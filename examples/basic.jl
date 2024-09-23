@@ -246,8 +246,9 @@ function generate_example_data()
     )
     return case, model
 end
+
 case, model = generate_example_data()
-m = JuMP.Model(Xpress.Optimizer)
+
 nl_solver = optimizer_with_attributes(
         Xpress.Optimizer, MOI.Silent() => true
     )
@@ -263,76 +264,10 @@ m = EMP.create_model(case, model, m; check_timeprofiles=true)
 optimize!(m)
 solution_summary(m)
 
-###########
-N = case[:nodes]
-D = filter(EMB.is_sink, N)
-S = filter(EMB.is_source, N)
-T = case[:T]
-P = case[:products]
-p = P[1]
-
-for t in T
-    for d in D
-        println(d, t, p)
-        println(value.(m[:flow_in][d, t, p]))
-    end
-end
-
-for t in T
-    for s in S
-        println(value.(m[:flow_out][s,t,p]))
-    end
-end
-
-# flows_in_terminals = [10.0
-#325.0
-#30.0
-#10.0]
-# revenue: 10*16 + 325*25 + 15*30 + 10*10 = 9285
-
-# flows_out_sources = 75 in all
-# cost = 75*7 + 75*3 + 75*2 + 75*10 + 75*5
-# profit = 9285 - 2025 = 7260
-
-###########
-
-# auxiliary code
-# blend_node = case[:nodes][4]
-# m[:flow_in][blend_node, :, :]
-# m[:flow_out][blend_node, :, :]
-
-𝒜 = case[:areas]
-links = case[:links]
-ℒᵗʳᵃⁿˢ = case[:transmission]
-𝒫 = case[:products]
-𝒯 = case[:T]
-
-area = case[:areas][1]
-nodesinarea = EMG.getnodesinarea(area, links)
-blendnodes = EMB.nodes_sub(convert(Vector{EMB.Node}, nodesinarea), EnergyModelsPooling.Blending)
-b_n = blendnodes[1]
-
-
-# Function to write all constraints to a file
-function write_constraints_to_file(model::Model, filename::String)
-    open(filename, "w") do file
-        for T in JuMP.list_of_constraint_types(model)
-            cs = all_constraints(model, T...)
-            println(file, T)
-            println(file, "\n", cs)
-        end
-    end
-end
-
 # Write the constraints to a text file
 write_constraints_to_file(m, "/Users/raquelalonso/Documents/Development/dev_EnergyModelsPooling.jl/constraints.txt") 
 
-
 # Results
-# case_name = "example3_b"
-# folder_path = "/Users/raquelalonso/Documents/Development/dev_GroundServices/cases/results"
-# file_path = joinpath(folder_path, "$case_name.xlsx")
-
 variables = [:opex_var, :stor_charge_invest_b, :stor_charge_add, :moving, :location, :stor_level, :stor_charge_use, :stor_discharge_use]
 
 var = :trans_out
