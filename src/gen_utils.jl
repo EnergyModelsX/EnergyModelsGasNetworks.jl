@@ -178,3 +178,14 @@ function df_structs_to_strings!(df::DataFrame)
     end
     return df
 end
+
+# Function to write all constraints to a file
+function write_constraints_to_file(model::Model, filename::String)
+    open(filename, "w") do file
+        for T in JuMP.list_of_constraint_types(model)
+            cs = all_constraints(model, T...)
+            println(file, T)
+            println(file, "\n", cs)
+        end
+    end
+end
