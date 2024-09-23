@@ -107,7 +107,7 @@ function RefBlendingSink(
     upperbound::Dict{<:Resource, <:Real},
     lowerbound::Dict{<:Resource, <:Real},
 )
-    return RefBlendingSink(id, cap, penalty, input, quality, Data[])
+    return RefBlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
 end
 
 function get_quality(s::RefSourceComponent, p::Resource)

@@ -86,10 +86,10 @@ function constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
         
         𝒫ᵘ = res_upper(d)
         @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ᵘ],
-             sum((get_quality(s, p) - get_quality(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) <= 0)
+             sum((get_quality(s, p) - get_upper(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) <= 0)
         𝒫ˡ = res_lower(d)
         @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ˡ],
-             sum((get_quality(s, p) - get_quality(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) >= 0)
+             sum((get_quality(s, p) - get_lower(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) >= 0)
     end
 end
 
