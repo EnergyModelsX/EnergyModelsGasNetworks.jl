@@ -95,7 +95,8 @@ struct RefBlendingSink <: EMB.Sink
     cap::TimeProfile
     penalty::Dict{Symbol, <:TimeProfile}
     input::Dict{<:Resource, <:Real}
-    quality::Dict{<:Resource, <:Real}
+    upperbound::Dict{<:Resource, <:Real}
+    lowerbound::Dict{<:Resource, <:Real}
     data::Vector{Data}
 end
 function RefBlendingSink(
@@ -103,12 +104,11 @@ function RefBlendingSink(
     cap::TimeProfile,
     penalty::Dict{<:Any,<:TimeProfile},
     input::Dict{<:Resource,<:Real},
-    quality::Dict{<:Resource, <:Real},
+    upperbound::Dict{<:Resource, <:Real},
+    lowerbound::Dict{<:Resource, <:Real},
 )
     return RefBlendingSink(id, cap, penalty, input, quality, Data[])
 end
-
-res_quality(n::RefBlendingSink) = collect(keys(n.quality))
 
 function get_quality(s::RefSourceComponent, p::Resource)
     quality = s.quality
@@ -119,10 +119,22 @@ function get_quality(s::RefSourceComponent, p::Resource)
     end
 end
 
-function get_quality(s::RefBlendingSink, p::Resource)
-    quality = s.quality
-    if p in keys(quality)
-        return quality[p]
+res_upper(n::RefBlendingSink) = collect(keys(n.upperbound))
+res_lower(n::RefBlendingSink) = collect(keys(n.lowerbound))
+
+function get_upper(s::RefBlendingSink, p::Resource)
+    upperbound = s.upperbound
+    if p in keys(upperbound)
+        return upperbound[p]
+    else
+        return 0
+    end
+end
+
+function get_lower(s::RefBlendingSink, p::Resource)
+    lowerbound = s.lowerbound
+    if p in keys(lowerbound)
+        return lowerbound[p]
     else
         return 0
     end

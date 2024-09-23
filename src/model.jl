@@ -66,8 +66,8 @@ function constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
         @constraint(m, [t ∈ 𝒯],
             sum(m[:prop_source][a, s, t] for s ∈ 𝒮ᵗᵐ) == 1.0)
 
-        # @constraint(m, [t ∈ 𝒯, tm ∈ ℒᶠ],
-        #     sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for s ∈ 𝒮ᵗᵐ) - m[:trans_in][tm, t] == 0)
+        @constraint(m, [t ∈ 𝒯, tm ∈ ℒᶠ],
+            sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for s ∈ 𝒮ᵗᵐ) - m[:trans_in][tm, t] == 0)
     end    
 end
 
@@ -78,16 +78,18 @@ function constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
         d = first([n for n in EMG.getnodesinarea(a, links) if EnergyModelsPooling.is_blending_sink(n)])   # get terminals, one terminal per terinalarea
 
         av = availability_node(a)
-        𝒫ᵃ = res_quality(d)
+        
         ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
         𝒜ᵃ = setdiff(getadjareas(a, ℒᵗᵒ), [a])
         𝒮ᵃ = Dict(ad => track_source(ad, links, 𝒜, ℒᵗʳᵃⁿˢ) for ad ∈ 𝒜ᵃ)
         TM = Dict(ad => modes(EMG.corr_from_to(ad.name, a.name, ℒᵗᵒ)) for ad ∈ 𝒜ᵃ)
         
-        for p ∈ 𝒫ᵃ
-            @constraint(m, [t ∈ 𝒯],
+        𝒫ᵘ = res_upper(d)
+        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ᵘ],
              sum((get_quality(s, p) - get_quality(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) <= 0)
-        end
+        𝒫ˡ = res_lower(d)
+        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ˡ],
+             sum((get_quality(s, p) - get_quality(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) >= 0)
     end
 end
 
