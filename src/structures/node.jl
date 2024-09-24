@@ -155,3 +155,11 @@ Checks, whether node `n` is a `RefBlendingSink` node
 """
 is_blending_sink(::EMB.Node) = false
 is_blending_sink(::RefBlendingSink) = true
+
+surplus_penalty(n::RefBlendingSink) = nothing
+surplus_penalty(n::RefBlendingSink, t) = nothing
+deficit_penalty(n::RefBlendingSink) = nothing
+deficit_penalty(n::RefBlendingSink, t) = nothing
+
+price_penalty(n::RefBlendingSink) = n.penalty[:price]
+price_penalty(n::RefBlendingSink, t) = n.penalty[:price][t]
