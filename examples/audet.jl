@@ -192,7 +192,7 @@ function generate_example_data()
         RefBlendingSink(
             j+2,
             FixedProfile(500),                                                               # Demand in flow
-            Dict(:surplus => FixedProfile(1e6), :deficit => FixedProfile(1e6)),
+            Dict(:price => FixedProfile(-190)),
             Dict(NG=>1.0),                                                                      # Output flow                                                           
             Dict(den => 0.79),                                                                           # Quality component upper bounds
             Dict(den => 0.74, roz => 95, moz =>85)                                           # Quality component lower bounds
@@ -216,7 +216,7 @@ function generate_example_data()
          RefBlendingSink(
             j+2,
             FixedProfile(500),                                                               # Demand in flow
-            Dict(:surplus => FixedProfile(-230), :deficit => FixedProfile(1.0e6)),              # Penalty                                                            
+            Dict(:price => FixedProfile(-230)),              # Penalty                                                            
             Dict(NG => 1.0),                                                                   # inputs
             Dict(den => 0.79, bnz => 0.9),                                                               # Quality component upper bounds
             Dict(den => 0.74, roz => 96, moz =>88)                                           # Quality component lower bounds                                                                     # Quality
@@ -240,7 +240,7 @@ function generate_example_data()
         RefBlendingSink(
            j+2,
            FixedProfile(500),                                                               # Demand in flow
-           Dict(:surplus => FixedProfile(-230), :deficit => FixedProfile(1.0e6)),              # Penalty                                                            
+           Dict(:price => FixedProfile(-150)),              # Penalty                                                            
            Dict(NG => 1.0),                                                                   # inputs
            Dict(den => 0.79),                                                                           # Quality component upper bounds
            Dict(den => 0.74, roz => 95,)                                           # Quality component lower bounds
@@ -261,8 +261,8 @@ function generate_example_data()
         RefArea(1, "Supply 1",          10.751, 59.921, an[1]),
         RefArea(2, "Supply 2",          10.398, 63.436, an[2]),
         RefArea(3, "Supply 3",          10.751, 59.921, an[3]),
-        BlendArea(4, "Pooling 1",       10.751, 59.921, an[4]),
-        BlendArea(5, "Pooling 2",       10.751, 59.921, an[5]),
+        BlendArea(4, "Pooling 1",       10.751, 59.921, an[4], Dict(NG => FixedProfile(1250.0))),
+        BlendArea(5, "Pooling 2",       10.751, 59.921, an[5], Dict(NG => FixedProfile(1750.0))),
         TerminalArea(6, "Terminal 1",      10.751, 59.921, an[6]),
         TerminalArea(7, "Terminal 2",      10.751, 59.921, an[7]),
         TerminalArea(8, "Terminal 3",      10.751, 59.921, an[8]),
@@ -278,25 +278,25 @@ function generate_example_data()
     ## ONLY ALLOWED TO CONNECT AREAS WITH BLENDS WITH PIPELINESIMPLE
     NG_Pipe_14 = PipeSimple("PipeLine_14", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
     NG_Pipe_15 = PipeSimple("PipeLine_15", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
-    NG_Pipe_17 = PipeSimple("PipeLine_17", NG, NG, NG, FixedProfile(0.0), FixedProfile(750), loss, FixedProfile(-230.0), opex_fix, 1, Data[])
+    NG_Pipe_17 = PipeSimple("PipeLine_17", NG, NG, NG, FixedProfile(0.0), FixedProfile(750), loss, FixedProfile(0.0), opex_fix, 1, Data[])
     
-    NG_Pipe_26 = PipeSimple("PipeLine_26", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(-190.0), opex_fix, 1, Data[])
+    NG_Pipe_26 = PipeSimple("PipeLine_26", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
     NG_Pipe_24 = PipeSimple("PipeLine_24", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
     NG_Pipe_25 = PipeSimple("PipeLine_25", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
-    NG_Pipe_28 = PipeSimple("PipeLine_28", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(-150.0), opex_fix, 1, Data[])
+    NG_Pipe_28 = PipeSimple("PipeLine_28", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
     
     NG_Pipe_34 = PipeSimple("PipeLine_34", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
     NG_Pipe_35 = PipeSimple("PipeLine_35", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
-    NG_Pipe_36 = PipeSimple("PipeLine_36", NG, NG, NG, FixedProfile(0.0), FixedProfile(750), loss, FixedProfile(-190.0), opex_fix, 1, Data[])
+    NG_Pipe_36 = PipeSimple("PipeLine_36", NG, NG, NG, FixedProfile(0.0), FixedProfile(750), loss,FixedProfile(0.0), opex_fix, 1, Data[])
 
 
-    NG_Pipe_46 = PipeSimple("PipeLine_46", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(-190.0), opex_fix, 1, Data[])
-    NG_Pipe_47 = PipeSimple("PipeLine_47", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(-230.0), opex_fix, 1, Data[])
-    NG_Pipe_48 = PipeSimple("PipeLine_48", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(-150.0), opex_fix, 1, Data[])
+    NG_Pipe_46 = PipeSimple("PipeLine_46", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
+    NG_Pipe_47 = PipeSimple("PipeLine_47", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
+    NG_Pipe_48 = PipeSimple("PipeLine_48", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
     
-    NG_Pipe_56 = PipeSimple("PipeLine_56", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(-190.0), opex_fix, 1, Data[])
-    NG_Pipe_57 = PipeSimple("PipeLine_57", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(-230.0), opex_fix, 1, Data[])
-    NG_Pipe_58 = PipeSimple("PipeLine_58", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(-150.0), opex_fix, 1, Data[])
+    NG_Pipe_56 = PipeSimple("PipeLine_56", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
+    NG_Pipe_57 = PipeSimple("PipeLine_57", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
+    NG_Pipe_58 = PipeSimple("PipeLine_58", NG, NG, NG, FixedProfile(0.0), cap_ng, loss, FixedProfile(0.0), opex_fix, 1, Data[])
 
 
     # 7. Create the different transmission corridors between the individual areas

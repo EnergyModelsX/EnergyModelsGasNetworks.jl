@@ -114,7 +114,7 @@ Declaration of deficit (`:sink_deficit`) variables
 for `RefBlendingSink` nodes `𝒩ˢⁱⁿᵏ` to quantify when there is too much or too little energy for
 satisfying the demand.
 """
-function EMB.variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:RefBlendingSink}, 𝒯, modeltype::EnergyModel)
+function EMB.variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:RefBlendingSink}, 𝒯, modeltype::EnergyModel) #TODO: The variables are still generated, although not used.
     # @variable(m, sink_surplus[𝒩ˢⁱⁿᵏ, 𝒯] >= 0)
     # @variable(m, sink_deficit[𝒩ˢⁱⁿᵏ, 𝒯] >= 0)
 end
@@ -188,3 +188,20 @@ function EMB.check_node(n::RefBlendingSink, 𝒯, modeltype::EnergyModel, check_
     #     )
     # end
 end
+
+"""
+    create_area(m, a::LimitedExchangeArea, 𝒯, ℒᵗʳᵃⁿˢ, modeltype)
+
+Constraint that limit input to a based on the specified exchange_limit.
+"""
+function EMG.create_area(m, a::BlendArea, 𝒯, ℒᵗʳᵃⁿˢ, modeltype)
+
+    ## TODO: Consider adding additional types for import or export exchange limits
+    # @constraint(m, [t ∈ 𝒯, p ∈ elimit_resources(a)],
+    #     m[:area_exchange][a, t, p] <= exchange_limit(a, p, t)) # Import limit
+    # ℒᶠʳᵒᵐ, ℒᵗᵒ = EMG.trans_sub(ℒᵗʳᵃⁿˢ, a)
+    # @constraint(m, [t ∈ 𝒯, p ∈ limit_resources(a)],
+    #     sum(EMG.compute_trans_out(m, t, p, tm) for tm ∈ modes(ℒᵗᵒ)) <= exchange_limit(a, p, t)) # Export limit
+
+end
+
