@@ -4,3 +4,4 @@
 *.txt
 /docs/
 *.DS_Store
+*.log
