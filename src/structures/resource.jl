@@ -22,6 +22,9 @@ struct ResourceComponent <: EMB.Resource
     id
 end
 
+struct ResourceComponentTrack <: EMB.Resource
+    id
+end
 
 
 function EMB.co2_int(p::ResourceBlend)
@@ -39,5 +42,9 @@ function output(n::ResourceBlend, p::ResourceCarrier)
 end
 
 EMB.is_resource_emit(p::ResourceBlend) = false
+
 is_resource_blend(p::Resource) = false
 is_resource_blend(p::ResourceBlend) = true
+
+is_resource_track(p::Resource) = false
+is_resource_track(p::ResourceComponentTrack) = true
