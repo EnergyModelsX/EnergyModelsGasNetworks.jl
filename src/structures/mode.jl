@@ -103,3 +103,5 @@ function PipePressureSimple(
         Data[],
         )
 end
+
+max_pressure(tm::PipePressureSimple) = tm.max_pressure
