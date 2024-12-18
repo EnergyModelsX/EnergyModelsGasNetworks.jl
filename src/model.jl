@@ -19,7 +19,7 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     variables_tracking_prop(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
     # Construction of constraints for the problem
-    constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_tracking(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -81,7 +81,6 @@ end
 function pressure_balance(m, a::Area, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     return nothing
 end
-
 function pressure_balance(m, a::SourcePressure, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
     
@@ -90,7 +89,6 @@ function pressure_balance(m, a::SourcePressure, ℒᵗʳᵃⁿˢ, links, 𝒯, �
         m[:p_in][tm, t] <= out_pressure(l) * m[:has_flow][tm, t])
     end
 end
-
 function pressure_balance(m, a::BlendPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
@@ -125,7 +123,6 @@ function pressure_balance(m, a::BlendPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯
         end
     end
 end
-
 function pressure_balance(m, a::TerminalPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
     TM_in = [tm for tm in EMG.modes(l_in) for l_in ∈ ℒⁱⁿ]
@@ -151,9 +148,14 @@ function constraints_tracking(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 
-function constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     # Filter only Blending areas
     𝒜ᵇ = filter(a -> is_blendarea(a), 𝒜)
+    𝒫ᵉ = filter(p -> !EMB.is_resource_emit(p), 𝒫)
+
+    if isnothing(𝒜ᵇ) && length(𝒫ᵉ) > 1
+        throw(ArgumentError("For more than 2 Resources in network, ensure using BlendingAreas"))
+    end
 
     for a ∈ 𝒜ᵇ
         𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
@@ -215,7 +217,7 @@ function constraints_weymouth(m, pwa::PWAFunc{C1, D1}, 𝒜, 𝒫, ℒᵗʳᵃ�
     else # lenght == 1
         constraints_weymouth(m, nothing, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
-    
+
 end
 function constraints_weymouth(m, pwa::nothing, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     if lenght(𝒫) > 1
