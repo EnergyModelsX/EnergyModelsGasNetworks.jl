@@ -14,10 +14,12 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     
     # Declaration of variables for blend structs
     variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
     # Construction of constraints for the problem
     constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     
     return m
 
@@ -39,14 +41,79 @@ function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
         𝒮ˢ  = getsource(a, links)
         
         for s ∈ 𝒮
-            if ~(s in 𝒮ᵗᵐ)
+            if ~(s in 𝒮ᵗᵐ) # sources not directed to a
                 @constraint(m, [t ∈ 𝒯], m[:prop_source][a, s, t] == 0)
             end
-            if s ∈ 𝒮ˢ
+            if s ∈ 𝒮ˢ # sources inside area
                 @constraint(m, [t ∈ 𝒯], m[:prop_source][a, s, t] == 1.0)
             end
         end
     end
+end
+
+function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    for l ∈ ℒᵗʳᵃⁿˢ
+        ℒ = EMG.modes(l)
+        @variable(m, p_in[ℒ, 𝒯] >= 0)
+        @variable(m, p_out[ℒ, 𝒯] >= 0)
+        @variable(m, has_flow[ℒ, 𝒯], Bin)
+        @variable(m, lower_pressure_into_node[ℒ, 𝒯], Bin) # binary for tracking lowest pressure going into a node
+    end
+end
+
+function constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    for a ∈ 𝒜
+        pressure_balance(m, a, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    end
+end
+
+function pressure_balance(m, a::SourcePressure, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
+    
+    for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
+        @constraint(m, [t ∈ 𝒯], 
+        m[:p_in][tm, t] <= out_pressure(l) * m[:has_flow][tm, t])
+    end
+
+end
+
+function pressure_balance(m, a::BlendPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
+    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
+
+    TM_in = [tm for tm in EMG.modes(l_in) for l_in ∈ ℒⁱⁿ]
+    TM_out = [tm for tm in EMG.modes(l_out) for l_out ∈ ℒᵒᵘᵗ]
+
+    if length(TM_in) > 1
+        @constraint(m, [t ∈ 𝒯],
+                sum(m[:lower_pressure_into_node][tm_in, t] for tm_in ∈ TM_in) == 1)
+
+        for tm_in ∈ TM_in, tm_out ∈ TM_out
+            max_in = max_pressure(tm_in)
+
+            @constraint(m, [t ∈ 𝒯],
+                m[:p_in][tm_out, t] >= m[:p_out][tm_in, t] - max_in * (1 - m[:lower_pressure_into_node][tm_in, t]))
+            
+            @constraint(m, [t ∈ 𝒯],
+                m[:lower_pressure_into_node][tm_in, t] <= m[:has_flow][tm_in, t])
+            
+            @constraint(m, [t ∈ 𝒯],
+                m[:p_in][tm_out, t] <= m[:p_out][tm_in, t] + max_pressure(tm_out) * (1 - m[:has_flow][tm_in, t]))
+        end 
+    else
+        tm_in = first(TM_in)
+
+        for tm_out ∈ TM_out
+            @constraint(m, [t ∈ 𝒯],
+                m[:p_in][tm_out, t] >= m[:p_out][tm_in, t] - max_pressure(tm_in) * (1 - m[:has_flow][tm_in, t]))
+            @constraint(m, [t ∈ 𝒯],
+                m[:p_in][tm_out, t] <= m[:p_out][tm_in, t])
+        end
+    end
+end
+
+function pressure_balance(m, a::BlendPressureSink, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+
 end
 
 function constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
