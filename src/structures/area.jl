@@ -1,3 +1,11 @@
+struct SourcePressure <: EMG.Area
+    id::Any
+    lon::Real
+    lat::Real
+    node::EMB.Availability
+    out_pressure::Any
+end
+
 struct BlendArea <: EMG.Area
     id
     name
@@ -6,6 +14,19 @@ struct BlendArea <: EMG.Area
     node::EMB.Availability
     limit::Dict{<:EMB.Resource, <:TimeProfile}
 end
+
+"""
+    No pressure change assumed in `BlendPressureArea`.
+"""
+struct BlendPressureArea <: EMG.Area
+    id
+    name
+    lon::Real
+    lat::Real
+    node::EMB.Availability
+    limit::Dict{<:EMB.Resource, <:TimeProfile}
+end
+
 
 struct TerminalArea <: EMG.Area
     id
@@ -56,3 +77,5 @@ Returns the limit of exchange resource `p` in area `a` at time period `t`.
 """
 exchange_limit(a::BlendArea, p::Resource, t) =
     haskey(a.limit, p) ? a.limit[p][t] : 0
+
+out_pressure(a::SourcePressure) = a.out_pressure
