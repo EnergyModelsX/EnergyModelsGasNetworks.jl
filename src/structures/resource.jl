@@ -10,7 +10,7 @@ Resources that composed of ResourceCarrier resources
 """
 struct ResourceBlend <: EMB.Resource
     id
-    res_blend::Vector{<:EMB.ResourceCarrier}
+    res_blend::Vector
 end
 
 """

@@ -52,7 +52,7 @@ struct BlendAvailability <: EMB.Availability
 end
 
 is_blendarea(a::Area) = false
-is_blendarea(a::{BlendArea, BlendPressureArea}) = true
+is_blendarea(a::Union{BlendArea, BlendPressureArea}) = true
 
 
 is_terminalarea(a::Area) = false

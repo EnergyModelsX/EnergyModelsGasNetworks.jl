@@ -10,7 +10,6 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     ℒᵗʳᵃⁿˢ = case[:transmission]
     𝒫 = case[:products]
     𝒯 = case[:T]
-    e = case[:e]
     pwa = case[:pwa]
     
     # Declaration of variables for blend structs
@@ -63,13 +62,13 @@ function variables_tracking_prop(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
 end
 
 function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    for l ∈ ℒᵗʳᵃⁿˢ
-        ℒ = EMG.modes(l)
-        @variable(m, p_in[ℒ, 𝒯] >= 0)
-        @variable(m, p_out[ℒ, 𝒯] >= 0)
-        @variable(m, has_flow[ℒ, 𝒯], Bin)
-        @variable(m, lower_pressure_into_node[ℒ, 𝒯], Bin) # binary for tracking lowest pressure going into a node
-    end
+    TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l)]
+
+    @variable(m, p_in[TM, 𝒯] >= 0)
+    @variable(m, p_out[TM, 𝒯] >= 0)
+    @variable(m, has_flow[TM, 𝒯], Bin)
+    @variable(m, lower_pressure_into_node[TM, 𝒯], Bin) # binary for tracking lowest pressure going into a node
+    
 end
 
 function constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
@@ -219,7 +218,7 @@ function constraints_weymouth(m, pwa::PWAFunc{C1, D1}, 𝒜, 𝒫, ℒᵗʳᵃ�
     end
 
 end
-function constraints_weymouth(m, pwa::nothing, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function constraints_weymouth(m, pwa, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     if lenght(𝒫) > 1
         throw(ArgumentError("For more than 2 Resources, ensure you add the pwa (plane approximations)."))
     else
@@ -313,7 +312,7 @@ function EMB.constraints_opex_var(m, n::RefBlendingSink, 𝒯ᴵⁿᵛ, modeltyp
         sum(
             (
             m[:cap_use][n, t] * price_penalty(n, t) 
-            ) * multiple(t_inv, t) for t ∈ t_inv
+            ) * EMB.scale_op_sp(t_inv, t) for t ∈ t_inv
         )
     )
 end
