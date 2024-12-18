@@ -15,6 +15,7 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     # Declaration of variables for blend structs
     variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    variables_tracking_prop(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
     # Construction of constraints for the problem
     constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -37,7 +38,7 @@ function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
     # Define y = 0 if s not associated to the area and y = 1 if s inside area
     for a in 𝒜ⁿᵗ
-        𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
+        𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ) 
         𝒮ˢ  = getsource(a, links)
         
         for s ∈ 𝒮
@@ -49,6 +50,13 @@ function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
             end
         end
     end
+end
+
+function variables_tracking_prop(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
+    track_r = first(r -> is_resource_track(r), 𝒫)
+
+    @variable(m, 0 <= prop_track[track_r, 𝒜ⁿᵗ, t] <= 1.0)
 end
 
 function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -67,6 +75,10 @@ function constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     end
 end
 
+function pressure_balance(m, a::Area, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    return nothing
+end
+
 function pressure_balance(m, a::SourcePressure, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
     
@@ -74,7 +86,6 @@ function pressure_balance(m, a::SourcePressure, ℒᵗʳᵃⁿˢ, links, 𝒯, �
         @constraint(m, [t ∈ 𝒯], 
         m[:p_in][tm, t] <= out_pressure(l) * m[:has_flow][tm, t])
     end
-
 end
 
 function pressure_balance(m, a::BlendPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
@@ -119,6 +130,21 @@ function pressure_balance(m, a::TerminalPressureArea, ℒᵗʳᵃⁿˢ, links, �
     for tm_in ∈ TM_in
         @constraint(m, [t ∈ 𝒯],
             m[:p_out][tm_in, t] >= in_pressure(a) * m[:has_flow][tm, t])
+    end
+end
+
+function constraints_tracking(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
+    track_r = first(r -> is_resource_track(r), 𝒫)
+
+    for a ∈ 𝒜ⁿᵗ
+        𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
+        𝒮ˢ  = getsource(a, links)
+        # filter sources of ResourceComponentTrack
+        𝒮 = filter(s -> outputs(s, track_r), union(𝒮ᵗᵐ, 𝒮ˢ))
+
+        @constraint(m, [t ∈ 𝒯],
+            m[:prop_track][track_r, a, t] == sum(get_quality(s, track_r) * m[:prop_source][a, s, t] for s ∈ 𝒮))
     end
 end
 
