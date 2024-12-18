@@ -112,8 +112,14 @@ function pressure_balance(m, a::BlendPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯
     end
 end
 
-function pressure_balance(m, a::BlendPressureSink, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function pressure_balance(m, a::TerminalPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
+    TM_in = [tm for tm in EMG.modes(l_in) for l_in ∈ ℒⁱⁿ]
 
+    for tm_in ∈ TM_in
+        @constraint(m, [t ∈ 𝒯],
+            m[:p_out][tm_in, t] >= in_pressure(a) * m[:has_flow][tm, t])
+    end
 end
 
 function constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
