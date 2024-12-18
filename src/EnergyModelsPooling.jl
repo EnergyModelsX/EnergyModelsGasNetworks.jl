@@ -6,6 +6,7 @@ using EnergyModelsGeography; const EMG = EnergyModelsGeography
 using TimeStruct
 using MetaGraphs
 using Graphs
+using PiecewiseAffineApprox
 
 
 include("structures/energy.jl")

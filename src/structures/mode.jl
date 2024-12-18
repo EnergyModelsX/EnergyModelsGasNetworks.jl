@@ -45,6 +45,8 @@ struct PipePressureSimple <: PipeMode
     opex_var::TimeProfile
     opex_fixed::TimeProfile
     max_pressure::Int
+    weymouth::Float64
+    lin_pressures::Vector{Tuple}
     directions::Int
     data::Vector{<:Data}
 
@@ -59,6 +61,8 @@ struct PipePressureSimple <: PipeMode
         opex_var::TimeProfile,
         opex_fixed::TimeProfile,
         max_pressure::Int,
+        weymouth::Float64,
+        lin_pressures::Vector{Tuple},
         data::Vector{<:Data}
     )
         new(
@@ -72,6 +76,8 @@ struct PipePressureSimple <: PipeMode
             opex_var,
             opex_fixed,
             max_pressure,
+            weymouth,
+            lin_pressures,
             1,
             data,
             )
@@ -87,7 +93,9 @@ function PipePressureSimple(
     trans_loss::TimeProfile,
     opex_var::TimeProfile,
     opex_fixed::TimeProfile,
-    max_pressure::Int
+    max_pressure::Int,
+    weymouth::Float64,
+    lin_pressures::Vector{Tuple} # Tuples of pairs (P^in, P^out) 
 )
     PipePressureSimple(
         id,
@@ -100,8 +108,12 @@ function PipePressureSimple(
         opex_var,
         opex_fixed,
         max_pressure,
+        weymouth,
+        lin_pressures,
         Data[],
         )
 end
 
 max_pressure(tm::PipePressureSimple) = tm.max_pressure
+weymouth_ct(tm::PipePressureSimple) = tm.weymouth
+linearised_pressures(tm::PipePressureSimple) = tm.lin_pressures
