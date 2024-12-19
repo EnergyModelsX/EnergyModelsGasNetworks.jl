@@ -4,7 +4,7 @@ struct BlendArea <: EMG.Area
     lon::Real
     lat::Real
     node::EMB.Availability
-    limit::Dict{<:EMB.Resource, <:TimeProfile}
+    limit::Dict{<:EMB.Component, <:TimeProfile}
 end
 
 struct TerminalArea <: EMG.Area
@@ -47,12 +47,12 @@ exchange_limit(a::BlendArea) = a.limit
 
 Returns the limit of exchange resource `p` in area `a` a `TimeProfile`.
 """
-exchange_limit(a::BlendArea, p::Resource) =
+exchange_limit(a::BlendArea, p::Component) =
     haskey(a.limit, p) ? a.limit[p] : FixedProfile(0)
 """
     exchange_limit(a::BlendArea, p::Resource, t)
 
 Returns the limit of exchange resource `p` in area `a` at time period `t`.
 """
-exchange_limit(a::BlendArea, p::Resource, t) =
+exchange_limit(a::BlendArea, p::Component, t) =
     haskey(a.limit, p) ? a.limit[p][t] : 0

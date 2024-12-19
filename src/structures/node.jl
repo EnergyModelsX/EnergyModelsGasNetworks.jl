@@ -20,7 +20,7 @@ struct RefSourceComponent <: EMB.Source
     opex_var::TimeProfile
     opex_fixed::TimeProfile
     output::Dict{<:Resource, <:Real}
-    quality::Dict{<:Resource, <:Real}
+    quality::Dict{<:Component, <:Real}
     data::Vector{Data}
 end
 function RefSourceComponent(
@@ -29,7 +29,7 @@ function RefSourceComponent(
     opex_var::TimeProfile,
     opex_fixed::TimeProfile,
     output::Dict{<:Resource,<:Real},
-    quality::Dict{<:Resource, <:Real}
+    quality::Dict{<:Component, <:Real}
 )
     return RefSourceComponent(id, cap, opex_var, opex_fixed, output, quality, Data[])
 end
@@ -95,8 +95,8 @@ struct RefBlendingSink <: EMB.Sink
     cap::TimeProfile
     penalty::Dict{Symbol, <:TimeProfile}
     input::Dict{<:Resource, <:Real}
-    upperbound::Dict{<:Resource, <:Real}
-    lowerbound::Dict{<:Resource, <:Real}
+    upperbound::Dict{<:Component, <:Real}
+    lowerbound::Dict{<:Component, <:Real}
     data::Vector{Data}
 end
 function RefBlendingSink(
@@ -104,13 +104,13 @@ function RefBlendingSink(
     cap::TimeProfile,
     penalty::Dict{<:Any,<:TimeProfile},
     input::Dict{<:Resource,<:Real},
-    upperbound::Dict{<:Resource, <:Real},
-    lowerbound::Dict{<:Resource, <:Real},
+    upperbound::Dict{<:Component, <:Real},
+    lowerbound::Dict{<:Component, <:Real},
 )
     return RefBlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
 end
 
-function get_quality(s::RefSourceComponent, p::Resource)
+function get_quality(s::RefSourceComponent, p::Component)
     quality = s.quality
     if p in keys(quality)
         return quality[p]
@@ -122,7 +122,7 @@ end
 res_upper(n::RefBlendingSink) = collect(keys(n.upperbound))
 res_lower(n::RefBlendingSink) = collect(keys(n.lowerbound))
 
-function get_upper(s::RefBlendingSink, p::Resource)
+function get_upper(s::RefBlendingSink, p::Component)
     upperbound = s.upperbound
     if p in keys(upperbound)
         return upperbound[p]
@@ -131,7 +131,7 @@ function get_upper(s::RefBlendingSink, p::Resource)
     end
 end
 
-function get_lower(s::RefBlendingSink, p::Resource)
+function get_lower(s::RefBlendingSink, p::Component)
     lowerbound = s.lowerbound
     if p in keys(lowerbound)
         return lowerbound[p]
