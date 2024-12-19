@@ -9,6 +9,7 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     links = case[:links]
     ℒᵗʳᵃⁿˢ = case[:transmission]
     𝒫 = case[:products]
+    𝒞 = case[:components]
     𝒯 = case[:T]
     pwa = case[:pwa]
     
@@ -263,7 +264,7 @@ end
 function EMB.constraints_flow_in(m, n::RefBlending, 𝒯::TimeStructure, modeltype::EnergyModel)
     # Declaration of the required subsystems
     𝒫ⁱⁿ  = inputs(n)
-    𝒫ᵒᵘᵗ  = outputs(n) # In RefBlending this should be a singleton
+    𝒫ᵒᵘᵗ  = outputs(n)
 
     if length(𝒫ᵒᵘᵗ) > 1
         @error("The type `RefBlending` should have only one output resource")

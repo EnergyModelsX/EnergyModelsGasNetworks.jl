@@ -12,6 +12,18 @@ struct BlendArea <: EMG.Area
     lon::Real
     lat::Real
     node::EMB.Availability
+    limit::Dict{<:EMB.Component, <:TimeProfile}
+end
+
+"""
+    No pressure change assumed in `BlendPressureArea`.
+"""
+struct BlendPressureArea <: EMG.Area
+    id
+    name
+    lon::Real
+    lat::Real
+    node::EMB.Availability
     limit::Dict{<:EMB.Resource, <:TimeProfile}
 end
 
@@ -77,14 +89,14 @@ exchange_limit(a::Union{BlendArea, BlendPressureArea}) = a.limit
 
 Returns the limit of exchange resource `p` in area `a` a `TimeProfile`.
 """
-exchange_limit(a::Union{BlendArea, BlendPressureArea}, p::Resource) =
+exchange_limit(a::Union{BlendArea, BlendPressureArea}, p::Component) =
     haskey(a.limit, p) ? a.limit[p] : FixedProfile(0)
 """
     exchange_limit(a::BlendArea, p::Resource, t)
 
 Returns the limit of exchange resource `p` in area `a` at time period `t`.
 """
-exchange_limit(a::Union{BlendArea, BlendPressureArea}, p::Resource, t) =
+exchange_limit(a::Union{BlendArea, BlendPressureArea}, p::Component, t) =
     haskey(a.limit, p) ? a.limit[p][t] : 0
 
 out_pressure(a::SourcePressure) = a.out_pressure
