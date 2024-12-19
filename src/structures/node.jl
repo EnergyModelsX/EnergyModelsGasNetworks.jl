@@ -66,13 +66,10 @@ function RefBlendingSink(
 	return RefBlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
 end
 
+components(n::RefSourceComponent) = collect(keys(n.quality))
+
 function get_quality(s::RefSourceComponent, p::Component)
-	quality = s.quality
-	if p in keys(quality)
-		return quality[p]
-	else
-		return 0
-	end
+	return get(s.quality, p, 0)
 end
 
 res_upper(n::RefBlendingSink) = collect(keys(n.upperbound))
@@ -95,6 +92,8 @@ function get_lower(s::RefBlendingSink, p::Component)
 		return 0
 	end
 end
+
+
 
 """
 	is_geoavailability(n::Node)

@@ -12,7 +12,7 @@ struct BlendArea <: EMG.Area
     lon::Real
     lat::Real
     node::EMB.Availability
-    limit::Dict{<:EMB.Component, <:TimeProfile}
+    limit::Dict{<:Component, <:TimeProfile}
 end
 
 """
@@ -26,19 +26,6 @@ struct BlendPressureArea <: EMG.Area
     node::EMB.Availability
     limit::Dict{<:EMB.Resource, <:TimeProfile}
 end
-
-"""
-    No pressure change assumed in `BlendPressureArea`.
-"""
-struct BlendPressureArea <: EMG.Area
-    id
-    name
-    lon::Real
-    lat::Real
-    node::EMB.Availability
-    limit::Dict{<:EMB.Resource, <:TimeProfile}
-end
-
 
 struct TerminalArea <: EMG.Area #TODO: Take out TerminalArea and dispatch functions in RefBlendingSink instead
     id

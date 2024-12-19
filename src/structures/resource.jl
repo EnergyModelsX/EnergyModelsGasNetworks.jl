@@ -1,16 +1,15 @@
+abstract type Component <: EMB.Resource end
 struct ResourceCarrierBlend <: EMB.Resource
 	id::Any
-	components::Vector{}
+	components::Vector{Any}
 end
 
-abstract type Component <: EMB.Resource end
-
-struct RefComponent <: Component
+struct RefComponent{T<:Real} <: Component
 	id::Any
 	co2_int::T
 end
 
-struct ComponentTrack <: Component
+struct ComponentTrack{T<:Real} <: Component
 	id::Any
 	co2_int::T
 end
