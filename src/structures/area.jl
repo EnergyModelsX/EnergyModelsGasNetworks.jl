@@ -57,12 +57,6 @@ struct TerminalPressureArea <: EMG.Area
     in_pressure::Int
 end
 
-struct BlendAvailability <: EMB.Availability
-    id
-    input::Array{Resource}
-    output::Array{Resource}
-end
-
 is_blendarea(a::Area) = false
 is_blendarea(a::Union{BlendArea, BlendPressureArea}) = true
 
