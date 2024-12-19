@@ -23,7 +23,7 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_tracking(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    constraints_weymouth(m, pwa, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_weymouth(m, pwa, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) 
     
     return m
 
@@ -57,7 +57,7 @@ end
 
 function variables_tracking_prop(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
-    track_r = first(r -> is_resource_track(r), 𝒫)
+    track_r = filter(r -> is_component_track(r), 𝒫)
 
     @variable(m, 0 <= prop_track[track_r, 𝒜ⁿᵗ, t] <= 1.0)
 end
@@ -135,7 +135,7 @@ end
 
 function constraints_tracking(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
-    track_r = first(r -> is_resource_track(r), 𝒫)
+    track_r = first(filter(r -> is_component_track(r), 𝒫))
 
     for a ∈ 𝒜ⁿᵗ
         𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
@@ -197,15 +197,15 @@ function constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     end
 end
 
-function constraints_weymouth(m, pwa::PWAFunc{C1, D1}, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} #TODO: Adapt to only one resource without blending
+function constraints_weymouth(m, pwa::PWAFunc{C1, D1}, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
     
-    if lenght(𝒫) > 2 && any(x -> x isa ResourceComponentTrack, 𝒫)
-        throw(ArgumentError("Blending and pressure capabilities not supported for more than 2 elements. For more than 3 elements only blending is allowed. 
-        If wanting to ensure blending, please change your ResourceComponentTrack to ResourceBlend type. Otherwise, ensure having 1 ResourceBlend and 1 ResourceComponentTrack."))
-    elseif length(𝒫) == 2
-        p = first(filter(r -> is_resource_track(r), 𝒫))
+    if lenght(𝒞) > 2 && any(x -> x isa ComponentTrack, 𝒞)
+        throw(ArgumentError("Blending and pressure capabilities not supported for more than 2 Components. For more than 3 Components only blending is allowed. 
+        If wanting to ensure blending, please change your ResourceComponentTrack to ResourceBlend type"))
+    elseif length(𝒞) == 2
+        p = first(filter(p -> is_component_track(r), 𝒞))
         if isnothing(p)
-            throw(ArgumentError("One of the Resources must be of type ResourceComponentTrack."))
+            throw(ArgumentError("One of the Resources must be of type ResourceComponentTrack to apply Weymouth."))
         end
 
         𝒜ᵗ = filter(a -> !is_terminalarea(a), 𝒜)
@@ -214,16 +214,22 @@ function constraints_weymouth(m, pwa::PWAFunc{C1, D1}, 𝒜, 𝒫, ℒᵗʳᵃ�
                 add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, plane)
             end
         end
-    else # lenght == 1
-        constraints_weymouth(m, nothing, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
-
 end
-function constraints_weymouth(m, pwa, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    if lenght(𝒫) > 1
-        throw(ArgumentError("For more than 2 Resources, ensure you add the pwa (plane approximations)."))
-    else
-        p = first(𝒫)
+
+"""
+    This constraint applies when there is only one Resource in the system. No components are needed
+"""
+function constraints_weymouth(m, pwa, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    𝒫ꜝ = filter(p -> !EMB.is_resource_emit(p), 𝒫)
+    𝒜ꜝ = filter(a -> is_pressurearea(a), 𝒜)
+    
+    if length(𝒫ꜝ) > 1 && !isempty(𝒜ꜝ) #TODO: Improve with checking_data
+        throw(ArgumentError("Pressure constraints only available for 1 Resource and 1 Resource and 2 Components"))
+    elseif length(𝒞) != 0 && !isempty(𝒜ꜝ)
+        throw(ArgumentError("For systems with Components, ensure you add the pwa (plane approximations)."))
+    elseif !isempty(𝒜ꜝ)
+        p = first(𝒫ꜝ)
         𝒜ᵗ = filter(a -> !is_terminalarea(a), 𝒜)
 
         for t ∈ 𝒯, a ∈ 𝒜ᵗ
@@ -232,14 +238,14 @@ function constraints_weymouth(m, pwa, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 
-function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::ResourceComponentTrack, ℒᵗʳᵃⁿˢ, t, plane)
+function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
         PiecewiseAffineApprox.constr(C1, m, m[:trans_in][tm, t], plane, (m[:p_in][tm, t], m[:p_out][tm, t], m[:prop_track][p, a, t]))
     end
 end
-function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::ResourceComponent, ℒᵗʳᵃⁿˢ, t)
+function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::Resource, ℒᵗʳᵃⁿˢ, t)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
