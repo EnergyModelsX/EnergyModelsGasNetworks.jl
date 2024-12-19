@@ -40,7 +40,7 @@ struct BlendPressureArea <: EMG.Area
 end
 
 
-struct TerminalArea <: EMG.Area
+struct TerminalArea <: EMG.Area #TODO: Take out TerminalArea and dispatch functions in RefBlendingSink instead
     id
     name
     lon::Real
@@ -63,6 +63,9 @@ is_blendarea(a::Union{BlendArea, BlendPressureArea}) = true
 
 is_terminalarea(a::Area) = false
 is_terminalarea(a::Union{TerminalArea, TerminalPressureArea}) = true
+
+is_pressurearea(a::Area) = false
+is_pressurearea(a::Union{BlendPressureArea, SourcePressure, TerminalPressureArea}) = true
 
 """
     limit_resources(a::LimitedExchangeArea)

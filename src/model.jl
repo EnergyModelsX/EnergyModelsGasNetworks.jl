@@ -59,7 +59,7 @@ function variables_tracking_prop(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
     track_r = filter(r -> is_component_track(r), 𝒫)
 
-    @variable(m, 0 <= prop_track[track_r, 𝒜ⁿᵗ, t] <= 1.0)
+    @variable(m, 0 <= prop_track[track_r, 𝒜ⁿᵗ, 𝒯] <= 1.0)
 end
 
 function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -141,7 +141,7 @@ function constraints_tracking(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
         𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
         𝒮ˢ  = getsource(a, links)
         # filter sources of ResourceComponentTrack
-        𝒮 = filter(s -> outputs(s, track_r), union(𝒮ᵗᵐ, 𝒮ˢ))
+        𝒮 = filter(s -> track_r ∈ EMB.outputs(s), union(𝒮ᵗᵐ, 𝒮ˢ))
 
         @constraint(m, [t ∈ 𝒯],
             m[:prop_track][track_r, a, t] == sum(get_quality(s, track_r) * m[:prop_source][a, s, t] for s ∈ 𝒮))
@@ -243,7 +243,7 @@ function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::Compone
 
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
         PiecewiseAffineApprox.constr(C1, m, m[:trans_in][tm, t], plane, (m[:p_in][tm, t], m[:p_out][tm, t], m[:prop_track][p, a, t]))
-    end
+    end 
 end
 function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::Resource, ℒᵗʳᵃⁿˢ, t)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
