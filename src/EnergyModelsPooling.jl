@@ -18,8 +18,9 @@ include("model.jl")
 include("readgms.jl")
 
 
-export ResourceBlend, RefBlendingSink, ResourceComponent, RefSourceComponent, RefEnergyContent
+export ResourceCarrierBlend, RefComponent, ComponentTrack
 export BlendArea, TerminalArea, BlendAvailability
+export RefSourceComponent, RefBlendingSink
 export create_model
 export loadGamsFile
 
