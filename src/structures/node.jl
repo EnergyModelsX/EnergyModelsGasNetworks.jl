@@ -1,5 +1,5 @@
 """
-    RefSourceComponent <: EMB.Source
+	RefSourceComponent <: EMB.Source
 
 A source node with specific qualities of ResourceComponent resources.
 
@@ -15,67 +15,23 @@ A source node with specific qualities of ResourceComponent resources.
 """
 
 struct RefSourceComponent <: EMB.Source
-    id
-    cap::TimeProfile
-    opex_var::TimeProfile
-    opex_fixed::TimeProfile
-    output::Dict{<:Resource, <:Real}
-    quality::Dict{<:Component, <:Real}
-    data::Vector{Data}
+	id::Any
+	cap::TimeProfile
+	opex_var::TimeProfile
+	opex_fixed::TimeProfile
+	output::Dict{<:Resource, <:Real}
+	quality::Dict{<:Component, <:Real}
+	data::Vector{Data}
 end
 function RefSourceComponent(
-    id,
-    cap::TimeProfile,
-    opex_var::TimeProfile,
-    opex_fixed::TimeProfile,
-    output::Dict{<:Resource,<:Real},
-    quality::Dict{<:Component, <:Real}
+	id,
+	cap::TimeProfile,
+	opex_var::TimeProfile,
+	opex_fixed::TimeProfile,
+	output::Dict{<:Resource, <:Real},
+	quality::Dict{<:Component, <:Real},
 )
-    return RefSourceComponent(id, cap, opex_var, opex_fixed, output, quality, Data[])
-end
-
-abstract type Blending <: EMB.NetworkNode end
-
-""" 
-    RefBlending <: Blending
-
-A NetworkNode summing the flows of ResourceCarriers and generates a flow of ResourceBlend.
-
-#Fields
-- **`id`** is the name/identifier of the node.\n
-- **`cap::TimeProfile`** is the installed capacity.\n
-- **`opex_var::TimeProfile`** is the variational operational costs per energy unit produced.\n
-- **`opex_fixed::TimeProfile`** is the fixed operational costs.\n
-- **`input::Dict{<:Resource, <:Real}`** are the input `ResourceCarriers`s.\n
-- **`output::Dict{<:Resource, <:Real}`** is the generated `ResourceBlend`s. \n
-- **`data::Vector{Data}`** is the additional data (e.g. for investments). The field \
-`data` is conditional through usage of a constructor.
-"""
-struct RefBlending <: Blending
-    id
-    cap::TimeProfile
-    opex_var::TimeProfile
-    opex_fixed::TimeProfile
-    input::Dict{<:Resource, <:Real}             
-    output::Dict{<:Resource, <:Real}
-    data::Vector{Data}
-end
-function RefBlending(
-    id,
-    cap::TimeProfile,
-    opex_var::TimeProfile,
-    opex_fixed::TimeProfile,
-    input::Dict{<:Resource, <:Real},
-    output::Dict{<:Resource, <:Real},
-)
-    return RefBlending(
-        id,
-        cap,
-        opex_var,
-        opex_fixed,
-        input,
-        output,
-        Data[])
+	return RefSourceComponent(id, cap, opex_var, opex_fixed, output, quality, Data[])
 end
 
 """ A reference `RefBlendingSink` node
@@ -91,57 +47,57 @@ end
 `data` is conditional through usage of a constructor.
 """
 struct RefBlendingSink <: EMB.Sink
-    id
-    cap::TimeProfile
-    penalty::Dict{Symbol, <:TimeProfile}
-    input::Dict{<:Resource, <:Real}
-    upperbound::Dict{<:Component, <:Real}
-    lowerbound::Dict{<:Component, <:Real}
-    data::Vector{Data}
+	id::Any
+	cap::TimeProfile
+	penalty::Dict{Symbol, <:TimeProfile}
+	input::Dict{<:Resource, <:Real}
+	upperbound::Dict{<:Component, <:Real}
+	lowerbound::Dict{<:Component, <:Real}
+	data::Vector{Data}
 end
 function RefBlendingSink(
-    id,
-    cap::TimeProfile,
-    penalty::Dict{<:Any,<:TimeProfile},
-    input::Dict{<:Resource,<:Real},
-    upperbound::Dict{<:Component, <:Real},
-    lowerbound::Dict{<:Component, <:Real},
+	id,
+	cap::TimeProfile,
+	penalty::Dict{<:Any, <:TimeProfile},
+	input::Dict{<:Resource, <:Real},
+	upperbound::Dict{<:Component, <:Real},
+	lowerbound::Dict{<:Component, <:Real},
 )
-    return RefBlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
+	return RefBlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
 end
 
 function get_quality(s::RefSourceComponent, p::Component)
-    quality = s.quality
-    if p in keys(quality)
-        return quality[p]
-    else
-        return 0
-    end
+	quality = s.quality
+	if p in keys(quality)
+		return quality[p]
+	else
+		return 0
+	end
 end
 
 res_upper(n::RefBlendingSink) = collect(keys(n.upperbound))
 res_lower(n::RefBlendingSink) = collect(keys(n.lowerbound))
 
 function get_upper(s::RefBlendingSink, p::Component)
-    upperbound = s.upperbound
-    if p in keys(upperbound)
-        return upperbound[p]
-    else
-        return 0
-    end
+	upperbound = s.upperbound
+	if p in keys(upperbound)
+		return upperbound[p]
+	else
+		return 0
+	end
 end
 
 function get_lower(s::RefBlendingSink, p::Component)
-    lowerbound = s.lowerbound
-    if p in keys(lowerbound)
-        return lowerbound[p]
-    else
-        return 0
-    end
+	lowerbound = s.lowerbound
+	if p in keys(lowerbound)
+		return lowerbound[p]
+	else
+		return 0
+	end
 end
 
 """
-    is_geoavailability(n::Node)
+	is_geoavailability(n::Node)
 
 Checks, whether node `n` is a `GeoAvailability` node
 """
@@ -149,7 +105,7 @@ is_geoavailability(n::EMB.Node) = false
 is_geoavailability(n::EMG.GeoAvailability) = true
 
 """
-    is_blending_sink(n::Node)
+	is_blending_sink(n::Node)
 
 Checks, whether node `n` is a `RefBlendingSink` node
 """
