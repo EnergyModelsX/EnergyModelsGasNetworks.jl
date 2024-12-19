@@ -6,3 +6,4 @@
 *.DS_Store
 *.log
 .vscode
+.vscode/settings.json
