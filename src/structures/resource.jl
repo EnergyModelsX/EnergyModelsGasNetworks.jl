@@ -1,43 +1,38 @@
-
-"""
-    ResourceBlend <: EMB.Resource
-
-Resources that composed of ResourceCarrier resources
-
-#Fields
-- **`id`** is the name/identifier of the resource.\n
-- **`res_blend`** is the ResourceCarriers forming the blend.\n
-"""
-struct ResourceBlend <: EMB.Resource
-    id
-    res_blend::Vector{<:EMB.ResourceCarrier}
+struct ResourceCarrierBlend <: EMB.Resource
+	id::Any
+	components::Vector{}
 end
 
-"""
-    ResourceComponent <: EMB.Resource
+abstract type Component <: EMB.Resource end
 
-Resources whose quality needs to be tracked in other Resources (e.g., Sulfur)
-"""
-struct ResourceComponent <: EMB.Resource
-    id
+struct RefComponent <: Component
+	id::Any
+	co2_int::T
 end
 
-
-
-function EMB.co2_int(p::ResourceBlend)
-    resources = p.res_blend
-    co2 = []
-    for r in resources
-        push!(co2,r.co2_int)
-    end
-    return co2
+struct ComponentTrack <: Component
+	id::Any
+	co2_int::T
 end
 
-function output(n::ResourceBlend, p::ResourceCarrier)
-    e = n.output
-    return e[p]
+function EMB.co2_int(p::ResourceCarrierBlend)
+	components = p.components
+	co2 = []
+	for c in components
+		push!(co2, co2_int(c))
+	end
+	return co2
 end
 
-EMB.is_resource_emit(p::ResourceBlend) = false
+EMB.co2_int(p::Component) = p.co2_int
+
+components(n::ResourceCarrierBlend) = n.components
+
 is_resource_blend(p::Resource) = false
-is_resource_blend(p::ResourceBlend) = true
+is_resource_blend(p::ResourceCarrierBlend) = true
+
+is_component(p::Resource) = false
+is_component(p::Component) = true
+
+is_component_track(p::Resource) = false
+is_component_track(p::ComponentTrack) = true
