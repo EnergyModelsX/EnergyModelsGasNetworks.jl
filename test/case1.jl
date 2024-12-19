@@ -2,11 +2,11 @@
 function generate_case()
 
     # Define resources
-    NG = EMP.RefComponent("NG", 0.0)
-    H2 = EMP.ComponentTrack("H2", 0.0)
+    NG = RefComponent("NG", 0.0)
+    H2 = ComponentTrack("H2", 0.0)
     
-    Gas = EMB.ResourceCarrierBlend("Gas", [NG, H2])
-    CO2 = EMB.ResourceEmit("CO2", 1.0)
+    Gas = EMP.ResourceCarrierBlend("Gas", [NG, H2])
+    CO2 = ResourceEmit("CO2", 1.0)
     products = [CO2, Gas]
     components = [NG, H2]
 
@@ -37,7 +37,7 @@ function generate_case()
             FixedProfile(0), # Var. OPEX
             FixedProfile(0), # Fix. OPEX
             Dict(Gas => 1), # Output
-            Dict(H2 => 1)
+            Dict(H2 => 1) # Quality
         ),
     ]
     l = [
@@ -97,7 +97,7 @@ function generate_case()
 
     # Nodes in Area 5
     n = [
-        GeoAvailability(401, products)
+        GeoAvailability(501, products)
     ]
     l = [
     ]
@@ -132,7 +132,7 @@ function generate_case()
             FixedProfile(50), # Capacity
             Dict(:price => FixedProfile(-190)), # Penalty
             Dict(Gas => 1), # Input
-            Dict(H2 => 1, NG => 1), # upperbound
+            Dict(H2 => 0.7, NG => 1), # upperbound
             Dict(H2 => 0) # lowerbound
         )
     ]
@@ -198,13 +198,16 @@ function generate_case()
 end
 
 @testset "Only Blend" begin
+    
     case, model = generate_case()
-    m = optimize(case, model)
+    m = EMP.create_model(case, model)
+    m = optimize(m)
 
     @testset "Optimal solution" begin
-        @test termination_status(m) == MOI.OPTIMAL
+        println(termination_status(m))
+        @test termination_status(m) == MOI.LOCALLY_SOLVED
 
-        if termination_status(m) != MOI.OPTIMAL
+        if termination_status(m) != MOI.LOCALLY_SOLVED
             @show termination_status(m)
         else
             var_f = df_variable(m, :trans_in)
