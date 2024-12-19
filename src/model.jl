@@ -16,13 +16,13 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     # Declaration of variables for blend structs
     variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    variables_tracking_prop(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    variables_tracking_prop(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
     # Construction of constraints for the problem
     constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-    constraints_tracking(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_tracking(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     constraints_weymouth(m, pwa, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) 
     
     return m
@@ -55,11 +55,12 @@ function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 
-function variables_tracking_prop(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function variables_tracking_prop(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
-    track_r = filter(r -> is_component_track(r), 𝒫)
-
-    @variable(m, 0 <= prop_track[track_r, 𝒜ⁿᵗ, 𝒯] <= 1.0)
+    𝒞ꜝ = filter(r -> is_component_track(r),  𝒞)
+    if !isempty(𝒞ꜝ)
+        @variable(m, 0 <= prop_track[𝒞ꜝ, 𝒜ⁿᵗ, 𝒯] <= 1.0)
+    end
 end
 
 function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -133,18 +134,21 @@ function pressure_balance(m, a::TerminalPressureArea, ℒᵗʳᵃⁿˢ, links, �
     end
 end
 
-function constraints_tracking(m, 𝒜, 𝒫, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function constraints_tracking(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
-    track_r = first(filter(r -> is_component_track(r), 𝒫))
+    𝒞ꜝ = filter(r -> is_component_track(r), 𝒞)
+    c = isempty(𝒞ꜝ) ? nothing : first(𝒞ꜝ)
 
-    for a ∈ 𝒜ⁿᵗ
-        𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
-        𝒮ˢ  = getsource(a, links)
-        # filter sources of ResourceComponentTrack
-        𝒮 = filter(s -> track_r ∈ EMB.outputs(s), union(𝒮ᵗᵐ, 𝒮ˢ))
+    if !isnothing(c)
+        for a ∈ 𝒜ⁿᵗ
+            𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
+            𝒮ˢ  = getsource(a, links)
+            # filter sources of ResourceComponentTrack
+            𝒮 = filter(s -> c ∈ components(s), union(𝒮ᵗᵐ, 𝒮ˢ))
 
-        @constraint(m, [t ∈ 𝒯],
-            m[:prop_track][track_r, a, t] == sum(get_quality(s, track_r) * m[:prop_source][a, s, t] for s ∈ 𝒮))
+            @constraint(m, [t ∈ 𝒯],
+                m[:prop_track][c, a, t] == sum(get_quality(s, c) * m[:prop_source][a, s, t] for s ∈ 𝒮))
+        end
     end
 end
 
@@ -237,7 +241,6 @@ function constraints_weymouth(m, pwa, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links,
         end
     end
 end
-
 function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
