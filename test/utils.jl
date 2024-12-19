@@ -1,5 +1,6 @@
-function optimize(case, modeltype)
-    m = EMP.create_model(case, modeltype)
+using DataFrames
+
+function optimize(m)
     optimizer = Xpress.Optimizer
     set_optimizer(m, optimizer)
     set_optimizer_attribute(m, MOI.Silent(), true)
