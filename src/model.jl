@@ -261,19 +261,6 @@ function add_weymouth(m, a::Area, p::Resource, ℒᵗʳᵃⁿˢ, t)
     return nothing
 end
 
-function EMB.constraints_flow_in(m, n::RefBlending, 𝒯::TimeStructure, modeltype::EnergyModel)
-    # Declaration of the required subsystems
-    𝒫ⁱⁿ  = inputs(n)
-    𝒫ᵒᵘᵗ  = outputs(n)
-
-    if length(𝒫ᵒᵘᵗ) > 1
-        @error("The type `RefBlending` should have only one output resource")
-    else
-        # Constraint for the total input stream and the total flow
-        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ᵒᵘᵗ],
-            sum(m[:flow_in][n, t, p_in] for p_in ∈ 𝒫ⁱⁿ) == m[:flow_out][n, t, p])
-    end
-end
 
 """
     variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:RefBlendingSink}, 𝒯, modeltype::EnergyModel)
