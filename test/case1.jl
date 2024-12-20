@@ -206,27 +206,14 @@ end
     @testset "Optimal solution" begin
         println(termination_status(m))
         @test termination_status(m) == MOI.LOCALLY_SOLVED
-
-        if termination_status(m) != MOI.LOCALLY_SOLVED
-            @show termination_status(m)
-        else
-            var_f = df_variable(m, :trans_in)
-            var_prop = df_variable(m, :prop_source)
-            var_track = df_variable(m, :prop_track)
-            var_p_in = df_variable(m, :p_in)
-            var_p_out = df_variable(m, :p_out)
+    
+        @info "FLOW:"
+        @info filter(:y => x -> x > 0, df_variable(m, :trans_in))
+        @info "Proportion flow:"
+        @info filter(:y => x -> x > 0, df_variable(m, :prop_source))
+        @info "Proportion H2:"
+        @info filter(:y => x -> x > 0, df_variable(m, :prop_track))
         
-            @info "FLOW:"
-            @info filter(:y => x -> x > 0, var_f)
-            @info "Proportion flow:"
-            @info filter(:y => x -> x > 0, var_prop)
-            @info "Proportion H2:"
-            @info filter(:y => x -> x > 0, var_track)
-            @info "P_IN:"
-            @info filter(:y => x -> x > 0, var_p_in)
-            @info "P_OUT:"
-            @info filter(:y => x -> x > 0, var_p_out)
-        end
     end
 
 end
