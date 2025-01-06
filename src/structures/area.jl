@@ -1,5 +1,6 @@
 struct SourcePressure <: EMG.Area
     id::Any
+    name
     lon::Real
     lat::Real
     node::EMB.Availability
