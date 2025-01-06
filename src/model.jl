@@ -71,6 +71,16 @@ function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     @variable(m, has_flow[TM, 𝒯], Bin)
     @variable(m, lower_pressure_into_node[TM, 𝒯], Bin) # binary for tracking lowest pressure going into a node
     
+    constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
+end
+
+function constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
+    TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l) if is_pressurepipe(tm)]
+
+    @constraint(
+        m, [tm ∈ TM, t ∈ 𝒯],
+        m[:trans_in][tm, t] <= max_pressure(tm) * m[:has_flow][tm, t]
+    )
 end
 
 function constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
