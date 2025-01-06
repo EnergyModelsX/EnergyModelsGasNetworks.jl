@@ -87,15 +87,15 @@ function pressure_balance(m, a::SourcePressure, ℒᵗʳᵃⁿˢ, links, 𝒯, �
     
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
         @constraint(m, [t ∈ 𝒯], 
-        m[:p_in][tm, t] <= out_pressure(l) * m[:has_flow][tm, t])
+        m[:p_in][tm, t] <= out_pressure(a) * m[:has_flow][tm, t])
     end
 end
 function pressure_balance(m, a::BlendPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
-    TM_in = [tm for tm in EMG.modes(l_in) for l_in ∈ ℒⁱⁿ]
-    TM_out = [tm for tm in EMG.modes(l_out) for l_out ∈ ℒᵒᵘᵗ]
+    TM_in = [tm for l_in ∈ ℒⁱⁿ for tm in EMG.modes(l_in) ]
+    TM_out = [tm for l_out ∈ ℒᵒᵘᵗ for tm in EMG.modes(l_out)]
 
     if length(TM_in) > 1
         @constraint(m, [t ∈ 𝒯],
@@ -126,11 +126,11 @@ function pressure_balance(m, a::BlendPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯
 end
 function pressure_balance(m, a::TerminalPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
-    TM_in = [tm for tm in EMG.modes(l_in) for l_in ∈ ℒⁱⁿ]
+    TM_in = [tm for l_in ∈ ℒⁱⁿ for tm in EMG.modes(l_in)]
 
     for tm_in ∈ TM_in
         @constraint(m, [t ∈ 𝒯],
-            m[:p_out][tm_in, t] >= in_pressure(a) * m[:has_flow][tm, t])
+            m[:p_out][tm_in, t] >= in_pressure(a) * m[:has_flow][tm_in, t])
     end
 end
 
@@ -183,21 +183,24 @@ function constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     𝒜ᵗ = filter(a -> is_terminalarea(a), 𝒜)
 
     for a ∈ 𝒜ᵗ
-        d = first([n for n in EMG.getnodesinarea(a, links) if EnergyModelsPooling.is_blending_sink(n)])   # get terminals, one terminal per terinalarea
+        blending_sink =[n for n in EMG.getnodesinarea(a, links) if EnergyModelsPooling.is_blending_sink(n)]   # get terminals, one terminal per terinalarea
 
-        av = availability_node(a)
-        
-        ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
-        𝒜ᵃ = setdiff(getadjareas(a, ℒᵗᵒ), [a])
-        𝒮ᵃ = Dict(ad => track_source(ad, links, 𝒜, ℒᵗʳᵃⁿˢ) for ad ∈ 𝒜ᵃ)
-        TM = Dict(ad => modes(EMG.corr_from_to(ad.name, a.name, ℒᵗᵒ)) for ad ∈ 𝒜ᵃ)
-        
-        𝒫ᵘ = res_upper(d)
-        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ᵘ],
-             sum((get_quality(s, p) - get_upper(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) <= 0)
-        𝒫ˡ = res_lower(d)
-        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ˡ],
-             sum((get_quality(s, p) - get_lower(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) >= 0)
+        if !isempty(blending_sink)
+            d = first(blending_sink)
+            av = availability_node(a)
+            
+            ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
+            𝒜ᵃ = setdiff(getadjareas(a, ℒᵗᵒ), [a])
+            𝒮ᵃ = Dict(ad => track_source(ad, links, 𝒜, ℒᵗʳᵃⁿˢ) for ad ∈ 𝒜ᵃ)
+            TM = Dict(ad => modes(EMG.corr_from_to(ad.name, a.name, ℒᵗᵒ)) for ad ∈ 𝒜ᵃ)
+            
+            𝒫ᵘ = res_upper(d)
+            @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ᵘ],
+                sum((get_quality(s, p) - get_upper(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) <= 0)
+            𝒫ˡ = res_lower(d)
+            @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ˡ],
+                sum((get_quality(s, p) - get_lower(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) >= 0)
+        end
     end
 end
 

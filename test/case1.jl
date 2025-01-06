@@ -206,15 +206,50 @@ end
     @testset "Optimal solution" begin
         println(termination_status(m))
         @test termination_status(m) == MOI.LOCALLY_SOLVED
-    
-        @info "FLOW:"
-        @info filter(:y => x -> x > 0, df_variable(m, :trans_in))
-        @info "Proportion flow:"
-        @info filter(:y => x -> x > 0, df_variable(m, :prop_source))
-        @info "Proportion H2:"
-        @info filter(:y => x -> x > 0, df_variable(m, :prop_track))
-        
     end
+
+    ℒ = case[:transmission]
+    𝒯 = case[:T]
+    T = collect(𝒯)
+    𝒜 = case[:areas]
+    
+    a1 = 𝒜[1]
+    a2 = 𝒜[2]
+    a3 = 𝒜[3]
+    a4 = 𝒜[4]
+    a6 = 𝒜[6]
+
+    TM_to = [tm for l in ℒ for tm in modes(l) if l.to == a4]
+    TM_from = [tm for l in ℒ for tm in modes(l) if l.from == a4]
+
+    @testset "Flow Quantities" begin
+        # Test the inflows equals the outflows through areas
+        @test isapprox(sum(value.(m[:trans_out])[tm, t] for tm ∈ TM_to for t ∈ 𝒯), 
+              sum(value.(m[:trans_in])[tm, t] for tm ∈ TM_from for t ∈ 𝒯), atol=TEST_ATOL)
+    end
+    @testset "Flow Proportions" begin
+        source = case[:nodes][2]
+        pipeline = first([tm for l in filter(x -> x.from == a1 && x.to == a4, ℒ) for tm in modes(l)])
+        # Test if the proportions of flows in blending areas is correct
+        @test isapprox(value.(m[:trans_out])[pipeline, T[1]]/sum(value.(m[:trans_out])[p, T[1]] for p ∈ TM_to),
+                  value.(m[:prop_source][a4, source, T[1]]), atol=TEST_ATOL)
+    end
+    @testset "Proportion H2 at Terminals" begin
+        source = case[:nodes][2]
+        pipelines = [tm for l in filter(x -> x.to == a6, ℒ) for tm in modes(l)]
+        areas = [𝒜[4], 𝒜[5]]
+        sink = case[:nodes][10]
+
+        @test sum(value.(m[:trans_out])[p, T[1]] * value.(m[:prop_source][areas[i], source, T[1]]) for (i, p) in enumerate(pipelines))/sum(value.(m[:trans_out])[p, T[1]] for p in pipelines) <=
+            EMP.get_upper(sink, case[:components][2])
+    end
+
+    @info "FLOW:"
+    @info filter(:y => x -> x > 0, df_variable(m, :trans_in))
+    @info "Proportion flow:"
+    @info filter(:y => x -> x > 0, df_variable(m, :prop_source))
+    @info "Proportion H2:"
+    @info filter(:y => x -> x > 0, df_variable(m, :prop_track))
 
 end
 
