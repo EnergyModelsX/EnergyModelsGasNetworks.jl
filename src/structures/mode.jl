@@ -115,5 +115,7 @@ function PipePressureSimple(
 end
 
 max_pressure(tm::PipePressureSimple) = tm.max_pressure
+is_pressurepipe(tm::PipeMode) = false
+is_pressurepipe(tm::PipePressureSimple) = true
 weymouth_ct(tm::PipePressureSimple) = tm.weymouth
 linearised_pressures(tm::PipePressureSimple) = tm.lin_pressures

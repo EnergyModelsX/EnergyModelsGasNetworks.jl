@@ -19,4 +19,12 @@ include("utils.jl")
         include("case1.jl")
     end
 
+    @testset "Pooling | Pressure + 1 Resource" begin
+        include("case2.jl")
+    end
+
+    @testset "ConnectorSet" begin
+        include("connectorstest.jl")
+    end
+
 end
