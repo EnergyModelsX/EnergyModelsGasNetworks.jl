@@ -2,7 +2,7 @@ using DataFrames
 
 TEST_ATOL = 1e-6
 function optimize(m)
-    optimizer = HiGHS.Optimizer
+    optimizer = Xpress.Optimizer
     set_optimizer(m, optimizer)
     set_optimizer_attribute(m, MOI.Silent(), true)
     optimize!(m)
