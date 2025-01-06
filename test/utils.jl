@@ -1,7 +1,8 @@
 using DataFrames
 
+TEST_ATOL = 1e-6
 function optimize(m)
-    optimizer = Xpress.Optimizer
+    optimizer = HiGHS.Optimizer
     set_optimizer(m, optimizer)
     set_optimizer_attribute(m, MOI.Silent(), true)
     optimize!(m)
