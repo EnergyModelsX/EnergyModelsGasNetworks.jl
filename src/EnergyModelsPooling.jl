@@ -9,19 +9,21 @@ using Graphs
 using PiecewiseAffineApprox
 
 
-include("structures/energy.jl")
+# include("structures/energy.jl") # TODO: Include energy content
 include("structures/resource.jl")
 include("structures/node.jl")
 include("structures/area.jl")
+include("structures/mode.jl")
 include("utils.jl")
 include("model.jl")
-include("readgms.jl")
+
 
 
 export ResourceCarrierBlend, RefComponent, ComponentTrack
-export BlendArea, TerminalArea, BlendAvailability
 export RefSourceComponent, RefBlendingSink
+export BlendArea, TerminalArea, SourcePressure, TerminalPressureArea, BlendPressureArea
+export PipePressureSimple
 export create_model
-export loadGamsFile
+
 
 end
