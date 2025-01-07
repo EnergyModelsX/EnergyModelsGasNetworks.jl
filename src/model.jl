@@ -20,11 +20,7 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
 
     # Construction of constraints for the problem
     constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-    constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-
-    constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-    constraints_tracking(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    constraints_weymouth(m, pwa, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) 
+    constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
     
     return m
 
@@ -85,15 +81,18 @@ function constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
 end
 
 ### CONSTRAINTS PRESSURE
-function constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-    for a ∈ 𝒜
+function constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
+    𝒜ᵖ = filter(x -> is_pressurearea(x), 𝒜)
+
+    for a ∈ 𝒜ᵖ
         pressure_balance(m, a, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+        constraints_weymouth(m, a, pwa, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 function pressure_balance(m, a::Area, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     return nothing
 end
-function pressure_balance(m, a::SourcePressure, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function pressure_balance(m, a::SourceArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
     
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
@@ -135,7 +134,7 @@ function pressure_balance(m, a::PoolingArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫
         end
     end
 end
-function pressure_balance(m, a::TerminalPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function pressure_balance(m, a::TerminalArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
     TM_in = [tm for l_in ∈ ℒⁱⁿ for tm in EMG.modes(l_in)]
 
@@ -144,6 +143,70 @@ function pressure_balance(m, a::TerminalPressureArea, ℒᵗʳᵃⁿˢ, links, �
             m[:p_out][tm_in, t] >= pressure(a) * m[:has_flow][tm_in, t])
     end
 end
+
+"""
+    constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::PWAFunc{C1, D1}, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+
+    When pwa::PWAFunc, the problem must contain two components (1 resource) as the pwa is used for approximating the Weymouth with 2 resources.
+    When pwa::Any, the problem is for one resources and the Weymouth will be approximated using the Taylor first-order approximation.
+"""
+function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::PWAFunc{C1, D1}, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
+    
+    if length(𝒞) == 2 #TODO: Examine the possibility of just using Resources rather than components
+        p = first(filter(p -> is_component_track(r), 𝒞))
+        if isnothing(p)
+            throw(ArgumentError("One of the Components must be of type ComponentTrack."))
+        end
+
+        for (k, plane) ∈ enumerate(pwa.planes)
+            for t ∈ 𝒯
+                add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, plane)
+            end
+        end
+    else
+        throw(ArgumentError("Pressure capabilities not supported for more than 2 Components."))
+    end
+end
+function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::Any, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    𝒫ꜝ = filter(p -> !EMB.is_resource_emit(p), 𝒫)
+    
+    if length(𝒫ꜝ) > 1
+        throw(ArgumentError("Pressure constraints only available for 1 Resource and 1 Resource + 2 Components"))
+    elseif length(𝒞) != 0
+        throw(ArgumentError("For systems with Components, ensure you add the pwa (plane approximations)."))
+    else
+        p = first(𝒫ꜝ)
+
+        for t ∈ 𝒯
+            add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t)
+        end
+    end
+end
+function constraints_weymouth(m, a::TerminalArea, pwa::Any, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    return nothing
+end
+function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane)
+    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
+
+    for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
+        PiecewiseAffineApprox.constr(C1, m, m[:trans_in][tm, t], plane, (m[:p_in][tm, t], m[:p_out][tm, t], m[:prop_track][p, a, t]))
+    end 
+end
+function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗʳᵃⁿˢ, t)
+    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
+
+    for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
+        K_W = weymouth_ct(tm)
+        P = linearised_pressures(tm)
+        for (PIn, POut) ∈ P
+            @constraint(m, 
+            m[:trans_in][tm, t] <= K_W * (
+                                            (PIn/(sqrt(PIn^2 - POut^2))) * m[:p_in][tm, t] -
+                                            (POut/(sqrt(PIn^2 - POut^2))) * m[:p_out][tm, t]
+                                          ))
+        end
+    end
+end   
 
 ### CONSTRAINTS BLENDING
 function constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -157,7 +220,7 @@ function create_blending_node(m, a::TerminalArea, 𝒞, ℒᵗʳᵃⁿˢ, links,
     constraints_tracking(m, a, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     constraints_quality(m, a, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
 end
-function create_blending_node(m, a::PoolingArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function create_blending_node(m, a::PoolingArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
 
     𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
     𝒜ᵃ = setdiff(getadjareas(a, ℒᵗʳᵃⁿˢ), [a])
@@ -174,6 +237,9 @@ function create_blending_node(m, a::PoolingArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 
     @constraint(m, [t ∈ 𝒯, tm ∈ ℒᶠ],
         sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for s ∈ 𝒮ᵗᵐ) - m[:trans_in][tm, t] == 0)
   
+end
+function create_blending_node(m, a::Area, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    return nothing
 end
 function constraints_tracking(m, a::TerminalArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒞ꜝ = filter(r -> is_component_track(r), 𝒞)
@@ -211,76 +277,6 @@ function constraints_quality(m, a::TerminalArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 
     else
         throw(ArgumentError("Trying to create a TerminalArea with Blending behaviour without a RefBlendingSink node."))
     end
-end
-
-
-function constraints_weymouth(m, pwa::PWAFunc{C1, D1}, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
-    
-    if lenght(𝒞) > 2 && any(x -> x isa ComponentTrack, 𝒞)
-        throw(ArgumentError("Blending and pressure capabilities not supported for more than 2 Components. For more than 3 Components only blending is allowed. 
-        If wanting to ensure blending, please change your ResourceComponentTrack to ResourceBlend type"))
-    elseif length(𝒞) == 2
-        p = first(filter(p -> is_component_track(r), 𝒞))
-        if isnothing(p)
-            throw(ArgumentError("One of the Resources must be of type ResourceComponentTrack to apply Weymouth."))
-        end
-
-        𝒜ᵗ = filter(a -> !is_terminalarea(a), 𝒜)
-        for (k, plane) ∈ enumerate(pwa.planes)
-            for t ∈ 𝒯, a ∈ 𝒜ᵗ
-                add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, plane)
-            end
-        end
-    end
-end
-
-"""
-    This constraint applies when there is only one Resource in the system. No components are needed
-"""
-function constraints_weymouth(m, pwa, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒫ꜝ = filter(p -> !EMB.is_resource_emit(p), 𝒫)
-    𝒜ꜝ = filter(a -> is_pressurearea(a), 𝒜)
-    
-    if length(𝒫ꜝ) > 1 && !isempty(𝒜ꜝ) #TODO: Improve with checking_data
-        throw(ArgumentError("Pressure constraints only available for 1 Resource and 1 Resource and 2 Components"))
-    elseif length(𝒞) != 0 && !isempty(𝒜ꜝ)
-        throw(ArgumentError("For systems with Components, ensure you add the pwa (plane approximations)."))
-    elseif !isempty(𝒜ꜝ)
-        p = first(𝒫ꜝ)
-        𝒜ᵗ = filter(a -> !is_terminalarea(a), 𝒜)
-
-        for t ∈ 𝒯, a ∈ 𝒜ᵗ
-            add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t)
-        end
-    end
-end
-function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane)
-    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
-
-    for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
-        PiecewiseAffineApprox.constr(C1, m, m[:trans_in][tm, t], plane, (m[:p_in][tm, t], m[:p_out][tm, t], m[:prop_track][p, a, t]))
-    end 
-end
-function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗʳᵃⁿˢ, t)
-    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
-
-    for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
-        K_W = weymouth_ct(tm)
-        P = linearised_pressures(tm)
-        for (PIn, POut) ∈ P
-            @constraint(m, 
-            m[:trans_in][tm, t] <= K_W * (
-                                            (PIn/(sqrt(PIn^2 - POut^2))) * m[:p_in][tm, t] -
-                                            (POut/(sqrt(PIn^2 - POut^2))) * m[:p_out][tm, t]
-                                          ))
-        end
-    end
-end   
-function add_weymouth(m, a::Area, p::Resource, ℒᵗʳᵃⁿˢ, t, plane)
-    return nothing
-end
-function add_weymouth(m, a::Area, p::Resource, ℒᵗʳᵃⁿˢ, t)
-    return nothing
 end
 
 
