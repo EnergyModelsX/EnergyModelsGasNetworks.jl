@@ -20,8 +20,9 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
 
     # Construction of constraints for the problem
     constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-    constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+
+    constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     constraints_tracking(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     constraints_weymouth(m, pwa, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) 
     
@@ -83,12 +84,12 @@ function constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
     )
 end
 
+### CONSTRAINTS PRESSURE
 function constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     for a ∈ 𝒜
         pressure_balance(m, a, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     end
 end
-
 function pressure_balance(m, a::Area, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     return nothing
 end
@@ -97,10 +98,10 @@ function pressure_balance(m, a::SourcePressure, ℒᵗʳᵃⁿˢ, links, 𝒯, �
     
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
         @constraint(m, [t ∈ 𝒯], 
-        m[:p_in][tm, t] <= out_pressure(a) * m[:has_flow][tm, t])
+        m[:p_in][tm, t] <= pressure(a) * m[:has_flow][tm, t])
     end
 end
-function pressure_balance(m, a::BlendPressureArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function pressure_balance(m, a::PoolingArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
@@ -140,79 +141,78 @@ function pressure_balance(m, a::TerminalPressureArea, ℒᵗʳᵃⁿˢ, links, �
 
     for tm_in ∈ TM_in
         @constraint(m, [t ∈ 𝒯],
-            m[:p_out][tm_in, t] >= in_pressure(a) * m[:has_flow][tm_in, t])
+            m[:p_out][tm_in, t] >= pressure(a) * m[:has_flow][tm_in, t])
     end
 end
 
-function constraints_tracking(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
+### CONSTRAINTS BLENDING
+function constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    𝒜ᵇ = filter(x -> is_blendarea(x), 𝒜)
+    for a ∈ 𝒜ᵇ
+        create_blending_node(m, a, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    end
+end
+
+function create_blending_node(m, a::TerminalArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_tracking(m, a, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_quality(m, a, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+end
+function create_blending_node(m, a::PoolingArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+
+    𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
+    𝒜ᵃ = setdiff(getadjareas(a, ℒᵗʳᵃⁿˢ), [a])
+    ℒ = Dict(ad => EMG.modes(l) for ad ∈ 𝒜ᵃ for l ∈ [EMG.corr_from_to(ad.name, a.name, ℒᵗʳᵃⁿˢ)])
+    ℒᶠ = [first(modes(l)) for l ∈ EMG.corr_from(a, ℒᵗʳᵃⁿˢ)] # ASSUMING ONLY ONE MODE PER TRANSMISSION.
+
+    @constraint(m, [t ∈ 𝒯, s ∈ 𝒮ᵗᵐ],
+        sum(m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for tm ∈ ℒ[ad])
+        - sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for tm ∈ ℒᶠ) == 0)
+
+    @constraint(m, [t ∈ 𝒯],
+        sum(m[:prop_source][a, s, t] for s ∈ 𝒮ᵗᵐ) == 1.0)
+
+    @constraint(m, [t ∈ 𝒯, tm ∈ ℒᶠ],
+        sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for s ∈ 𝒮ᵗᵐ) - m[:trans_in][tm, t] == 0)
+  
+end
+function constraints_tracking(m, a::TerminalArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒞ꜝ = filter(r -> is_component_track(r), 𝒞)
     c = isempty(𝒞ꜝ) ? nothing : first(𝒞ꜝ)
-
-    if !isnothing(c)
-        for a ∈ 𝒜ⁿᵗ
-            𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
-            𝒮ˢ  = getsource(a, links)
-            # filter sources of ResourceComponentTrack
-            𝒮 = filter(s -> c ∈ components(s), union(𝒮ᵗᵐ, 𝒮ˢ))
-
-            @constraint(m, [t ∈ 𝒯],
-                m[:prop_track][c, a, t] == sum(get_quality(s, c) * m[:prop_source][a, s, t] for s ∈ 𝒮))
-        end
-    end
-end
-
-function constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-    # Filter only Blending areas
-    𝒜ᵇ = filter(a -> is_blendarea(a), 𝒜)
-    𝒫ᵉ = filter(p -> !EMB.is_resource_emit(p), 𝒫)
-
-    if isnothing(𝒜ᵇ) && length(𝒫ᵉ) > 1
-        throw(ArgumentError("For more than 2 Resources in network, ensure using BlendingAreas"))
-    end
-
-    for a ∈ 𝒜ᵇ
+    if isnothing(c)
+        throw(ArgumentError("Trying to build a blending node without a component to track."))
+    else
         𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
-        𝒜ᵃ = setdiff(getadjareas(a, ℒᵗʳᵃⁿˢ), [a])
-        ℒ = Dict(ad => EMG.modes(l) for ad ∈ 𝒜ᵃ for l ∈ [EMG.corr_from_to(ad.name, a.name, ℒᵗʳᵃⁿˢ)])
-        ℒᶠ = [first(modes(l)) for l ∈ EMG.corr_from(a, ℒᵗʳᵃⁿˢ)] # ASSUMING ONLY ONE MODE PER TRANSMISSION.
-
-        @constraint(m, [t ∈ 𝒯, s ∈ 𝒮ᵗᵐ],
-            sum(m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for tm ∈ ℒ[ad])
-            - sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for tm ∈ ℒᶠ) == 0)
+        𝒮ˢ  = getsource(a, links)
+        # filter sources of ResourceComponentTrack
+        𝒮 = filter(s -> c ∈ components(s), union(𝒮ᵗᵐ, 𝒮ˢ))
 
         @constraint(m, [t ∈ 𝒯],
-            sum(m[:prop_source][a, s, t] for s ∈ 𝒮ᵗᵐ) == 1.0)
-
-        @constraint(m, [t ∈ 𝒯, tm ∈ ℒᶠ],
-            sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for s ∈ 𝒮ᵗᵐ) - m[:trans_in][tm, t] == 0)
-    end    
-end
-
-function constraints_quality(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-    𝒜ᵗ = filter(a -> is_terminalarea(a), 𝒜)
-
-    for a ∈ 𝒜ᵗ
-        blending_sink =[n for n in EMG.getnodesinarea(a, links) if EnergyModelsPooling.is_blending_sink(n)]   # get terminals, one terminal per terinalarea
-
-        if !isempty(blending_sink)
-            d = first(blending_sink)
-            av = availability_node(a)
-            
-            ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
-            𝒜ᵃ = setdiff(getadjareas(a, ℒᵗᵒ), [a])
-            𝒮ᵃ = Dict(ad => track_source(ad, links, 𝒜, ℒᵗʳᵃⁿˢ) for ad ∈ 𝒜ᵃ)
-            TM = Dict(ad => modes(EMG.corr_from_to(ad.name, a.name, ℒᵗᵒ)) for ad ∈ 𝒜ᵃ)
-            
-            𝒫ᵘ = res_upper(d)
-            @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ᵘ],
-                sum((get_quality(s, p) - get_upper(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) <= 0)
-            𝒫ˡ = res_lower(d)
-            @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ˡ],
-                sum((get_quality(s, p) - get_lower(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) >= 0)
-        end
+            m[:prop_track][c, a, t] == sum(get_quality(s, c) * m[:prop_source][a, s, t] for s ∈ 𝒮))
     end
 end
+function constraints_quality(m, a::TerminalArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    blending_sink =[n for n in EMG.getnodesinarea(a, links) if EnergyModelsPooling.is_blending_sink(n)]   # get terminals, one terminal per terinalarea
+
+    if !isempty(blending_sink)
+        d = first(blending_sink)
+        av = availability_node(a)
+        
+        ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
+        𝒜ᵃ = setdiff(getadjareas(a, ℒᵗᵒ), [a])
+        𝒮ᵃ = Dict(ad => track_source(ad, links, 𝒜, ℒᵗʳᵃⁿˢ) for ad ∈ 𝒜ᵃ)
+        TM = Dict(ad => modes(EMG.corr_from_to(ad.name, a.name, ℒᵗᵒ)) for ad ∈ 𝒜ᵃ)
+        
+        𝒫ᵘ = res_upper(d)
+        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ᵘ],
+            sum((get_quality(s, p) - get_upper(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) <= 0)
+        𝒫ˡ = res_lower(d)
+        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ˡ],
+            sum((get_quality(s, p) - get_lower(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) >= 0)
+    else
+        throw(ArgumentError("Trying to create a TerminalArea with Blending behaviour without a RefBlendingSink node."))
+    end
+end
+
 
 function constraints_weymouth(m, pwa::PWAFunc{C1, D1}, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
     
@@ -254,14 +254,14 @@ function constraints_weymouth(m, pwa, 𝒜, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links,
         end
     end
 end
-function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane)
+function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
         PiecewiseAffineApprox.constr(C1, m, m[:trans_in][tm, t], plane, (m[:p_in][tm, t], m[:p_out][tm, t], m[:prop_track][p, a, t]))
     end 
 end
-function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::Resource, ℒᵗʳᵃⁿˢ, t)
+function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗʳᵃⁿˢ, t)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
@@ -270,8 +270,8 @@ function add_weymouth(m, a::Union{BlendPressureArea, SourcePressure}, p::Resourc
         for (PIn, POut) ∈ P
             @constraint(m, 
             m[:trans_in][tm, t] <= K_W * (
-                                            PIn/(sqrt(PIn^2 - POut^2)) * m[:p_in][tm, t] -
-                                            POut/(sqrt(PIn^2 - POut^2)) * m[:p_out][tm, t]
+                                            (PIn/(sqrt(PIn^2 - POut^2))) * m[:p_in][tm, t] -
+                                            (POut/(sqrt(PIn^2 - POut^2))) * m[:p_out][tm, t]
                                           ))
         end
     end
@@ -374,11 +374,6 @@ Constraint that limit input to a based on the specified exchange_limit.
 function EMG.create_area(m, a::BlendArea, 𝒯, ℒᵗʳᵃⁿˢ, modeltype)
 
     ## TODO: Consider adding additional types for import or export exchange limits
-    # @constraint(m, [t ∈ 𝒯, p ∈ elimit_resources(a)],
-    #     m[:area_exchange][a, t, p] <= exchange_limit(a, p, t)) # Import limit
-    # ℒᶠʳᵒᵐ, ℒᵗᵒ = EMG.trans_sub(ℒᵗʳᵃⁿˢ, a)
-    # @constraint(m, [t ∈ 𝒯, p ∈ limit_resources(a)],
-    #     sum(EMG.compute_trans_out(m, t, p, tm) for tm ∈ modes(ℒᵗᵒ)) <= exchange_limit(a, p, t)) # Export limit
 
 end
 
