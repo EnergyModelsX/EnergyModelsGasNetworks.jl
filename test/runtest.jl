@@ -1,4 +1,5 @@
 using Xpress
+using HiGHS
 using JuMP
 using TimeStruct
 using EnergyModelsBase
@@ -14,16 +15,20 @@ const EMP = EnergyModelsPooling
 include("utils.jl")
 
 @testset "test EnergyModelsPooling" begin
+
+    @testset "Check all nodes pressure or not" begin
+        #TODO: Add checks
+    end
     
-    @testset "Pooling | Only Blend" begin
+    @testset "EnergyModelsPooling | Only Blend" begin
         include("case1.jl")
     end
 
-    @testset "Pooling | Pressure + 1 Resource" begin
+    @testset "EnergyModelsPooling | Only Pressure" begin
         include("case2.jl")
     end
 
-    @testset "ConnectorSet" begin
+    @testset "EnergyModelsPooling | ConnectorSet" begin
         include("connectorstest.jl")
     end
 

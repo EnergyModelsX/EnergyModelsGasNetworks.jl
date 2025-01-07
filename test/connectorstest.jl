@@ -40,7 +40,7 @@ function generate_case()
         GeoAvailability(101, products),
         RefSource(
             102,
-            FixedProfile(150), # Capacity
+            FixedProfile(100), # Capacity
             FixedProfile(0), # Var. OPEX
             FixedProfile(0), # Fix. OPEX
             Dict(Gas => 1), # Output
@@ -58,7 +58,7 @@ function generate_case()
         GeoAvailability(201, products),
         RefSource(
             202,
-            FixedProfile(100), # Capacity
+            FixedProfile(50), # Capacity
             FixedProfile(0), # Var. OPEX
             FixedProfile(0), # Fix. OPEX
             Dict(Gas => 1), # Output
@@ -76,7 +76,7 @@ function generate_case()
         GeoAvailability(301, products),
         RefSource(
             302,
-            FixedProfile(50), # Capacity
+            FixedProfile(0), # Capacity
             FixedProfile(0), # Var. OPEX
             FixedProfile(0), # Fix. OPEX
             Dict(Gas => 1), # Output
@@ -100,21 +100,21 @@ function generate_case()
     areas["4"] = n[1] # link area with GeoAvailability node
 
     # Nodes in Area 5
-    n = [
-        GeoAvailability(501, products)
-    ]
-    l = [
-    ]
-    append!(nodes, n)
-    append!(links, l)
-    areas["5"] = n[1] # link area with GeoAvailability node
+    # n = [
+    #     GeoAvailability(501, products)
+    # ]
+    # l = [
+    # ]
+    # append!(nodes, n)
+    # append!(links, l)
+    # areas["5"] = n[1] # link area with GeoAvailability node
 
     # Nodes in Area 6
     n = [
         GeoAvailability(601, products),
         RefSink(
             602,
-            FixedProfile(100), # Capacity
+            FixedProfile(150), # Capacity
             Dict(:surplus => FixedProfile(-190), :deficit => FixedProfile(190)), # Penalty
             Dict(Gas => 1), # Input
         )
@@ -127,31 +127,29 @@ function generate_case()
     areas["6"] = n[1] # link area with GeoAvailability node
 
     # Nodes in Area 7
-    n = [
-        GeoAvailability(701, products),
-        RefSink(
-            702,
-            FixedProfile(50), # Capacity
-            Dict(:surplus => FixedProfile(-190), :deficit => FixedProfile(190)), # Penalty
-            Dict(Gas => 1), # Input
-        )
-    ]
-    l = [
-        Direct(710, n[1], n[2], Linear())
-    ]
-    append!(nodes, n)
-    append!(links, l)
-    areas["7"] = n[1] # link area with GeoAvailability node
+    # n = [
+    #     GeoAvailability(701, products),
+    #     RefSink(
+    #         702,
+    #         FixedProfile(50), # Capacity
+    #         Dict(:surplus => FixedProfile(-190), :deficit => FixedProfile(190)), # Penalty
+    #         Dict(Gas => 1), # Input
+    #     )
+    # ]
+    # l = [
+    #     Direct(710, n[1], n[2], Linear())
+    # ]
+    # append!(nodes, n)
+    # append!(links, l)
+    # areas["7"] = n[1] # link area with GeoAvailability node
 
     # Create individual Areas
     area = [
-        SourceArea("1", "Supply 1", 10, 10, areas["1"], Pressure(70)), # outlet pressure
-        SourceArea("2", "Supply 2", 10, 10, areas["2"], Pressure(70)),
-        SourceArea("3", "Supply 3", 10, 10, areas["3"], Pressure(70)),
+        SourceArea("1", "Supply 1", 10, 10, areas["1"], Pressure(74.0)),
+        SourceArea("2", "Supply 2", 10, 10, areas["2"], Pressure(50)),
+        SourceArea("3", "Supply 3", 10, 10, areas["3"], Pressure(0)),
         PoolingArea("4", "Blend 4", 10, 10, areas["4"], Pressure(0), Dict(Gas => FixedProfile(0))),
-        PoolingArea("5", "Blend 5", 10, 10, areas["5"], Pressure(0), Dict(Gas => FixedProfile(0))),
-        TerminalArea("6", "Terminal 6", 10, 10, areas["6"], Pressure(30)),
-        TerminalArea("7", "Terminal 7", 10, 10, areas["7"], Pressure(30)), #inlet pressure
+        TerminalArea("6", "Terminal 6", 10, 10, areas["6"], Pressure(25)),
     ]
 
     # Create transmission modes
@@ -163,28 +161,16 @@ function generate_case()
     weymouth = 5.37178761089193
     lin_pressures = calculate_linearise_pressures()
     tm_14 = PipePressureSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_15 = PipePressureSimple("tm_15", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
     tm_24 = PipePressureSimple("tm_24", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_25 = PipePressureSimple("tm_25", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
     tm_34 = PipePressureSimple("tm_34", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_35 = PipePressureSimple("tm_35", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
     tm_46 = PipePressureSimple("tm_46", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_47 = PipePressureSimple("tm_47", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_56 = PipePressureSimple("tm_56", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_57 = PipePressureSimple("tm_57", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
 
     # Create transmission corriders between areas
     transmission = [
         Transmission(area[1], area[4], [tm_14]),
-        Transmission(area[1], area[5], [tm_15]),
         Transmission(area[2], area[4], [tm_24]),
-        Transmission(area[2], area[5], [tm_25]),
         Transmission(area[3], area[4], [tm_34]),
-        Transmission(area[3], area[5], [tm_35]),
-        Transmission(area[4], area[6], [tm_46]),
-        Transmission(area[4], area[7], [tm_47]),
-        Transmission(area[5], area[6], [tm_56]),
-        Transmission(area[5], area[7], [tm_57]),
+        Transmission(area[4], area[5], [tm_46]),
     ]
 
     case = Dict(
@@ -205,8 +191,8 @@ end
     
     case, model = generate_case()
     m = EMP.create_model(case, model)
-    m = optimize(m, nlp_constraints = false) # false => HiGHS to guarantee correct handling of binaries #TODO: Discuss how to improve this
-    
+    m = optimize(m, nlp_constraints=false)
+
     @testset "Optimal solution" begin
         println(termination_status(m))
         @test termination_status(m) == OPTIMAL
@@ -220,8 +206,9 @@ end
     @info df_variable(m, :p_out)
     @info "Has Flow"
     @info df_variable(m, :has_flow)
-    @info "Lower_pressure_into_node"
+    @info "LowerPressure"
     @info df_variable(m, :lower_pressure_into_node)
+
 end
 
 
