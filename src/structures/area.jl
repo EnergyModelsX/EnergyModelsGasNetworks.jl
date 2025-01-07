@@ -9,7 +9,9 @@ struct Pressure <: PressureBlendingBehaviour
     pressure::Any
 end
 
-struct Blending <: PressureBlendingBehaviour end
+struct Blending <: PressureBlendingBehaviour 
+    id::String
+end
 
 struct PressBlend <: PressureBlendingBehaviour 
     pressure::Any
@@ -56,8 +58,8 @@ is_pressurebehaviour(b::Blending) = false
 is_blendarea(a::Area) = false
 function is_blendarea(a::Union{SourceArea, PoolingArea, TerminalArea}) #TODO: Ensure all areas have the field behaviour
     behaviour = a.behaviour
-    is_blendbehaviour = is_blendbehaviour(behaviour)
-    if is_blendbehaviour
+    is_blend = is_blendbehaviour(behaviour)
+    if is_blend
         return true
     else
         return false
@@ -67,8 +69,8 @@ end
 is_pressurearea(a::Area) = false
 function is_pressurearea(a::Union{PoolingArea, SourceArea, TerminalArea}) 
     behaviour = a.behaviour
-    is_pressurebehaviour = is_pressurebehaviour(behaviour)
-    if is_pressurebehaviour
+    is_pressure = is_pressurebehaviour(behaviour)
+    if is_pressure
         return true
     else
         return false
