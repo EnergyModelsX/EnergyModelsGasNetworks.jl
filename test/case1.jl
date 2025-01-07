@@ -144,14 +144,15 @@ function generate_case()
     areas["7"] = n[1] # link area with GeoAvailability node
 
     # Create individual Areas
+    blending = EMP.Blending("blend")
     area = [
-        RefArea("1", "Supply 1", 10, 10, areas["1"]),
-        RefArea("2", "Supply 2", 10, 10, areas["2"]),
-        RefArea("3", "Supply 3", 10, 10, areas["3"]),
-        BlendArea("4", "Blend 4", 10, 10, areas["4"], Dict(NG => FixedProfile(0))),
-        BlendArea("5", "Blend 5", 10, 10, areas["5"], Dict(NG => FixedProfile(0))),
-        TerminalArea("6", "Terminal 6", 10, 10, areas["6"]),
-        TerminalArea("7", "Terminal 7", 10, 10, areas["7"]),
+        SourceArea("1", "Supply 1", 10, 10, areas["1"], blending),
+        SourceArea("2", "Supply 2", 10, 10, areas["2"], blending),
+        SourceArea("3", "Supply 3", 10, 10, areas["3"], blending),
+        PoolingArea("4", "Blend 4", 10, 10, areas["4"], blending, Dict(NG => FixedProfile(0))),
+        PoolingArea("5", "Blend 5", 10, 10, areas["5"], blending, Dict(NG => FixedProfile(0))),
+        TerminalArea("6", "Terminal 6", 10, 10, areas["6"], blending),
+        TerminalArea("7", "Terminal 7", 10, 10, areas["7"], blending),
     ]
 
     # Create transmission modes
