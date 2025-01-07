@@ -1,31 +1,41 @@
-struct SourcePressure <: EMG.Area
+"""
+PressureBlendingBehaviour as supertype for area behaviours.
+
+PressureBlendingBehaviour is used to identify if a source, pool and terminal area include pressure, blending or both types of parameters. It is used to dispatch the constraints in the model.
+"""
+abstract type PressureBlendingBehaviour end
+
+struct Pressure <: PressureBlendingBehaviour
+    pressure::Any
+end
+
+struct Blending <: PressureBlendingBehaviour end
+
+struct PressBlend <: PressureBlendingBehaviour 
+    pressure::Any
+end
+
+"""
+Three new types of Areas are included SourceArea, PoolingArea and TerminalArea, following the structure of typical gas networks.
+"""
+
+struct SourceArea <: EMG.Area
     id::Any
     name
     lon::Real
     lat::Real
     node::EMB.Availability
-    out_pressure::Any
+    behaviour::PressureBlendingBehaviour #outlet pressure
 end
 
-struct BlendArea <: EMG.Area
+struct PoolingArea <: EMG.Area
     id
     name
     lon::Real
     lat::Real
     node::EMB.Availability
-    limit::Dict{<:Component, <:TimeProfile}
-end
-
-"""
-    No pressure change assumed in `BlendPressureArea`.
-"""
-struct BlendPressureArea <: EMG.Area
-    id
-    name
-    lon::Real
-    lat::Real
-    node::EMB.Availability
-    limit::Dict{<:EMB.Resource, <:TimeProfile}
+    behaviour::PressureBlendingBehaviour
+    limit::Dict{<:EMB.Resource, <:TimeProfile} #TODO: Check utility
 end
 
 struct TerminalArea <: EMG.Area #TODO: Take out TerminalArea and dispatch functions in RefBlendingSink instead
@@ -34,55 +44,46 @@ struct TerminalArea <: EMG.Area #TODO: Take out TerminalArea and dispatch functi
     lon::Real
     lat::Real
     node::EMB.Availability
+    behaviour::PressureBlendingBehaviour # inlet pressure
 end
 
-struct TerminalPressureArea <: EMG.Area
-    id
-    name
-    lon::Real
-    lat::Real
-    node::EMB.Availability
-    in_pressure::Int
-end
+is_blendbehaviour(b::PressureBlendingBehaviour) = true
+is_blendbehaviour(b::Pressure) = false
+
+is_pressurebehaviour(b::PressureBlendingBehaviour) = true
+is_pressurebehaviour(b::Blending) = false
 
 is_blendarea(a::Area) = false
-is_blendarea(a::Union{BlendArea, BlendPressureArea}) = true
-
-
-is_terminalarea(a::Area) = false
-is_terminalarea(a::Union{TerminalArea, TerminalPressureArea}) = true
+function is_blendarea(a::Union{SourceArea, PoolingArea, TerminalArea}) #TODO: Ensure all areas have the field behaviour
+    behaviour = a.behaviour
+    is_blendbehaviour = is_blendbehaviour(behaviour)
+    if is_blendbehaviour
+        return true
+    else
+        return false
+    end
+end
 
 is_pressurearea(a::Area) = false
-is_pressurearea(a::Union{BlendPressureArea, SourcePressure, TerminalPressureArea}) = true
+function is_pressurearea(a::Union{PoolingArea, SourceArea, TerminalArea}) 
+    behaviour = a.behaviour
+    is_pressurebehaviour = is_pressurebehaviour(behaviour)
+    if is_pressurebehaviour
+        return true
+    else
+        return false
+    end
+end
 
-"""
-    limit_resources(a::LimitedExchangeArea)
+function pressure(a::Union{SourceArea, PoolingArea, TerminalArea}) 
+    behaviour = a.behaviour
+    is_pressurebehaviour = is_pressurebehaviour(behaviour)
+    if is_pressurebehaviour
+        return behaviour.pressure
+    else
+        error("The area $a.id has not a pressure behaviour.")
+    end
+end
 
-Returns the limited resources of a `LimitedExchangeArea` `a`. All other resources are
-considered unlimited.
-"""
-limit_resources(a::Union{BlendArea, BlendPressureArea}) = collect(keys(a.limit))
-
-"""
-    exchange_limit(a::BlendArea)
-
-Returns the limits of the exchange resources in area `a`.
-"""
-exchange_limit(a::Union{BlendArea, BlendPressureArea}) = a.limit
-"""
-    exchange_limit(a::BlendArea, p::Resource)
-
-Returns the limit of exchange resource `p` in area `a` a `TimeProfile`.
-"""
-exchange_limit(a::Union{BlendArea, BlendPressureArea}, p::Component) =
-    haskey(a.limit, p) ? a.limit[p] : FixedProfile(0)
-"""
-    exchange_limit(a::BlendArea, p::Resource, t)
-
-Returns the limit of exchange resource `p` in area `a` at time period `t`.
-"""
-exchange_limit(a::Union{BlendArea, BlendPressureArea}, p::Component, t) =
-    haskey(a.limit, p) ? a.limit[p][t] : 0
-
-out_pressure(a::SourcePressure) = a.out_pressure
-in_pressure(a::TerminalPressureArea) = a.in_pressure
+is_terminalarea(a::Area) = false
+is_terminalarea(a::TerminalArea) = true
