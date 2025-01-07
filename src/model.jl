@@ -19,7 +19,7 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
 
     # Construction of constraints for the problem
     constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
+    constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
     
     return m
 
@@ -82,12 +82,12 @@ function constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
 
     @constraint(
         m, [tm ∈ TM, t ∈ 𝒯],
-        m[:trans_in][tm, t] <= max_pressure(tm) * m[:has_flow][tm, t]
+        m[:trans_in][tm, t] <= EMG.capacity(tm, t) * m[:has_flow][tm, t]
     )
 end
 
 ### CONSTRAINTS PRESSURE
-function constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
+function constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
     𝒜ᵖ = filter(x -> is_pressurearea(x), 𝒜)
 
     for a ∈ 𝒜ᵖ

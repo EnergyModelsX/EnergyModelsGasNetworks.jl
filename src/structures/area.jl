@@ -79,11 +79,11 @@ end
 
 function pressure(a::Union{SourceArea, PoolingArea, TerminalArea}) 
     behaviour = a.behaviour
-    is_pressurebehaviour = is_pressurebehaviour(behaviour)
-    if is_pressurebehaviour
+    is_pressure = is_pressurebehaviour(behaviour)
+    if is_pressure
         return behaviour.pressure
     else
-        error("The area $a.id has not a pressure behaviour.")
+        error("The area $(a.id) has not a pressure behaviour.")
     end
 end
 
