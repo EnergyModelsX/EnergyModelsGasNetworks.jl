@@ -14,9 +14,8 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     pwa = case[:pwa]
     
     # Declaration of variables for blend structs
-    variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    variables_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    variables_tracking_prop(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
     # Construction of constraints for the problem
     constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
@@ -30,6 +29,11 @@ function create_model(case, modeltype::EnergyModel; check_timeprofiles::Bool=tru
     create_model(case, modeltype, m; check_timeprofiles)
 end
 
+function variables_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    𝒜ᵇ = filter(x -> is_blendarea(x), 𝒜)
+    variables_proportion(m, 𝒜ᵇ, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    variables_tracking_prop(m, 𝒜ᵇ, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+end
 function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒮 = [n for area in 𝒜 for n in EMG.getnodesinarea(area, links) if EMB.is_source(n)]
     𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
@@ -51,7 +55,6 @@ function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
         end
     end
 end
-
 function variables_tracking_prop(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
     𝒞ꜝ = filter(r -> is_component_track(r),  𝒞)
@@ -61,16 +64,19 @@ function variables_tracking_prop(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 end
 
 function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l)]
-
-    @variable(m, p_in[TM, 𝒯] >= 0)
-    @variable(m, p_out[TM, 𝒯] >= 0)
-    @variable(m, has_flow[TM, 𝒯], Bin)
-    @variable(m, lower_pressure_into_node[TM, 𝒯], Bin) # binary for tracking lowest pressure going into a node
+    𝒜ᵖ = filter(x -> is_pressurearea(x), 𝒜)
     
-    constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
-end
+    if !isempty(𝒜ᵖ)
+        TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l)]
 
+        @variable(m, p_in[TM, 𝒯] >= 0)
+        @variable(m, p_out[TM, 𝒯] >= 0)
+        @variable(m, has_flow[TM, 𝒯], Bin)
+        @variable(m, lower_pressure_into_node[TM, 𝒯], Bin) # binary for tracking lowest pressure going into a node
+        
+        constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
+    end
+end
 function constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
     TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l) if is_pressurepipe(tm)]
 
@@ -207,6 +213,9 @@ function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗ�
         end
     end
 end   
+function PiecewiseAffineApprox.constr(::Type{Concave}, m, z, p, x)
+    @constraint(m, z <= dot(-1 .* p.α, x) - p.β)
+end
 
 ### CONSTRAINTS BLENDING
 function constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -360,19 +369,4 @@ function EMB.check_node(n::RefBlendingSink, 𝒯, modeltype::EnergyModel, check_
     #         "An inconsistent combination of `:surplus` and `:deficit` leads to an infeasible model."
     #     )
     # end
-end
-
-"""
-    create_area(m, a::LimitedExchangeArea, 𝒯, ℒᵗʳᵃⁿˢ, modeltype)
-
-Constraint that limit input to a based on the specified exchange_limit.
-"""
-function EMG.create_area(m, a::BlendArea, 𝒯, ℒᵗʳᵃⁿˢ, modeltype)
-
-    ## TODO: Consider adding additional types for import or export exchange limits
-
-end
-
-function PiecewiseAffineApprox.constr(::Type{Concave}, m, z, p, x)
-    @constraint(m, z <= dot(-1 .* p.α, x) - p.β)
 end
