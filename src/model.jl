@@ -14,11 +14,11 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     pwa = case[:pwa]
     
     # Declaration of variables for blend structs
-    variables_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    variables_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
     # Construction of constraints for the problem
-    constraints_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+    constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     constraints_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
     
     return m
@@ -29,7 +29,7 @@ function create_model(case, modeltype::EnergyModel; check_timeprofiles::Bool=tru
     create_model(case, modeltype, m; check_timeprofiles)
 end
 
-function variables_blending(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function variables_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ᵇ = filter(x -> is_blendarea(x), 𝒜)
     variables_proportion(m, 𝒜ᵇ, ℒᵗʳᵃⁿˢ, links, 𝒯)
     variables_tracking_prop(m, 𝒜ᵇ, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -221,15 +221,14 @@ end
 function constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ᵇ = filter(x -> is_blendarea(x), 𝒜)
     for a ∈ 𝒜ᵇ
-        create_blending_node(m, a, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+        create_blending_node(m, a, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 
-function create_blending_node(m, a::TerminalArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    constraints_tracking(m, a, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    constraints_quality(m, a, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function create_blending_node(m, a::TerminalArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_quality(m, a, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
 end
-function create_blending_node(m, a::PoolingArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function create_blending_node(m, a::PoolingArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
     𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
     𝒜ᵃ = setdiff(getadjareas(a, ℒᵗʳᵃⁿˢ), [a])
@@ -245,12 +244,17 @@ function create_blending_node(m, a::PoolingArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 
 
     @constraint(m, [t ∈ 𝒯, tm ∈ ℒᶠ],
         sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for s ∈ 𝒮ᵗᵐ) - m[:trans_in][tm, t] == 0)
-  
+    
+    constraints_tracking(m, a, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 end
-function create_blending_node(m, a::Area, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function create_blending_node(m, a::SourceArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_tracking(m, a, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+end
+function create_blending_node(m, a::Area, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     return nothing
 end
-function constraints_tracking(m, a::TerminalArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+
+function constraints_tracking(m, a::Union{SourceArea, PoolingArea}, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒞ꜝ = filter(r -> is_component_track(r), 𝒞)
     c = isempty(𝒞ꜝ) ? nothing : first(𝒞ꜝ)
     if isnothing(c)
@@ -265,7 +269,7 @@ function constraints_tracking(m, a::TerminalArea, 𝒞, ℒᵗʳᵃⁿˢ, links,
             m[:prop_track][c, a, t] == sum(get_quality(s, c) * m[:prop_source][a, s, t] for s ∈ 𝒮))
     end
 end
-function constraints_quality(m, a::TerminalArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+function constraints_quality(m, a::TerminalArea, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     blending_sink =[n for n in EMG.getnodesinarea(a, links) if EnergyModelsPooling.is_blending_sink(n)]   # get terminals, one terminal per terinalarea
 
     if !isempty(blending_sink)
