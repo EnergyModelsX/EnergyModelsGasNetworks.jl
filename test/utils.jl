@@ -11,7 +11,6 @@ function optimize(m; nlp_constraints=true)
 
     set_optimizer(m, optimizer)
     set_optimizer_attribute(m, MOI.Silent(), false)
-    # set_optimizer_attribute(m, "IFCHECKCONVEXITY", 1)
     optimize!(m)
     return m
 end
