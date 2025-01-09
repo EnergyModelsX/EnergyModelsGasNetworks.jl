@@ -159,14 +159,14 @@ end
 function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::PWAFunc{C1, D1}, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
     
     if length(𝒞) == 2 #TODO: Examine the possibility of just using Resources rather than components
-        p = first(filter(p -> is_component_track(r), 𝒞))
+        p = first(filter(p -> is_component_track(p), 𝒞))
         if isnothing(p)
             throw(ArgumentError("One of the Components must be of type ComponentTrack."))
         end
 
         for (k, plane) ∈ enumerate(pwa.planes)
             for t ∈ 𝒯
-                add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, plane)
+                add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, plane, C1, D1)
             end
         end
     else
@@ -184,21 +184,21 @@ function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::Any, �
         p = first(𝒫ꜝ)
 
         for t ∈ 𝒯
-            add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t)
+            add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, nothing, nothing)
         end
     end
 end
 function constraints_weymouth(m, a::TerminalArea, pwa::Any, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     return nothing
 end
-function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane)
+function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane, C1, D1)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
         PiecewiseAffineApprox.constr(C1, m, m[:trans_in][tm, t], plane, (m[:p_in][tm, t], m[:p_out][tm, t], m[:prop_track][p, a, t]))
     end 
 end
-function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗʳᵃⁿˢ, t)
+function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗʳᵃⁿˢ, t, C1, D1)
     ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)

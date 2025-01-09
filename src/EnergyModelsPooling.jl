@@ -7,6 +7,7 @@ using TimeStruct
 using MetaGraphs
 using Graphs
 using PiecewiseAffineApprox
+using LinearAlgebra
 
 
 # include("structures/energy.jl") # TODO: Include energy content
@@ -23,7 +24,7 @@ export ResourceCarrierBlend, RefComponent, ComponentTrack
 export RefSourceComponent, RefBlendingSink
 export SourceArea, TerminalArea, PoolingArea, Pressure, Blending, PressBlend
 export PipePressureSimple
-export create_model
+export create_model, pwa
 
 
 end
