@@ -21,8 +21,9 @@ end
 Three new types of Areas are included SourceArea, PoolingArea and TerminalArea, following the structure of typical gas networks.
 """
 
-struct SourceArea <: EMG.Area
-    id::Any
+abstract type NetworkAreas <: EMG.Area end
+
+struct SourceArea <: NetworkAreas
     name
     lon::Real
     lat::Real
@@ -30,7 +31,7 @@ struct SourceArea <: EMG.Area
     behaviour::PressureBlendingBehaviour #outlet pressure
 end
 
-struct PoolingArea <: EMG.Area
+struct PoolingArea <: NetworkAreas
     id
     name
     lon::Real
@@ -40,7 +41,7 @@ struct PoolingArea <: EMG.Area
     limit::Dict{<:EMB.Resource, <:TimeProfile} #TODO: Check utility
 end
 
-struct TerminalArea <: EMG.Area #TODO: Take out TerminalArea and dispatch functions in RefBlendingSink instead
+struct TerminalArea <: NetworkAreas #TODO: Take out TerminalArea and dispatch functions in BlendingSink instead
     id
     name
     lon::Real
@@ -56,7 +57,7 @@ is_pressurebehaviour(b::PressureBlendingBehaviour) = true
 is_pressurebehaviour(b::Blending) = false
 
 is_blendarea(a::Area) = false
-function is_blendarea(a::Union{SourceArea, PoolingArea, TerminalArea}) #TODO: Ensure all areas have the field behaviour
+function is_blendarea(a::NetworkAreas) #TODO: Ensure all areas have the field behaviour
     behaviour = a.behaviour
     is_blend = is_blendbehaviour(behaviour)
     if is_blend
@@ -77,7 +78,7 @@ function is_pressurearea(a::Union{PoolingArea, SourceArea, TerminalArea})
     end
 end
 
-function pressure(a::Union{SourceArea, PoolingArea, TerminalArea}) 
+function pressure(a::NetworkAreas) 
     behaviour = a.behaviour
     is_pressure = is_pressurebehaviour(behaviour)
     if is_pressure
