@@ -30,7 +30,7 @@ function create_model(case, modeltype::EnergyModel; check_timeprofiles::Bool=tru
 end
 
 function variables_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒜ᵇ = filter(x -> is_blendarea(x), 𝒜)
+    𝒜ᵇ = filter(is_blendarea, 𝒜)
     variables_proportion(m, 𝒜ᵇ, ℒᵗʳᵃⁿˢ, links, 𝒯)
     variables_tracking_prop(m, 𝒜ᵇ, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 end
@@ -56,8 +56,8 @@ function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 function variables_tracking_prop(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
-    𝒞ꜝ = filter(r -> is_component_track(r),  𝒞)
+    𝒜ⁿᵗ = filter(!is_terminalarea, 𝒜)
+    𝒞ꜝ = filter(is_component_track,  𝒞)
     if !isempty(𝒞ꜝ)
         @variable(m, 0 <= prop_track[𝒞ꜝ, 𝒜ⁿᵗ, 𝒯] <= 1.0)
     end
@@ -173,7 +173,7 @@ function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::PWAFunc
         throw(ArgumentError("Pressure capabilities not supported for more than 2 Components."))
     end
 end
-function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::Any, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒫ꜝ = filter(p -> !EMB.is_resource_emit(p), 𝒫)
     
     if length(𝒫ꜝ) > 1

@@ -194,7 +194,6 @@ end
     m = optimize(m, nlp_constraints=false)
 
     @testset "Optimal solution" begin
-        println(termination_status(m))
         @test termination_status(m) == OPTIMAL
     end
 
