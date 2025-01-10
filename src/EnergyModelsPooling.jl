@@ -14,7 +14,7 @@ using LinearAlgebra
 include("structures/resource.jl")
 include("structures/node.jl")
 include("structures/area.jl")
-include("structures/mode.jl")
+include("structures/data.jl")
 include("utils.jl")
 include("model.jl")
 
@@ -23,7 +23,7 @@ include("model.jl")
 export ComponentBlend, AbstractComponent, ComponentTrack
 export SourceComponent, BlendingSink
 export SourceArea, TerminalArea, PoolingArea, Pressure, Blending, PressBlend
-export PipePressureSimple
+export PressurePipe
 export create_model, pwa
 
 

@@ -155,15 +155,18 @@ function generate_case()
     # Create transmission modes
     # Note: The inlet and outlets do not affect as the trans_out are not associated to Resources
     # and the different flows are tracked by prop_source variable
-
     fixed_O = FixedProfile(0.0)
-    max_pressure = 70
-    weymouth = 5.37178761089193
     lin_pressures = calculate_linearise_pressures()
-    tm_14 = PipePressureSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_24 = PipePressureSimple("tm_24", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_34 = PipePressureSimple("tm_34", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
-    tm_46 = PipePressureSimple("tm_46", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, max_pressure, weymouth, lin_pressures, Data[])
+    pressure_data = PressurePipe(
+        80, # max_pressure
+        5.37178761089193, # weymouth
+        lin_pressures
+    )
+
+    tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, fixed_O, fixed_O, fixed_O, fixed_O, [pressure_data])
+    tm_24 = PipeSimple("tm_24", Gas, Gas, Gas, fixed_O, fixed_O, fixed_O, fixed_O, fixed_O, [pressure_data])
+    tm_34 = PipeSimple("tm_34", Gas, Gas, Gas, fixed_O, fixed_O, fixed_O, fixed_O, fixed_O, [pressure_data])
+    tm_46 = PipeSimple("tm_46", Gas, Gas, Gas, fixed_O, fixed_O, fixed_O, fixed_O, fixed_O, [pressure_data])
 
     # Create transmission corriders between areas
     transmission = [
