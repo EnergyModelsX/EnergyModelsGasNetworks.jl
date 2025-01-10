@@ -31,7 +31,7 @@ function generate_case()
     # Nodes in Area 1
     n = [
         GeoAvailability(101, products),
-        RefSourceComponent(
+        SourceComponent(
             102,
             FixedProfile(150), # Capacity
             FixedProfile(0), # Var. OPEX
@@ -50,7 +50,7 @@ function generate_case()
     # Nodes in Area 2
     n = [
         GeoAvailability(201, products),
-        RefSourceComponent(
+        SourceComponent(
             202,
             FixedProfile(100), # Capacity
             FixedProfile(0), # Var. OPEX
@@ -69,7 +69,7 @@ function generate_case()
     # Nodes in Area 3
     n = [
         GeoAvailability(301, products),
-        RefSourceComponent(
+        SourceComponent(
             302,
             FixedProfile(50), # Capacity
             FixedProfile(0), # Var. OPEX

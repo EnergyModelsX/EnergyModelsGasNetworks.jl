@@ -24,6 +24,7 @@ Three new types of Areas are included SourceArea, PoolingArea and TerminalArea, 
 abstract type NetworkAreas <: EMG.Area end
 
 struct SourceArea <: NetworkAreas
+    id
     name
     lon::Real
     lat::Real
