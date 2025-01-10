@@ -288,30 +288,30 @@ function constraints_quality(m, a::TerminalArea, 𝒜, ℒᵗʳᵃⁿˢ, links, 
         @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ˡ],
             sum((get_quality(s, p) - get_lower(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) >= 0)
     else
-        throw(ArgumentError("Trying to create a TerminalArea with Blending behaviour without a RefBlendingSink node."))
+        throw(ArgumentError("Trying to create a TerminalArea with Blending behaviour without a BlendingSink node."))
     end
 end
 
 
 """
-    variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:RefBlendingSink}, 𝒯, modeltype::EnergyModel)
+    variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:BlendingSink}, 𝒯, modeltype::EnergyModel)
 
 Declaration of deficit (`:sink_deficit`) variables
-for `RefBlendingSink` nodes `𝒩ˢⁱⁿᵏ` to quantify when there is too much or too little energy for
+for `BlendingSink` nodes `𝒩ˢⁱⁿᵏ` to quantify when there is too much or too little energy for
 satisfying the demand.
 """
-function EMB.variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:RefBlendingSink}, 𝒯, modeltype::EnergyModel) #TODO: The variables are still generated, although not used.
+function EMB.variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:BlendingSink}, 𝒯, modeltype::EnergyModel) #TODO: The variables are still generated, although not used.
     # @variable(m, sink_surplus[𝒩ˢⁱⁿᵏ, 𝒯] >= 0)
     # @variable(m, sink_deficit[𝒩ˢⁱⁿᵏ, 𝒯] >= 0)
 end
 
 """
-    constraints_capacity(m, n::RefBlendingSink, 𝒯::TimeStructure, modeltype::EnergyModel)
+    constraints_capacity(m, n::BlendingSink, 𝒯::TimeStructure, modeltype::EnergyModel)
 
-Function for creating the constraint on the maximum capacity of a generic `RefBlendingSink`.
-This function serves as fallback option if no other function is specified for a `RefBlendingSink`.
+Function for creating the constraint on the maximum capacity of a generic `BlendingSink`.
+This function serves as fallback option if no other function is specified for a `BlendingSink`.
 """
-function EMB.constraints_capacity(m, n::RefBlendingSink, 𝒯::TimeStructure, modeltype::EnergyModel)
+function EMB.constraints_capacity(m, n::BlendingSink, 𝒯::TimeStructure, modeltype::EnergyModel)
     @constraint(m, [t ∈ 𝒯],
         m[:cap_use][n, t] >= m[:cap_inst][n, t]
     )
@@ -325,7 +325,7 @@ end
 Function for creating the constraint on the variable OPEX of a generic `Sink`.
 This function serves as fallback option if no other function is specified for a `Sink`.
 """
-function EMB.constraints_opex_var(m, n::RefBlendingSink, 𝒯ᴵⁿᵛ, modeltype::EnergyModel)
+function EMB.constraints_opex_var(m, n::BlendingSink, 𝒯ᴵⁿᵛ, modeltype::EnergyModel)
     @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
         m[:opex_var][n, t_inv] ==
         sum(
@@ -352,7 +352,7 @@ or that a new `Source` type receives a new method for `check_node`.
  - The sum of the values `:deficit` and `:surplus` in the dictionary `penalty` has to be
    non-negative to avoid an infeasible model.
 """
-function EMB.check_node(n::RefBlendingSink, 𝒯, modeltype::EnergyModel, check_timeprofiles::Bool)
+function EMB.check_node(n::BlendingSink, 𝒯, modeltype::EnergyModel, check_timeprofiles::Bool)
     @assert_or_log(
         sum(capacity(n, t) ≥ 0 for t ∈ 𝒯) == length(𝒯),
         "The capacity must be non-negative."

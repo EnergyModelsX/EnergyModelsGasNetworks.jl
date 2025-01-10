@@ -20,8 +20,8 @@ include("model.jl")
 
 
 
-export ResourceCarrierBlend, RefComponent, ComponentTrack
-export RefSourceComponent, RefBlendingSink
+export ComponentBlend, AbstractComponent, ComponentTrack
+export SourceComponent, BlendingSink
 export SourceArea, TerminalArea, PoolingArea, Pressure, Blending, PressBlend
 export PipePressureSimple
 export create_model, pwa

@@ -2,10 +2,10 @@
 function generate_case()
 
     # Define resources
-    NG = RefComponent("NG", 0.0)
+    NG = AbstractComponent("NG", 0.0)
     H2 = ComponentTrack("H2", 0.0)
     
-    Gas = EMP.ResourceCarrierBlend("Gas", [NG, H2])
+    Gas = EMP.ComponentBlend("Gas", [NG, H2])
     CO2 = ResourceEmit("CO2", 1.0)
     products = [CO2, Gas]
     components = [NG, H2]
@@ -108,7 +108,7 @@ function generate_case()
     # Nodes in Area 6
     n = [
         GeoAvailability(601, products),
-        RefBlendingSink(
+        BlendingSink(
             602,
             FixedProfile(100), # Capacity
             Dict(:price => FixedProfile(-190)), # Penalty
@@ -127,7 +127,7 @@ function generate_case()
     # Nodes in Area 7
     n = [
         GeoAvailability(701, products),
-        RefBlendingSink(
+        BlendingSink(
             702,
             FixedProfile(50), # Capacity
             Dict(:price => FixedProfile(-190)), # Penalty

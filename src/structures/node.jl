@@ -14,7 +14,7 @@ A source node with specific qualities of ResourceComponent resources.
   is conditional through usage of a constructor.
 """
 
-struct RefSourceComponent <: EMB.Source
+struct SourceComponent <: EMB.Source
 	id::Any
 	cap::TimeProfile
 	opex_var::TimeProfile
@@ -23,7 +23,7 @@ struct RefSourceComponent <: EMB.Source
 	quality::Dict{<:Component, <:Real}
 	data::Vector{Data}
 end
-function RefSourceComponent(
+function SourceComponent(
 	id,
 	cap::TimeProfile,
 	opex_var::TimeProfile,
@@ -31,10 +31,10 @@ function RefSourceComponent(
 	output::Dict{<:Resource, <:Real},
 	quality::Dict{<:Component, <:Real},
 )
-	return RefSourceComponent(id, cap, opex_var, opex_fixed, output, quality, Data[])
+	return SourceComponent(id, cap, opex_var, opex_fixed, output, quality, Data[])
 end
 
-""" A reference `RefBlendingSink` node
+""" A reference `BlendingSink` node
 
 `Sink` node with max. boundaries in quality of `ResourceComponent`s and proportion of `ResourceCarrier`s. 
 
@@ -46,7 +46,7 @@ end
 - **`data::Vector{Data}`** is the additional data (e.g. for investments). The field \
 `data` is conditional through usage of a constructor.
 """
-struct RefBlendingSink <: EMB.Sink
+struct BlendingSink <: EMB.Sink
 	id::Any
 	cap::TimeProfile
 	penalty::Dict{Symbol, <:TimeProfile}
@@ -55,7 +55,7 @@ struct RefBlendingSink <: EMB.Sink
 	lowerbound::Dict{<:Component, <:Real}
 	data::Vector{Data}
 end
-function RefBlendingSink(
+function BlendingSink(
 	id,
 	cap::TimeProfile,
 	penalty::Dict{<:Any, <:TimeProfile},
@@ -63,19 +63,19 @@ function RefBlendingSink(
 	upperbound::Dict{<:Component, <:Real},
 	lowerbound::Dict{<:Component, <:Real},
 )
-	return RefBlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
+	return BlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
 end
 
-components(n::RefSourceComponent) = collect(keys(n.quality))
+components(n::SourceComponent) = collect(keys(n.quality))
 
-function get_quality(s::RefSourceComponent, p::Component)
+function get_quality(s::SourceComponent, p::Component)
 	return get(s.quality, p, 0)
 end
 
-res_upper(n::RefBlendingSink) = collect(keys(n.upperbound))
-res_lower(n::RefBlendingSink) = collect(keys(n.lowerbound))
+res_upper(n::BlendingSink) = collect(keys(n.upperbound))
+res_lower(n::BlendingSink) = collect(keys(n.lowerbound))
 
-function get_upper(s::RefBlendingSink, p::Component)
+function get_upper(s::BlendingSink, p::Component)
 	upperbound = s.upperbound
 	if p in keys(upperbound)
 		return upperbound[p]
@@ -84,7 +84,7 @@ function get_upper(s::RefBlendingSink, p::Component)
 	end
 end
 
-function get_lower(s::RefBlendingSink, p::Component)
+function get_lower(s::BlendingSink, p::Component)
 	lowerbound = s.lowerbound
 	if p in keys(lowerbound)
 		return lowerbound[p]
@@ -106,15 +106,15 @@ is_geoavailability(n::EMG.GeoAvailability) = true
 """
 	is_blending_sink(n::Node)
 
-Checks, whether node `n` is a `RefBlendingSink` node
+Checks, whether node `n` is a `BlendingSink` node
 """
 is_blending_sink(::EMB.Node) = false
-is_blending_sink(::RefBlendingSink) = true
+is_blending_sink(::BlendingSink) = true
 
-surplus_penalty(n::RefBlendingSink) = nothing
-surplus_penalty(n::RefBlendingSink, t) = nothing
-deficit_penalty(n::RefBlendingSink) = nothing
-deficit_penalty(n::RefBlendingSink, t) = nothing
+surplus_penalty(n::BlendingSink) = nothing
+surplus_penalty(n::BlendingSink, t) = nothing
+deficit_penalty(n::BlendingSink) = nothing
+deficit_penalty(n::BlendingSink, t) = nothing
 
-price_penalty(n::RefBlendingSink) = n.penalty[:price]
-price_penalty(n::RefBlendingSink, t) = n.penalty[:price][t]
+price_penalty(n::BlendingSink) = n.penalty[:price]
+price_penalty(n::BlendingSink, t) = n.penalty[:price][t]
