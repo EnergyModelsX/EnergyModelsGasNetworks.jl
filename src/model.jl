@@ -212,10 +212,7 @@ function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗ�
                                           ))
         end
     end
-end   
-function PiecewiseAffineApprox.constr(::Type{Concave}, m, z, p, x)
-    @constraint(m, z <= dot(-1 .* p.α, x) - p.β)
-end
+end 
 
 ### CONSTRAINTS BLENDING
 function constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
