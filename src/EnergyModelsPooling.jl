@@ -21,7 +21,7 @@ include("model.jl")
 export ComponentBlend, AbstractComponent, ComponentTrack
 export SourceComponent, BlendingSink
 export SourceArea, TerminalArea, PoolingArea, Pressure, Blending, PressBlend
-export PressurePipe
+export PressurePipe, PressBlendPipe
 export create_model, pwa
 
 end

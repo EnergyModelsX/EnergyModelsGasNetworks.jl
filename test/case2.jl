@@ -1,14 +1,3 @@
-function calculate_linearise_pressures()
-    P_min = 30.0  # example minimum pressure
-    P_max = 70.0  # example maximum pressure
-    n = 5         # number of points
-
-    pressures = range(P_min, P_max, length=n)
-    pairs = [(p1, p2) for p1 in pressures, p2 in pressures if p1 > p2]
-
-    return pairs
-end
-
 function generate_case()
 
     # Define resources    
@@ -207,7 +196,7 @@ end
     
     case, model = generate_case()
     m = EMP.create_model(case, model)
-    m = optimize(m, nlp_constraints = false) # false => HiGHS to guarantee correct handling of binaries #TODO: Discuss how to improve this
+    m = optimize(m, nlp_constraints = true)
     
     @testset "Optimal solution" begin
         println(termination_status(m))

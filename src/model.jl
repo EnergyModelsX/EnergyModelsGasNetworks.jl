@@ -11,7 +11,6 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
     𝒫 = case[:products]
     𝒞 = case[:components]
     𝒯 = case[:T]
-    pwa = case[:pwa]
     
     # Declaration of variables for blend structs
     variables_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -19,7 +18,7 @@ function create_model(case, modeltype::EnergyModel, m::JuMP.Model; check_timepro
 
     # Construction of constraints for the problem
     constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
+    constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     
     return m
 
@@ -78,12 +77,12 @@ function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 
-function constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫, pwa)
+function constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     𝒜ᵖ = filter(x -> is_pressurearea(x), 𝒜)
 
     for a ∈ 𝒜ᵖ
         pressure_balance(m, a, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-        constraints_weymouth(m, a, pwa, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+        constraints_weymouth(m, a, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 

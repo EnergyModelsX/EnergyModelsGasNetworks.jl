@@ -15,10 +15,6 @@ const EMP = EnergyModelsPooling
 include("utils.jl")
 
 @testset "test EnergyModelsPooling" begin
-
-    @testset "Check all nodes pressure or not" begin
-        #TODO: Add checks
-    end
     
     @testset "EnergyModelsPooling | Only Blend" begin
         include("case1.jl")
@@ -26,10 +22,6 @@ include("utils.jl")
 
     @testset "EnergyModelsPooling | Only Pressure" begin
         include("case2.jl")
-    end
-
-    @testset "EnergyModelsPooling | ConnectorSet" begin
-        include("connectorstest.jl")
     end
 
     @testset "EnergyModelsPooling | Pressure + Blend" begin

@@ -3,7 +3,7 @@ function generate_case()
 
     # Define resources
     NG = AbstractComponent("NG", 0.0)
-    H2 = ComponentTrack("H2", 0.0)
+    H2 = ComponentTrack("H2", 0.0, 0.7)
     
     Gas = EMP.ComponentBlend("Gas", [NG, H2])
     CO2 = ResourceEmit("CO2", 1.0)

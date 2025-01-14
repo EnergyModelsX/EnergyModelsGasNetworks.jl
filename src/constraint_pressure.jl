@@ -1,5 +1,5 @@
 function constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
-    TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l) if is_pressurepipe(tm)]
+    TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l) if has_pressuredata(tm)]
 
     @constraint(
         m, [tm ∈ TM, t ∈ 𝒯],
@@ -67,86 +67,65 @@ end
 
     For SourceArea, all transmission carry one resource => always use Taylor approximation
 """
-function constraints_weymouth(m, a::SourceArea, pwa, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
-    
-    if length(𝒞) == 2 #TODO: Examine the possibility of just using Resources rather than components
-        p = first(filter(p -> is_component_track(p), 𝒞))
-        if isnothing(p)
-            throw(ArgumentError("One of the Components must be of type ComponentTrack."))
-        end
+function constraints_weymouth(m, a::SourceArea, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    p = first(EMG.export_resources(ℒᵗʳᵃⁿˢ, a))
+    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
-        for t ∈ 𝒯
-            add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, nothing, nothing)
+    for l ∈ ℒᵒᵘᵗ
+        for tm ∈ EMG.modes(l)
+            constraints_taylor(m, a, p, ℒᵗʳᵃⁿˢ, tm, 𝒯)
         end
-    else
-        throw(ArgumentError("Pressure capabilities not supported for more than 2 Components."))
     end
 end
-function constraints_weymouth(m, a::PoolingArea, pwa::PWAFunc{C1, D1}, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
-    
+function constraints_weymouth(m, a::PoolingArea, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+
     if length(𝒞) == 2 #TODO: Examine the possibility of just using Resources rather than components
-        p = first(filter(p -> is_component_track(p), 𝒞))
+        p = first(filter(is_component_track, 𝒞))
         if isnothing(p)
             throw(ArgumentError("One of the Components must be of type ComponentTrack."))
         end
-
         add_blend_limit(m, a, p, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    else
+        p = first(EMG.export_resources(ℒᵗʳᵃⁿˢ, a))
+    end
 
-        for (k, plane) ∈ enumerate(pwa.planes)
-            for t ∈ 𝒯
-                add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, plane, C1, D1)
+    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
+    for l ∈ ℒᵒᵘᵗ
+        for tm ∈ EMG.modes(l)
+            if is_pressurepipe(tm)
+                constraints_taylor(m, a, p, ℒᵗʳᵃⁿˢ, tm, 𝒯)
+            else
+                pwa = get_pwa(tm)
+                for (k, plane) ∈ enumerate(pwa.planes)
+                    constraints_pwa(m, a, p, tm, 𝒯, plane, pwa)
+                end      
             end
         end
-    else
-        throw(ArgumentError("Pressure capabilities not supported for more than 2 Components."))
+    end      
+end
+function constraints_weymouth(m, a::Area, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+end
+
+function constraints_taylor(m, a, p, ℒᵗʳᵃⁿˢ, tm::EMG.TransmissionMode, 𝒯)
+    K_W = weymouth_ct(tm)
+    P = linearised_pressures(tm)
+    for (PIn, POut) ∈ P
+        @constraint(m, [t ∈ 𝒯],
+        m[:trans_in][tm, t] <= K_W * (
+                                        (PIn/(sqrt(PIn^2 - POut^2))) * m[:p_in][tm, t] -
+                                        (POut/(sqrt(PIn^2 - POut^2))) * m[:p_out][tm, t]
+                                        ))
     end
 end
-
-function constraints_weymouth(m, a::PoolingArea, pwa, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒫ꜝ = filter(p -> !EMB.is_resource_emit(p), 𝒫)
-    
-    if length(𝒫ꜝ) > 1
-        throw(ArgumentError("Pressure constraints only available for 1 Resource and 1 Resource + 2 Components"))
-    elseif length(𝒞) != 0
-        throw(ArgumentError("For systems with Components, ensure you add the pwa (plane approximations)."))
-    else
-        p = first(𝒫ꜝ)
-
-        for t ∈ 𝒯
-            add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, nothing, nothing)
-        end
-    end
-end
-function constraints_weymouth(m, a::Area, pwa::Any, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    return nothing
-end
-function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane, C1, D1)
-    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
-
-    for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
+function constraints_pwa(m, a::PoolingArea, p::ComponentTrack, tm, 𝒯, plane, pwa::PWAFunc{C1, D1}) where {C1, D1}
+    for t ∈ 𝒯
         PiecewiseAffineApprox.constr(C1, m, m[:trans_in][tm, t], plane, (m[:p_in][tm, t], m[:p_out][tm, t], m[:prop_track][p, a, t]))
-    end 
-end
-function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗʳᵃⁿˢ, t, C1, D1)
-    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
-
-    for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
-        K_W = weymouth_ct(tm)
-        P = linearised_pressures(tm)
-        for (PIn, POut) ∈ P
-            @constraint(m, 
-            m[:trans_in][tm, t] <= K_W * (
-                                            (PIn/(sqrt(PIn^2 - POut^2))) * m[:p_in][tm, t] -
-                                            (POut/(sqrt(PIn^2 - POut^2))) * m[:p_out][tm, t]
-                                          ))
-        end
     end
-end 
+end
 
 function add_blend_limit(m, a::PoolingArea, p::ComponentTrack, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
 
-    @constraint(m, [t ∈ 𝒯, l ∈ ℒᵒᵘᵗ],
+    @constraint(m, [t ∈ 𝒯],
         m[:prop_track][p, a, t] <= upper_level(p)
     )
 

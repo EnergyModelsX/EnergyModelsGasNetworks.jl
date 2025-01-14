@@ -184,7 +184,6 @@ function generate_case()
         :products       => products,
         :components     => components,
         :T              => T,
-        :pwa            => nothing
     )    
 
     return case, model

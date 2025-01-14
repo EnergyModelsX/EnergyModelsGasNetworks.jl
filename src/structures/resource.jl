@@ -12,7 +12,7 @@ end
 struct ComponentTrack{T<:Real} <: Component
 	id::Any
 	co2_int::T
-	upper_level::Real	# maximum percentage allowed in TransmissionModes with Blends
+	upper_level::Any	# maximum percentage allowed in TransmissionModes with Blends
 end
 
 function EMB.co2_int(p::ComponentBlend) # TODO: Look into how to integrate it in EMB

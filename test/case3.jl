@@ -1,19 +1,7 @@
-function calculate_linearise_pressures()
-    P_min = 30.0  # example minimum pressure
-    P_max = 70.0  # example maximum pressure
-    n = 5         # number of points
-
-    pressures = range(P_min, P_max, length=n)
-    pairs = [(p1, p2) for p1 in pressures, p2 in pressures if p1 > p2]
-
-    return pairs
-end
-
 function generate_case()
-
      # Define resources
     NG = AbstractComponent("NG", 0.0)
-    H2 = ComponentTrack("H2", 0.0)
+    H2 = ComponentTrack("H2", 0.0, 0.2)
     
     Gas = EMP.ComponentBlend("Gas", [NG, H2])
     CO2 = ResourceEmit("CO2", 1.0)
@@ -168,10 +156,22 @@ function generate_case()
     # Note: The inlet and outlets do not affect as the trans_out are not associated to Resources
     # and the different flows are tracked by prop_source variable
     fixed_O = FixedProfile(0.0)
+    
+    # Dispatch with PWA
+    weymouth = 53.7178761089193
+    pwa = EMP.pwa(Xpress.Optimizer, weymouth)
+    
+    presblend_data = PressBlendPipe(
+        80, # max_pressure
+        weymouth,
+        pwa
+    )
+
+    # Dispatch with Taylor approximation
     lin_pressures = calculate_linearise_pressures()
     pressure_data = PressurePipe(
-        80, # max_pressure
-        53.7178761089193, # weymouth
+        1e6,
+        5.37178761089193, # This must change based on the type of component transported in the pipeline, here assumed the same value for H2 and NG
         lin_pressures
     )
 
@@ -181,10 +181,10 @@ function generate_case()
     tm_25 = PipeSimple("tm_25", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
     tm_34 = PipeSimple("tm_34", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
     tm_35 = PipeSimple("tm_35", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-    tm_46 = PipeSimple("tm_46", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-    tm_47 = PipeSimple("tm_47", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-    tm_56 = PipeSimple("tm_56", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-    tm_57 = PipeSimple("tm_57", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
+    tm_46 = PipeSimple("tm_46", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [presblend_data])
+    tm_47 = PipeSimple("tm_47", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [presblend_data])
+    tm_56 = PipeSimple("tm_56", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [presblend_data])
+    tm_57 = PipeSimple("tm_57", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [presblend_data])
 
     # Create transmission corriders between areas
     transmission = [
@@ -211,7 +211,6 @@ function generate_case()
         :products       => products,
         :components     => components,
         :T              => T,
-        :pwa            => nothing
     )    
 
     return case, model
@@ -220,9 +219,6 @@ end
 @testset "Pressure + Blend + 2 Resource" begin
     
     case, model = generate_case()
-    weymouth = 53.7178761089193
-    case[:pwa] = EMP.pwa(Xpress.Optimizer, weymouth)
-    
     m = EMP.create_model(case, model)
     m = optimize(m, nlp_constraints = true) # false => HiGHS to guarantee correct handling of binaries #TODO: Discuss how to improve this
     
@@ -237,6 +233,8 @@ end
     @info filter(:y => x -> x > 0, df_variable(m, :p_in))
     @info "Outlet pressures"
     @info df_variable(m, :p_out)
+    @info "Proportion H2"
+    @info df_variable(m, :prop_track)
     @info "Has Flow"
     @info df_variable(m, :has_flow)
     @info "Lower_pressure_into_node"
