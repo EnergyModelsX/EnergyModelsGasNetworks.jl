@@ -9,22 +9,19 @@ using Graphs
 using PiecewiseAffineApprox
 using LinearAlgebra
 
-
-# include("structures/energy.jl") # TODO: Include energy content
 include("structures/resource.jl")
 include("structures/node.jl")
 include("structures/area.jl")
 include("structures/data.jl")
 include("utils.jl")
+include("constraint_blend.jl")
+include("constraint_pressure.jl")
 include("model.jl")
-
-
 
 export ComponentBlend, AbstractComponent, ComponentTrack
 export SourceComponent, BlendingSink
 export SourceArea, TerminalArea, PoolingArea, Pressure, Blending, PressBlend
 export PressurePipe
 export create_model, pwa
-
 
 end
