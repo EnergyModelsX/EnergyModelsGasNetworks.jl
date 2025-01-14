@@ -65,16 +65,32 @@ end
 """
     constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::PWAFunc{C1, D1}, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
-    When pwa::PWAFunc, the problem must contain two components (1 resource) as the pwa is used for approximating the Weymouth with 2 resources.
-    When pwa::Any, the problem is for one resources and the Weymouth will be approximated using the Taylor first-order approximation.
+    For SourceArea, all transmission carry one resource => always use Taylor approximation
 """
-function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::PWAFunc{C1, D1}, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
+function constraints_weymouth(m, a::SourceArea, pwa, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
     
     if length(𝒞) == 2 #TODO: Examine the possibility of just using Resources rather than components
         p = first(filter(p -> is_component_track(p), 𝒞))
         if isnothing(p)
             throw(ArgumentError("One of the Components must be of type ComponentTrack."))
         end
+
+        for t ∈ 𝒯
+            add_weymouth(m, a, p, ℒᵗʳᵃⁿˢ, t, nothing, nothing)
+        end
+    else
+        throw(ArgumentError("Pressure capabilities not supported for more than 2 Components."))
+    end
+end
+function constraints_weymouth(m, a::PoolingArea, pwa::PWAFunc{C1, D1}, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯) where {C1, D1} 
+    
+    if length(𝒞) == 2 #TODO: Examine the possibility of just using Resources rather than components
+        p = first(filter(p -> is_component_track(p), 𝒞))
+        if isnothing(p)
+            throw(ArgumentError("One of the Components must be of type ComponentTrack."))
+        end
+
+        add_blend_limit(m, a, p, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
         for (k, plane) ∈ enumerate(pwa.planes)
             for t ∈ 𝒯
@@ -85,7 +101,8 @@ function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa::PWAFunc
         throw(ArgumentError("Pressure capabilities not supported for more than 2 Components."))
     end
 end
-function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+
+function constraints_weymouth(m, a::PoolingArea, pwa, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒫ꜝ = filter(p -> !EMB.is_resource_emit(p), 𝒫)
     
     if length(𝒫ꜝ) > 1
@@ -100,7 +117,7 @@ function constraints_weymouth(m, a::Union{SourceArea, PoolingArea}, pwa, 𝒫, �
         end
     end
 end
-function constraints_weymouth(m, a::TerminalArea, pwa::Any, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function constraints_weymouth(m, a::Area, pwa::Any, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     return nothing
 end
 function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::ComponentTrack, ℒᵗʳᵃⁿˢ, t, plane, C1, D1)
@@ -125,3 +142,12 @@ function add_weymouth(m, a::Union{PoolingArea, SourceArea}, p::Resource, ℒᵗ�
         end
     end
 end 
+
+function add_blend_limit(m, a::PoolingArea, p::ComponentTrack, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    ℒᵒᵘᵗ = EMG.corr_from(a, ℒᵗʳᵃⁿˢ)
+
+    @constraint(m, [t ∈ 𝒯, l ∈ ℒᵒᵘᵗ],
+        m[:prop_track][p, a, t] <= upper_level(p)
+    )
+
+end
