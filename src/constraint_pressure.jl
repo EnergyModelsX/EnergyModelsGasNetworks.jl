@@ -84,7 +84,6 @@ function constraints_weymouth(m, a::PoolingArea, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, l
         if isnothing(p)
             throw(ArgumentError("One of the Components must be of type ComponentTrack."))
         end
-        add_blend_limit(m, a, p, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     else
         p = first(EMG.export_resources(ℒᵗʳᵃⁿˢ, a))
     end
@@ -121,12 +120,4 @@ function constraints_pwa(m, a::PoolingArea, p::ComponentTrack, tm, 𝒯, plane, 
     for t ∈ 𝒯
         PiecewiseAffineApprox.constr(C1, m, m[:trans_in][tm, t], plane, (m[:p_in][tm, t], m[:p_out][tm, t], m[:prop_track][p, a, t]))
     end
-end
-
-function add_blend_limit(m, a::PoolingArea, p::ComponentTrack, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-
-    @constraint(m, [t ∈ 𝒯],
-        m[:prop_track][p, a, t] <= upper_level(p)
-    )
-
 end
