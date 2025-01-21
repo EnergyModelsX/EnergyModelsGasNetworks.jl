@@ -1,5 +1,9 @@
 using Xpress
+using Alpine
+using Ipopt
 using HiGHS
+using Juniper 
+
 using JuMP
 using TimeStruct
 using EnergyModelsBase

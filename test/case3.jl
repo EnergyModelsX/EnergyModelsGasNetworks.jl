@@ -220,11 +220,11 @@ end
     
     case, model = generate_case()
     m = EMP.create_model(case, model)
-    m = optimize(m, nlp_constraints = true) # false => HiGHS to guarantee correct handling of binaries #TODO: Discuss how to improve this
-    
+    m = optimize(m, nlp_constraints = true) 
+
     @testset "Optimal solution" begin
         println(termination_status(m))
-        @test termination_status(m) == LOCALLY_SOLVED
+        @test termination_status(m) == MOI.OPTIMAL
     end
 
     @info "FLOW:"

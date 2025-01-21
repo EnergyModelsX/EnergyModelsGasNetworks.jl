@@ -196,7 +196,7 @@ end
     
     case, model = generate_case()
     m = EMP.create_model(case, model)
-    m = optimize(m, nlp_constraints = true)
+    m = optimize(m, nlp_constraints = false)
     
     @testset "Optimal solution" begin
         println(termination_status(m))

@@ -3,7 +3,7 @@ function generate_case()
 
     # Define resources
     NG = AbstractComponent("NG", 0.0)
-    H2 = ComponentTrack("H2", 0.0, 0.7)
+    H2 = ComponentTrack("H2", 0.0, 1)
     
     Gas = EMP.ComponentBlend("Gas", [NG, H2])
     CO2 = ResourceEmit("CO2", 1.0)
@@ -132,7 +132,7 @@ function generate_case()
             FixedProfile(50), # Capacity
             Dict(:price => FixedProfile(-190)), # Penalty
             Dict(Gas => 1), # Input
-            Dict(H2 => 0.7, NG => 1), # upperbound
+            Dict(H2 => 0.2, NG => 1), # upperbound
             Dict(H2 => 0) # lowerbound
         )
     ]
@@ -192,7 +192,6 @@ function generate_case()
         :products       => products,
         :components     => components,
         :T              => T,
-        :pwa            => nothing
     )    
 
     return case, model
@@ -202,11 +201,11 @@ end
     
     case, model = generate_case()
     m = EMP.create_model(case, model)
-    m = optimize(m)
+    m = optimize(m, nlp_constraints=true)
 
     @testset "Optimal solution" begin
         println(termination_status(m))
-        @test termination_status(m) == MOI.LOCALLY_SOLVED
+        @test termination_status(m) == MOI.OPTIMAL
     end
 
     ℒ = case[:transmission]
