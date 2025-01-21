@@ -32,4 +32,8 @@ include("utils.jl")
         include("case3.jl")
     end
 
+    @testset "EnergyModelsPooling | PWA Handling" begin
+            include("test_scratch.jl")
+        end
+
 end

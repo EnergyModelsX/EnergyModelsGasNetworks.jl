@@ -158,13 +158,13 @@ function generate_case()
     fixed_O = FixedProfile(0.0)
     
     # Dispatch with PWA
-    weymouth = 53.7178761089193
-    pwa = EMP.pwa(Xpress.Optimizer, weymouth)
-    
+    weymouth = 53.7178761089193    
     presblend_data = PressBlendPipe(
         80, # max_pressure
         weymouth,
-        pwa
+        70,
+        30,
+        HiGHS.Optimizer
     )
 
     # Dispatch with Taylor approximation
@@ -220,7 +220,7 @@ end
     
     case, model = generate_case()
     m = EMP.create_model(case, model)
-    m = optimize(m, nlp_constraints = true) 
+    m = optimize(m, nlp_constraints = true)
 
     @testset "Optimal solution" begin
         println(termination_status(m))
