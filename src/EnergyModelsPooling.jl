@@ -9,6 +9,7 @@ using Graphs
 using PiecewiseAffineApprox
 using LinearAlgebra
 
+include("scratch.jl")
 include("structures/resource.jl")
 include("structures/node.jl")
 include("structures/area.jl")

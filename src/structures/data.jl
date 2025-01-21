@@ -11,6 +11,37 @@ struct PressBlendPipe <: PressureData
     weymouth::Float64
     pwa::Any
 end
+function PressBlendPipe(max_pressure, weymouth, pin, pout, optimizer)
+    Mᶜᴴ⁴ = 16.042 # molecular weight
+    Mᴴ² = 2.016
+    f(X) = sqrt(weymouth) .* sqrt.(X[:, 1].^2 - X[:, 2].^2) ./ sqrt.(Mᶜᴴ⁴ .* (1 .- X[:, 3]) .+ Mᴴ² .* X[:, 3])
+    
+    X = _calculate_input(pin, pout)
+    z = f(X)
+
+    fn = get_input_fn(X, z)
+
+    if isfile(fn)
+        pwa = read_from_json(fn)
+    else
+        pwa = approx(   
+            FunctionEvaluations(tuple.(eachcol(X)...), z),
+            Concave(),
+            Cluster(
+                ;optimizer,
+                planes = 10,
+                strict = :none,
+                metric = :l1,
+        ))
+        println(typeof(pwa))
+        write_to_json(fn, pwa)
+    end
+    return PressBlendPipe(
+        max_pressure,
+        weymouth,
+        pwa
+    )
+end
 
 function has_pressuredata(tm::PipeMode) 
     return any(typeof(data) <: PressureData for data ∈ tm.data)
