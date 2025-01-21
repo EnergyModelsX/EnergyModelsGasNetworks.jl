@@ -4,13 +4,19 @@ TEST_ATOL = 1e-6
 function optimize(m; nlp_constraints=true)
     
     if nlp_constraints
-        optimizer = Xpress.Optimizer
+        nl_solver = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
+        mip_optimizer = optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => true)
+        optimizer = optimizer_with_attributes(
+            Alpine.Optimizer,
+            "nlp_solver" => nl_solver,
+            "mip_solver" => mip_optimizer,
+        )
     else
         optimizer = HiGHS.Optimizer
     end
 
     set_optimizer(m, optimizer)
-    set_optimizer_attribute(m, MOI.Silent(), false)
+    # set_optimizer_attribute(m, MOI.Silent(), false)
     optimize!(m)
     return m
 end
