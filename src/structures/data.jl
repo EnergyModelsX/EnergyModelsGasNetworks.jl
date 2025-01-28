@@ -1,4 +1,4 @@
-abstract type PressureData <: Data end
+abstract type PressureData <: EMB.Data end
 
 struct PressurePipe <: PressureData
     max_pressure::Int
