@@ -158,6 +158,7 @@ function generate_case()
     fixed_O = FixedProfile(0.0)
     lin_pressures = calculate_linearise_pressures()
     pressure_data = PressurePipe(
+        "Taylor",
         80, # max_pressure
         5.37178761089193, # weymouth
         lin_pressures

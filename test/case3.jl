@@ -160,6 +160,7 @@ function generate_case()
     # Dispatch with PWA
     weymouth = 53.7178761089193    
     presblend_data = PressBlendPipe(
+        "Weymouth",
         80, # max_pressure
         weymouth,
         70,
@@ -170,6 +171,7 @@ function generate_case()
     # Dispatch with Taylor approximation
     lin_pressures = calculate_linearise_pressures()
     pressure_data = PressurePipe(
+        "Taylor",
         1e6,
         5.37178761089193, # This must change based on the type of component transported in the pipeline, here assumed the same value for H2 and NG
         lin_pressures

@@ -1,17 +1,19 @@
-abstract type PressureData <: EMB.Data end
+abstract type PressureData <: EnergyModelsBase.Data end
 
 struct PressurePipe <: PressureData
+    id::Any
     max_pressure::Int
     weymouth::Float64
     lin_pressures::Vector{Tuple{<:Real, <:Real}}
 end
 
 struct PressBlendPipe <: PressureData
+    id::Any
     max_pressure::Int
     weymouth::Float64
     pwa::Any
 end
-function PressBlendPipe(max_pressure, weymouth, pin, pout, optimizer)
+function PressBlendPipe(id, max_pressure, weymouth, pin, pout, optimizer)
     Mᶜᴴ⁴ = 16.042 # molecular weight
     Mᴴ² = 2.016
     f(X) = sqrt(weymouth) .* sqrt.(X[:, 1].^2 - X[:, 2].^2) ./ sqrt.(Mᶜᴴ⁴ .* (1 .- X[:, 3]) .+ Mᴴ² .* X[:, 3])
@@ -37,6 +39,7 @@ function PressBlendPipe(max_pressure, weymouth, pin, pout, optimizer)
         write_to_json(fn, pwa)
     end
     return PressBlendPipe(
+        id,
         max_pressure,
         weymouth,
         pwa

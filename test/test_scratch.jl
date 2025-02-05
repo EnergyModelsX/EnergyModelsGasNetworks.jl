@@ -4,6 +4,7 @@ using PiecewiseAffineApprox
     
     weymouth = 53.7178761089193
     presblend_data = PressBlendPipe(
+        "Weymouth",
         80, # max_pressure
         weymouth,
         70,
