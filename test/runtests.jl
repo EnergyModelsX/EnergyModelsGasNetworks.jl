@@ -16,7 +16,7 @@ const EMB = EnergyModelsBase
 const EMG = EnergyModelsGeography
 const EMP = EnergyModelsPooling
 
-include("utils.jl")
+include("test_utils.jl")
 
 @testset "test EnergyModelsPooling" begin
     

@@ -18,22 +18,20 @@ function PressBlendPipe(
         weymouth=58, 
         pin = [50, 53, 58, 58, 60, 63, 65, 67, 70], 
         pout = [30, 34, 35, 37, 43, 43, 45, 40, 50],
-        h2_fraction = [0.0, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.05, 0.1]
+        c2_fraction = [0.0, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.05, 0.1],
+        M1 = 16.042,
+		M2 = 2.016
         )
 
-    Mᶜᴴ⁴ = 16.042 # molecular weight
-    Mᴴ² = 2.016
+    z = weymouth_specgrav.(weymouth, pin, pout, c2_fraction, M1, M2)
 
-    f(weymouth, pin, pout, h2_fraction) = sqrt(weymouth) * sqrt(pin^2 - pout^2) / sqrt(Mᶜᴴ⁴ * (1 - h2_fraction) + Mᴴ² * h2_fraction)
-    z = f.(weymouth, pin, pout, h2_fraction)
-
-    fn = get_input_fn([pin, pout, h2_fraction], z)
+    fn = get_input_fn([pin, pout, c2_fraction], z)
 
     if isfile(fn)
         pwa = read_from_json(fn)
     else
         pwa = approx(   
-            FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
+            FunctionEvaluations(collect(zip(pin, pout, c2_fraction)), z),
             Concave(),
             Cluster(
                 ;optimizer,

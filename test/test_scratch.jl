@@ -9,13 +9,17 @@ using PiecewiseAffineApprox
 		HiGHS.Optimizer,
 		pin = [50, 63, 70], 
    		pout = [30, 43, 50],
-    	h2_fraction = [0.0, 0.05, 0.1]
+    	h2_fraction = [0.0, 0.05, 0.1],
+		M1 = 16.042,
+		M2 = 2.016
 	)
 
 	presblend_data = PressBlendPipe(
 		"Weymouth",
 		80, # max_pressure
 		HiGHS.Optimizer,
+		M1 = 16.042,
+		M2 = 2.016
 	)
 
 	pwa = EMP.get_pwa(presblend_data)
@@ -25,16 +29,16 @@ using PiecewiseAffineApprox
 end
 
 @testset "Testing Get and Read" begin
-	Mᶜᴴ⁴ = 16.042 # molecular weight
-	Mᴴ² = 2.016
+
 
     weymouth=58
     pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 35, 37, 43, 45, 40, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
+	M_ch4 = 16.042 # molecular weight
+	M_h2 = 2.016
 
-    f(weymouth, pin, pout, h2_fraction) = sqrt(weymouth) * sqrt(pin^2 - pout^2) / sqrt(Mᶜᴴ⁴ * (1 - h2_fraction) + Mᴴ² * h2_fraction)
-    z = f.(weymouth, pin, pout, h2_fraction)
+    z = weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
     
 	pwa1 = approx(
 		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
@@ -55,15 +59,15 @@ end
 end
 
 @testset "Testing No Saving and Get" begin
-	Mᶜᴴ⁴ = 16.042 # molecular weight
-	Mᴴ² = 2.016
+	M_ch4 = 16.042 # molecular weight
+	M_h2 = 2.016
 
 	weymouth = 58
     pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 35, 37, 43, 45, 40, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
 
-	f(weymouth, pin, pout, h2_fraction) = sqrt(weymouth) * sqrt(pin^2 - pout^2) / sqrt(Mᶜᴴ⁴ * (1 - h2_fraction) + Mᴴ² * h2_fraction)
+	f(weymouth, pin, pout, h2_fraction) = sqrt(weymouth) * sqrt(pin^2 - pout^2) / sqrt(M_ch4 * (1 - h2_fraction) + M_h2 * h2_fraction)
     z = f.(weymouth, pin, pout, h2_fraction)
 
 	pwa = approx(

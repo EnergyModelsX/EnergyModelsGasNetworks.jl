@@ -53,3 +53,11 @@ function getsource(a::Area, links)
     source_nodes   = [i for i in EMG.getnodesinarea(a, links) if EMB.is_source(i)]
     return source_nodes
 end
+
+"""
+c2_fraction: fraction of component 2 in the gas
+M²: molecular weight of component 2
+"""
+function weymouth_specgrav(weymouth, pin, pout, c2_fraction, M1, M2) 
+    return sqrt(weymouth) * sqrt(pin^2 - pout^2) / sqrt(M1 * (1 - c2_fraction) + M2 * c2_fraction)
+end
