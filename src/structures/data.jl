@@ -25,7 +25,7 @@ function PressBlendPipe(
 
     z = weymouth_specgrav.(weymouth, pin, pout, c2_fraction, M1, M2)
 
-    fn = get_input_fn([pin, pout, c2_fraction], z)
+    fn = get_input_fn([weymouth, pin, pout, c2_fraction], z)
 
     if isfile(fn)
         pwa = read_from_json(fn)
