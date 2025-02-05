@@ -1,7 +1,3 @@
-using Scratch
-using JSON3
-
-
 curve_cache = @get_scratch!("curve_cache")
 get_input_fn(x,y) = joinpath(@get_scratch!("curve_cache"),string(hash((x,y)),".json"))
 read_from_json(fn) = JSON3.read(fn, PiecewiseAffineApprox.PWAFunc)

@@ -8,6 +8,8 @@ using MetaGraphs
 using Graphs
 using PiecewiseAffineApprox
 using LinearAlgebra
+using Scratch
+using JSON3
 
 include("scratch.jl")
 include("structures/resource.jl")
