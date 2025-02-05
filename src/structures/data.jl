@@ -13,21 +13,27 @@ struct PressBlendPipe <: PressureData
     weymouth::Float64
     pwa::Any
 end
-function PressBlendPipe(id, max_pressure, weymouth, pin, pout, optimizer)
+function PressBlendPipe(
+        id, max_pressure, optimizer; 
+        weymouth=58, 
+        pin = [50, 53, 58, 58, 60, 63, 65, 67, 70], 
+        pout = [30, 34, 35, 37, 43, 43, 45, 40, 50],
+        h2_fraction = [0.0, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.05, 0.1]
+        )
+
     Mᶜᴴ⁴ = 16.042 # molecular weight
     Mᴴ² = 2.016
-    f(X) = sqrt(weymouth) .* sqrt.(X[:, 1].^2 - X[:, 2].^2) ./ sqrt.(Mᶜᴴ⁴ .* (1 .- X[:, 3]) .+ Mᴴ² .* X[:, 3])
-    
-    X = _calculate_input(pin, pout)
-    z = f(X)
 
-    fn = get_input_fn(X, z)
+    f(weymouth, pin, pout, h2_fraction) = sqrt(weymouth) * sqrt(pin^2 - pout^2) / sqrt(Mᶜᴴ⁴ * (1 - h2_fraction) + Mᴴ² * h2_fraction)
+    z = f.(weymouth, pin, pout, h2_fraction)
+
+    fn = get_input_fn([pin, pout, h2_fraction], z)
 
     if isfile(fn)
         pwa = read_from_json(fn)
     else
         pwa = approx(   
-            FunctionEvaluations(tuple.(eachcol(X)...), z),
+            FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
             Concave(),
             Cluster(
                 ;optimizer,

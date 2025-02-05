@@ -158,13 +158,9 @@ function generate_case()
     fixed_O = FixedProfile(0.0)
     
     # Dispatch with PWA
-    weymouth = 53.7178761089193    
     presblend_data = PressBlendPipe(
         "Weymouth",
         80, # max_pressure
-        weymouth,
-        70,
-        30,
         HiGHS.Optimizer
     )
 
