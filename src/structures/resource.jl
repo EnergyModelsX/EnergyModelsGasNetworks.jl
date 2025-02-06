@@ -1,43 +1,35 @@
-
-"""
-    ResourceBlend <: EMB.Resource
-
-Resources that composed of ResourceCarrier resources
-
-#Fields
-- **`id`** is the name/identifier of the resource.\n
-- **`res_blend`** is the ResourceCarriers forming the blend.\n
-"""
-struct ResourceBlend <: EMB.Resource
-    id
-    res_blend::Vector{<:EMB.ResourceCarrier}
+abstract type Component <: EMB.Resource end
+struct ComponentBlend <: EMB.Resource
+	id::Any
+	components::Vector{Any}
 end
 
-"""
-    ResourceComponent <: EMB.Resource
-
-Resources whose quality needs to be tracked in other Resources (e.g., Sulfur)
-"""
-struct ResourceComponent <: EMB.Resource
-    id
+struct AbstractComponent{T<:Real} <: Component
+	id::Any
+	co2_int::T
 end
 
-
-
-function EMB.co2_int(p::ResourceBlend)
-    resources = p.res_blend
-    co2 = []
-    for r in resources
-        push!(co2,r.co2_int)
-    end
-    return co2
+struct ComponentTrack{T<:Real} <: Component
+	id::Any
+	co2_int::T
+	upper_level::Any	# maximum percentage allowed in TransmissionModes with Blends
 end
 
-function output(n::ResourceBlend, p::ResourceCarrier)
-    e = n.output
-    return e[p]
+function EMB.co2_int(p::ComponentBlend) # TODO: Look into how to integrate it in EMB
+	co2_int.(p.components)
 end
 
-EMB.is_resource_emit(p::ResourceBlend) = false
+EMB.co2_int(p::Component) = p.co2_int
+
+components(n::ComponentBlend) = n.components
+
 is_resource_blend(p::Resource) = false
-is_resource_blend(p::ResourceBlend) = true
+is_resource_blend(p::ComponentBlend) = true
+
+is_component(p::Resource) = false
+is_component(p::Component) = true
+
+is_component_track(p::Resource) = false
+is_component_track(p::ComponentTrack) = true
+
+upper_level(p::ComponentTrack) = p.upper_level

@@ -1,58 +1,93 @@
-struct BlendArea <: EMG.Area
+"""
+PressureBlendingBehaviour as supertype for area behaviours.
+
+PressureBlendingBehaviour is used to identify if a source, pool and terminal area include pressure, blending or both types of parameters. It is used to dispatch the constraints in the model.
+"""
+abstract type PressureBlendingBehaviour end
+
+struct Pressure <: PressureBlendingBehaviour
+    pressure::Any
+end
+
+struct Blending <: PressureBlendingBehaviour 
+    id::String
+end
+
+struct PressBlend <: PressureBlendingBehaviour 
+    pressure::Any
+end
+
+"""
+Three new types of Areas are included SourceArea, PoolingArea and TerminalArea, following the structure of typical gas networks.
+"""
+
+abstract type NetworkAreas <: EMG.Area end
+
+struct SourceArea <: NetworkAreas
     id
     name
     lon::Real
     lat::Real
     node::EMB.Availability
-    limit::Dict{<:EMB.Resource, <:TimeProfile}
+    behaviour::PressureBlendingBehaviour #outlet pressure
 end
 
-struct TerminalArea <: EMG.Area
+struct PoolingArea <: NetworkAreas
     id
     name
     lon::Real
     lat::Real
     node::EMB.Availability
+    behaviour::PressureBlendingBehaviour
+    limit::Dict{<:EMB.Resource, <:TimeProfile} #TODO: Check utility
 end
 
-struct BlendAvailability <: EMB.Availability
+struct TerminalArea <: NetworkAreas #TODO: Take out TerminalArea and dispatch functions in BlendingSink instead
     id
-    input::Array{Resource}
-    output::Array{Resource}
+    name
+    lon::Real
+    lat::Real
+    node::EMB.Availability
+    behaviour::PressureBlendingBehaviour # inlet pressure
 end
+
+is_blendbehaviour(b::PressureBlendingBehaviour) = true
+is_blendbehaviour(b::Pressure) = false
+
+is_pressurebehaviour(b::PressureBlendingBehaviour) = true
+is_pressurebehaviour(b::Blending) = false
 
 is_blendarea(a::Area) = false
-is_blendarea(a::BlendArea) = true
+function is_blendarea(a::NetworkAreas) #TODO: Ensure all areas have the field behaviour
+    behaviour = a.behaviour
+    is_blend = is_blendbehaviour(behaviour)
+    if is_blend
+        return true
+    else
+        return false
+    end
+end
 
+is_pressurearea(a::Area) = false
+function is_pressurearea(a::Union{PoolingArea, SourceArea, TerminalArea}) 
+    behaviour = a.behaviour
+    is_pressure = is_pressurebehaviour(behaviour)
+    if is_pressure
+        return true
+    else
+        return false
+    end
+end
+
+function pressure(a::NetworkAreas) 
+    behaviour = a.behaviour
+    is_pressure = is_pressurebehaviour(behaviour)
+    if is_pressure
+        return behaviour.pressure
+    else
+        error("The area $(a.id) has not a pressure behaviour.")
+    end
+end
 
 is_terminalarea(a::Area) = false
 is_terminalarea(a::TerminalArea) = true
-
-"""
-    limit_resources(a::LimitedExchangeArea)
-
-Returns the limited resources of a `LimitedExchangeArea` `a`. All other resources are
-considered unlimited.
-"""
-limit_resources(a::BlendArea) = collect(keys(a.limit))
-
-"""
-    exchange_limit(a::BlendArea)
-
-Returns the limits of the exchange resources in area `a`.
-"""
-exchange_limit(a::BlendArea) = a.limit
-"""
-    exchange_limit(a::BlendArea, p::Resource)
-
-Returns the limit of exchange resource `p` in area `a` a `TimeProfile`.
-"""
-exchange_limit(a::BlendArea, p::Resource) =
-    haskey(a.limit, p) ? a.limit[p] : FixedProfile(0)
-"""
-    exchange_limit(a::BlendArea, p::Resource, t)
-
-Returns the limit of exchange resource `p` in area `a` at time period `t`.
-"""
-exchange_limit(a::BlendArea, p::Resource, t) =
-    haskey(a.limit, p) ? a.limit[p][t] : 0
