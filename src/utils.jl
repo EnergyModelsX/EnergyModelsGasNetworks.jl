@@ -54,10 +54,43 @@ function getsource(a::Area, links)
     return source_nodes
 end
 
+
 """
-c2_fraction: fraction of component 2 in the gas
-M²: molecular weight of component 2
+    weymouth_constant(FLOW, PIN, POUT)
+
+Calculate the normalised flow constant with respect to the specific gravity using specific operating points.
+Assumed to use operational points from flows from CH4.
 """
-function weymouth_specgrav(weymouth, pin, pout, c2_fraction, M1, M2) 
-    return sqrt(weymouth) * sqrt(pin^2 - pout^2) / sqrt(M1 * (1 - c2_fraction) + M2 * c2_fraction)
+function weymouth_constant(FLOW, PIN, POUT)
+
+    W = FLOW^2/(PIN^2 - POUT^2)
+
+    Mᶜʰ⁴ = 16.042 # g/mol
+    Mᵃⁱʳ = 28.96 # g/mol
+    g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
+
+    weymouth_ct = W * g
+
+    return weymouth_ct
+end
+
+"""
+    weymouth_specgrav(weymouth, pin, pout, fractionC2, M1, M2)
+
+Calculates the flow of gas using the Weymouth equation. 
+
+Typically, the flow constant in the Weymouth equation depends on the specific gravity of the gas. Here, we need instead a normalised constant with respect to the specific gravity (or independent of specific gravity).
+This allows to recalculate the flows considering the different proportions of the components.
+
+# Variables
+- **weymouth**: flow constant **independent on the specific gravity of the mixture**.
+- **pin**: Inlet pressure.
+- **pout**: Outlet pressure.
+- **fractionC2**: Fraction of the second component.
+- **M1**: Molecular mass of the first component.
+- **M2**: Molecular mass of the second component.
+"""
+function weymouth_specgrav(weymouth_ct, pin, pout, fractionC2, M1, M2) 
+    Mᵃⁱʳ = 28.96 # g/mol
+    return sqrt(weymouth_ct * (pin^2 - pout^2) * (Mᵃⁱʳ/ (M1 * (1 - fractionC2) + M2 * fractionC2)))
 end
