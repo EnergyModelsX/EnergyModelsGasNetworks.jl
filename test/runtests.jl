@@ -779,16 +779,17 @@ end
 
 @testitem "Testing Get and Read" setup=[MyTests] begin
 
-    FLOW = 67.5, #MSm3/d
-    PIN = 189.3, #barg
-    POUT = 147.5, #barg    pin = [50,  58, 58, 63, 65, 67, 70] 
+    FLOW = 67.5 #MSm3/d
+    PIN = 189.3 #barg
+    POUT = 147.5 #barg    
+    pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 35, 37, 43, 45, 40, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
 	M_ch4 = 16.042 # molecular weight
 	M_h2 = 2.016
 
-    weymouth = weymouth_constant(FLOW, PIN, POUT)
-    z = weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
+    weymouth = EMP.weymouth_constant(FLOW, PIN, POUT)
+    z = EMP.weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
     
 	pwa1 = approx(
 		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
@@ -812,16 +813,16 @@ end
 	M_ch4 = 16.042 # molecular weight
 	M_h2 = 2.016
 
-	FLOW = 67.5, #MSm3/d
-    PIN = 189.3, #barg
-    POUT = 147.5, #barg
+	FLOW = 67.5 #MSm3/d
+    PIN = 189.3 #barg
+    POUT = 147.5 #barg
     pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 36, 37, 43, 45, 41, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
     
-    weymouth = weymouth_constant(FLOW, PIN, POUT)
+    weymouth = EMP.weymouth_constant(FLOW, PIN, POUT)
 
-    z = weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
+    z = EMP.weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
 
 	pwa = approx(
 		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
