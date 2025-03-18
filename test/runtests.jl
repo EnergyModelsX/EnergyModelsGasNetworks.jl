@@ -664,7 +664,10 @@ end
         presblend_data = PressBlendPipe(
             "Weymouth",
             80, # max_pressure
-            HiGHS.Optimizer
+            HiGHS.Optimizer;
+            FLOW = 67.5, #MSm3/d
+            PIN = 189.3, #barg
+            POUT = 147.5, #barg
         )
 
         # Dispatch with Taylor approximation
@@ -747,6 +750,9 @@ end
 		"Weymouth",
 		80, # max_pressure
 		HiGHS.Optimizer,
+        FLOW = 67.5, #MSm3/d
+        PIN = 189.3, #barg
+        POUT = 147.5, #barg
 		pin = [50, 63, 70], 
    		pout = [30, 43, 50],
     	h2_fraction = [0.0, 0.05, 0.1],
@@ -758,6 +764,9 @@ end
 		"Weymouth",
 		80, # max_pressure
 		HiGHS.Optimizer,
+        FLOW = 67.5, #MSm3/d
+        PIN = 189.3, #barg
+        POUT = 147.5, #barg
 		M1 = 16.042,
 		M2 = 2.016
 	)
@@ -770,13 +779,15 @@ end
 
 @testitem "Testing Get and Read" setup=[MyTests] begin
 
-    weymouth=58
-    pin = [50,  58, 58, 63, 65, 67, 70] 
+    FLOW = 67.5, #MSm3/d
+    PIN = 189.3, #barg
+    POUT = 147.5, #barg    pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 35, 37, 43, 45, 40, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
 	M_ch4 = 16.042 # molecular weight
 	M_h2 = 2.016
 
+    weymouth = weymouth_constant(FLOW, PIN, POUT)
     z = weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
     
 	pwa1 = approx(
@@ -801,10 +812,14 @@ end
 	M_ch4 = 16.042 # molecular weight
 	M_h2 = 2.016
 
-	weymouth = 58
+	FLOW = 67.5, #MSm3/d
+    PIN = 189.3, #barg
+    POUT = 147.5, #barg
     pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 36, 37, 43, 45, 41, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
+    
+    weymouth = weymouth_constant(FLOW, PIN, POUT)
 
     z = weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
 
