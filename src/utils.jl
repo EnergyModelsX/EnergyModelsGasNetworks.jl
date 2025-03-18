@@ -54,37 +54,10 @@ function getsource(a::Area, links)
     return source_nodes
 end
 
-function pwa(optimizer, K)
-    Mᶜᴴ⁴ = 16.042 # molecular weight
-    Mᴴ² = 2.016
-
-    f(X) = sqrt(K) .* sqrt.(X[:, 1].^2 - X[:, 2].^2) ./ sqrt.(Mᶜᴴ⁴ .* (1 .- X[:, 3]) .+ Mᴴ² .* X[:, 3])
-
-    p1 = [i for i ∈ 30:5:70]
-    p2 = [j for j ∈ 30:5:70]
-    prop_H2 = [j for j ∈ 0:0.1:0.2]
-
-    X = hcat(
-        repeat(p1, inner = [length(p2) * length(prop_H2)]),
-        repeat(p2, inner = [length(prop_H2)], outer = [length(p1)]),
-        repeat(prop_H2, outer = [length(p1) * length(p2)])
-    )
-    valid_indices = X[:, 1].^2 .>= X[:, 2].^2
-    X = X[valid_indices, :]
-
-    z = f(X) 
-
-    pwa = approx(
-    FunctionEvaluations(tuple.(eachcol(X)...), z),
-    Concave(),
-    # MILP(
-    Cluster(
-        ;optimizer,
-        planes = 10,
-        strict = :none,
-        metric = :l1,
-    )
-    )
-
-    return pwa
+"""
+c2_fraction: fraction of component 2 in the gas
+M²: molecular weight of component 2
+"""
+function weymouth_specgrav(weymouth, pin, pout, c2_fraction, M1, M2) 
+    return sqrt(weymouth) * sqrt(pin^2 - pout^2) / sqrt(M1 * (1 - c2_fraction) + M2 * c2_fraction)
 end
