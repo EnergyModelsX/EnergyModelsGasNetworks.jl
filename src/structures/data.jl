@@ -3,8 +3,29 @@ abstract type PressureData <: EnergyModelsBase.Data end
 struct PressurePipe <: PressureData
     id::Any
     max_pressure::Int
-    weymouth::Float64
+    weymouth::Float64  # Weymouth constant
     lin_pressures::Vector{Tuple{<:Real, <:Real}}
+end
+function PressurePipe(
+    id, maxpressure;
+    FLOW::Any,
+    PIN::Any,
+    POUT::Any,
+)
+    # Calculate weymouth constant
+    weymouth = FLOW^2/(PIN^2 - POUT^2)
+
+    # Calculate linearised pressures
+    pressures = range(PIN, POUT, length=150)
+    lin_pressures = [(PIN, p) for p in pressures[2:end]]
+    
+    return PressurePipe(
+        id,
+        maxpressure,
+        weymouth,
+        lin_pressures
+    )
+
 end
 
 struct PressBlendPipe <: PressureData

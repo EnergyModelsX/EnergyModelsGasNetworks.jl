@@ -110,7 +110,7 @@ function constraints_taylor(m, a, p, ℒᵗʳᵃⁿˢ, tm::EMG.TransmissionMode,
     P = linearised_pressures(tm)
     for (PIn, POut) ∈ P
         @constraint(m, [t ∈ 𝒯],
-        m[:trans_in][tm, t] <= K_W * (
+        m[:trans_in][tm, t] <= sqrt(K_W) * (
                                         (PIn/(sqrt(PIn^2 - POut^2))) * m[:p_in][tm, t] -
                                         (POut/(sqrt(PIn^2 - POut^2))) * m[:p_out][tm, t]
                                         ))

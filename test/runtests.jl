@@ -431,12 +431,12 @@ end
         # Note: The inlet and outlets do not affect as the trans_out are not associated to Resources
         # and the different flows are tracked by prop_source variable
         fixed_O = FixedProfile(0.0)
-        lin_pressures = calculate_linearise_pressures()
         pressure_data = PressurePipe(
             "Weymouth",
-            1e6, # max_pressure
-            5.37178761089193, # weymouth
-            lin_pressures
+            1e6; # max_pressure
+            FLOW = 67.5, #MSm3/d
+            PIN = 189.3, #barg
+            POUT = 147.5, #barg
         )
         tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
         tm_15 = PipeSimple("tm_15", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
@@ -671,12 +671,12 @@ end
         )
 
         # Dispatch with Taylor approximation
-        lin_pressures = calculate_linearise_pressures()
         pressure_data = PressurePipe(
             "Taylor",
-            1e6,
-            5.37178761089193, # This must change based on the type of component transported in the pipeline, here assumed the same value for H2 and NG
-            lin_pressures
+            1e6;
+            FLOW = 67.5, #MSm3/d
+            PIN = 189.3, #barg
+            POUT = 147.5, #barg
         )
 
         tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
