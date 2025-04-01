@@ -179,8 +179,8 @@ end
             SourceArea("1", "Supply 1", 10, 10, areas["1"], blending),
             SourceArea("2", "Supply 2", 10, 10, areas["2"], blending),
             SourceArea("3", "Supply 3", 10, 10, areas["3"], blending),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], blending, Dict(NG => FixedProfile(0))),
-            PoolingArea("5", "Blend 5", 10, 10, areas["5"], blending, Dict(NG => FixedProfile(0))),
+            PoolingArea("4", "Blend 4", 10, 10, areas["4"], blending),
+            PoolingArea("5", "Blend 5", 10, 10, areas["5"], blending),
             TerminalArea("6", "Terminal 6", 10, 10, areas["6"], blending),
             TerminalArea("7", "Terminal 7", 10, 10, areas["7"], blending),
         ]
@@ -417,14 +417,17 @@ end
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
+        behaviour_max = EMP.Pressure("MaxPressure", EMP.PressureMaxArea(FixedProfile(70)))
+        behaviour_min = EMP.Pressure("MinPressure", EMP.PressureMinArea(FixedProfile(30)))
+
         area = [
-            SourceArea("1", "Supply 1", 10, 10, areas["1"], Pressure(70)), # outlet pressure
-            SourceArea("2", "Supply 2", 10, 10, areas["2"], Pressure(70)),
-            SourceArea("3", "Supply 3", 10, 10, areas["3"], Pressure(70)),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], Pressure(0), Dict(Gas => FixedProfile(0))),
-            PoolingArea("5", "Blend 5", 10, 10, areas["5"], Pressure(0), Dict(Gas => FixedProfile(0))),
-            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], Pressure(30)),
-            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], Pressure(30)), #inlet pressure
+            SourceArea("1", "Supply 1", 10, 10, areas["1"], behaviour_max),
+            SourceArea("2", "Supply 2", 10, 10, areas["2"], behaviour_max),
+            SourceArea("3", "Supply 3", 10, 10, areas["3"], behaviour_max),
+            PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max), # TODO: Fix as PoolingAreas do not hae any pressure behaviour for the moment
+            PoolingArea("5", "Blend 5", 10, 10, areas["5"], behaviour_max),
+            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], behaviour_min),
+            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min), 
         ]
 
         # Create transmission modes
@@ -645,14 +648,17 @@ end
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
+        behaviour_max = EMP.PressBlend("MaxPressure", EMP.PressureMaxArea(FixedProfile(100)))
+        behaviour_min = EMP.PressBlend("MinPressure", EMP.PressureMinArea(FixedProfile(0)))
+
         area = [
-            SourceArea("1", "Supply 1", 10, 10, areas["1"], PressBlend(70)), # outlet pressure
-            SourceArea("2", "Supply 2", 10, 10, areas["2"], PressBlend(70)),
-            SourceArea("3", "Supply 3", 10, 10, areas["3"], PressBlend(70)),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], PressBlend(0), Dict(Gas => FixedProfile(0))),
-            PoolingArea("5", "Blend 5", 10, 10, areas["5"], PressBlend(0), Dict(Gas => FixedProfile(0))),
-            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], PressBlend(30)),
-            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], PressBlend(30)), #inlet pressure
+            SourceArea("1", "Supply 1", 10, 10, areas["1"], behaviour_max), # outlet pressure
+            SourceArea("2", "Supply 2", 10, 10, areas["2"], behaviour_max),
+            SourceArea("3", "Supply 3", 10, 10, areas["3"], behaviour_max),
+            PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max),
+            PoolingArea("5", "Blend 5", 10, 10, areas["5"], behaviour_max),
+            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], behaviour_min),
+            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min), #inlet pressure
         ]
 
         # Create transmission modes

@@ -30,7 +30,8 @@ A behaviour type for `NetworkAreas` for dispatching with pressure constraints.
 
 """
 struct Pressure <: Behaviour
-	pressure::Any
+	id::Any
+	pressure::PressureArea
 end
 
 """
@@ -57,7 +58,8 @@ A behaviour type for ``NetworkAreas``for ensuring dispatching with blending and 
     For TerminalArea, the pressure is the minimum inlet pressure.
 """
 struct PressBlend <: Behaviour
-	pressure::Any
+	id::String
+	pressure::PressureArea
 end
 
 """
@@ -172,9 +174,9 @@ end
 Checks whether the area `a` has a pressure behaviour.
 """
 is_pressurearea(a::Area) = false
-function is_pressurearea(a::Union{PoolingArea, SourceArea, TerminalArea})
-	behaviour = behaviour(a)
-	is_pressure = is_pressurebehaviour(behaviour)
+function is_pressurearea(a::NetworkAreas)
+	b = behaviour(a)
+	is_pressure = is_pressurebehaviour(b)
 	if is_pressure
 		return true
 	else
@@ -187,16 +189,27 @@ end
 
 Returns the pressure of the network area `a` in case of having a `Pressure` behaviour.
 """
-function pressure(a::NetworkAreas)
-	behaviour = behaviour(a)
-	is_pressure = is_pressurebehaviour(behaviour)
+function pressure(a::NetworkAreas, t)
+	b = behaviour(a)
+	is_pressure = is_pressurebehaviour(b)
 	if is_pressure
-		return behaviour.pressure
+		data = b.pressure
+		return data.pressure[t]
 	else
 		error("The area $(a.id) has not a pressure behaviour.")
 	end
 end
-
+function pressure_data(a::NetworkAreas)
+	b = behaviour(a)
+	is_pressure = is_pressurebehaviour(b)
+	if is_pressure
+		data = b.pressure
+		return data
+	else
+		error("The area $(a.id) has not a pressure behaviour.")
+	end
+end
+pressure_data(a::PoolingArea) = nothing
 """
     is_terminalarea(a::Area)
 

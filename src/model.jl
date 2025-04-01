@@ -81,7 +81,8 @@ function constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫
     𝒜ᵖ = filter(x -> is_pressurearea(x), 𝒜)
 
     for a ∈ 𝒜ᵖ
-        pressure_balance(m, a, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+        data = pressure_data(a)
+        pressure_balance(m, a, data, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
         constraints_weymouth(m, a, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end

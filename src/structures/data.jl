@@ -1,5 +1,35 @@
 abstract type PressureData <: EnergyModelsBase.Data end
 
+abstract type PressureArea <: PressureData end
+#abstract type PressurePipe <: PressureData end #TODO: modify the pressure pipe data to an abstract type
+
+"""
+    PressureFixedArea(id, pressure)
+
+    Used to define the `Behaviour`` of pressure in `NetworkAreas` (e.g. `TerminalArea`, `SourceArea`). The pressure is set as a node.
+"""
+struct PressureFixedArea <: PressureArea
+    pressure::TimeProfile
+end
+
+"""
+    PressureMaxArea(id, pressure)
+
+    Used to define the `Behaviour`` of pressure in `NetworkAreas` (e.g. `TerminalArea`, `SourceArea`). The pressure is set as maximum.
+"""
+struct PressureMaxArea <: PressureArea
+    pressure::TimeProfile
+end
+
+"""
+    PressureMinArea(id, pressure)
+
+    Used to define the `Behaviour` of pressure in `NetworkAreas` (e.g. `TerminalArea`, `SourceArea`). The pressure is set as the minimum.
+"""
+struct PressureMinArea <: PressureArea
+    pressure::TimeProfile
+end
+
 struct PressurePipe <: PressureData
     id::Any
     max_pressure::Int
