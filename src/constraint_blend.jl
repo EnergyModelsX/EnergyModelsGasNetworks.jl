@@ -45,16 +45,16 @@ function constraints_tracking(m, a::Union{SourceArea, PoolingArea}, 𝒜, 𝒞, 
         # add_blend_limit(m, a, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
-function add_blend_limit(m, a::PoolingArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    p = first(filter(is_component_track, 𝒞))
+# function add_blend_limit(m, a::PoolingArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+#     p = first(filter(is_component_track, 𝒞))
 
-    @constraint(m, [t ∈ 𝒯],
-        m[:prop_track][p, a, t] <= upper_level(p)
-    )
-end
-function add_blend_limit(m, a::Area, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    return nothing
-end
+#     @constraint(m, [t ∈ 𝒯],
+#         m[:prop_track][p, a, t] <= upper_level(p)
+#     )
+# end
+# function add_blend_limit(m, a::Area, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+#     return nothing
+# end
 function constraints_quality(m, a::TerminalArea, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     blending_sink =[n for n in EMG.getnodesinarea(a, links) if EnergyModelsPooling.is_blending_sink(n)]   # get terminals, one terminal per terinalarea
 
