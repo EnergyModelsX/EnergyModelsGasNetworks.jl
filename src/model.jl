@@ -82,6 +82,7 @@ function constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫
 
     for a ∈ 𝒜ᵖ
         data = pressure_data(a)
+        
         pressure_balance(m, a, data, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
         constraints_weymouth(m, a, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end

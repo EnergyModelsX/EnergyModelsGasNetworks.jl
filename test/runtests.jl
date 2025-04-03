@@ -417,7 +417,7 @@ end
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
-        behaviour_max = EMP.Pressure("MaxPressure", EMP.PressureMaxArea(FixedProfile(70)))
+        behaviour_max = EMP.Pressure("MaxPressure", EMP.PressureMaxArea(FixedProfile(200)))
         behaviour_min = EMP.Pressure("MinPressure", EMP.PressureMinArea(FixedProfile(30)))
 
         area = [
@@ -648,7 +648,7 @@ end
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
-        behaviour_max = EMP.PressBlend("MaxPressure", EMP.PressureMaxArea(FixedProfile(100)))
+        behaviour_max = EMP.PressBlend("MaxPressure", EMP.PressureMaxArea(FixedProfile(200)))
         behaviour_min = EMP.PressBlend("MinPressure", EMP.PressureMinArea(FixedProfile(0)))
 
         area = [
