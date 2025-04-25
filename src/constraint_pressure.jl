@@ -31,7 +31,7 @@ function pressure_balance(m, a::SourceArea, data::PressureFixedArea, ℒᵗʳᵃ
     
     for l ∈ ℒᵒᵘᵗ, tm ∈ EMG.modes(l)
         @constraint(m, [t ∈ 𝒯], 
-        m[:p_in][tm, t] == pressure(a, t) * m[:has_flow][tm_in, t])
+        m[:p_in][tm, t] == pressure(a, t) * m[:has_flow][tm, t])
     end
 end
 
@@ -69,6 +69,7 @@ function pressure_balance(m, a::PoolingArea, data, ℒᵗʳᵃⁿˢ, links, 𝒯
         end
     end
 end
+
 function pressure_balance(m, a::TerminalArea, data::PressureMaxArea, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
     ℒⁱⁿ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
     TM_in = [tm for l_in ∈ ℒⁱⁿ for tm in EMG.modes(l_in)]
