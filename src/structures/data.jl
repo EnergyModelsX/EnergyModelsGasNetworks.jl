@@ -55,7 +55,22 @@ function PressurePipe(
         weymouth,
         lin_pressures
     )
-
+end
+function PressurePipe(
+    id, max_pressure, weymouth;
+    PIN::Float64,
+    POUT::Float64
+)
+     # Calculate linearised pressures
+     pressures = range(PIN, POUT, length=150)
+     lin_pressures = [(float(PIN), p) for p in pressures[2:end]]
+    
+     return PressurePipe(
+        id,
+        max_pressure,
+        weymouth,
+        lin_pressures
+    )
 end
 
 struct PressBlendPipe <: PressureData
