@@ -86,10 +86,10 @@ Declaration of deficit (`:sink_deficit`) variables
 for `BlendingSink` nodes `𝒩ˢⁱⁿᵏ` to quantify when there is too much or too little energy for
 satisfying the demand.
 """
-function EMB.variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:BlendingSink}, 𝒯, modeltype::EnergyModel) #TODO: The variables are still generated, although not used.
-    # @variable(m, sink_surplus[𝒩ˢⁱⁿᵏ, 𝒯] >= 0)
-    # @variable(m, sink_deficit[𝒩ˢⁱⁿᵏ, 𝒯] >= 0)
-end
+# function EMB.variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:BlendingSink}, 𝒯, modeltype::EnergyModel) #TODO: The variables are still generated, although not used.
+#     @variable(m, sink_surplus[𝒩ˢⁱⁿᵏ, 𝒯] >= 0)
+#     @variable(m, sink_deficit[𝒩ˢⁱⁿᵏ, 𝒯] >= 0)
+# end
 
 """
     constraints_capacity(m, n::BlendingSink, 𝒯::TimeStructure, modeltype::EnergyModel)
@@ -97,13 +97,13 @@ end
 Function for creating the constraint on the maximum capacity of a generic `BlendingSink`.
 This function serves as fallback option if no other function is specified for a `BlendingSink`.
 """
-function EMB.constraints_capacity(m, n::BlendingSink, 𝒯::TimeStructure, modeltype::EnergyModel)
-    @constraint(m, [t ∈ 𝒯],
-        m[:cap_use][n, t] >= m[:cap_inst][n, t]
-    )
+# function EMB.constraints_capacity(m, n::BlendingSink, 𝒯::TimeStructure, modeltype::EnergyModel)
+#     @constraint(m, [t ∈ 𝒯],
+#         m[:cap_use][n, t] >= m[:cap_inst][n, t]
+#     )
 
-    constraints_capacity_installed(m, n, 𝒯, modeltype)
-end
+#     constraints_capacity_installed(m, n, 𝒯, modeltype)
+# end
 
 """
     constraints_opex_var(m, n::Sink, 𝒯ᴵⁿᵛ, modeltype::EnergyModel)
@@ -111,16 +111,16 @@ end
 Function for creating the constraint on the variable OPEX of a generic `Sink`.
 This function serves as fallback option if no other function is specified for a `Sink`.
 """
-function EMB.constraints_opex_var(m, n::BlendingSink, 𝒯ᴵⁿᵛ, modeltype::EnergyModel)
-    @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
-        m[:opex_var][n, t_inv] ==
-        sum(
-            (
-            m[:cap_use][n, t] * price_penalty(n, t) 
-            ) * EMB.scale_op_sp(t_inv, t) for t ∈ t_inv
-        )
-    )
-end
+# function EMB.constraints_opex_var(m, n::BlendingSink, 𝒯ᴵⁿᵛ, modeltype::EnergyModel)
+#     @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
+#         m[:opex_var][n, t_inv] ==
+#         sum(
+#             (
+#             m[:cap_use][n, t] * price_penalty(n, t) 
+#             ) * EMB.scale_op_sp(t_inv, t) for t ∈ t_inv
+#         )
+#     )
+# end
 
 """
     check_node(n::Sink, 𝒯, modeltype::EnergyModel)
@@ -147,10 +147,10 @@ function EMB.check_node(n::BlendingSink, 𝒯, modeltype::EnergyModel, check_tim
         sum(inputs(n, p) ≥ 0 for p ∈ inputs(n)) == length(inputs(n)),
         "The values for the Dictionary `input` must be non-negative."
     )
-    @assert_or_log(
-        :price ∈ keys(n.penalty),
-        "The entry :price is required in the field `penalty`"
-    )
+    # @assert_or_log(
+    #     :price ∈ keys(n.penalty),
+    #     "The entry :price is required in the field `penalty`"
+    # )
 
     # if :surplus ∈ keys(n.penalty) && :deficit ∈ keys(n.penalty)
     #     # The if-condition was checked above.
