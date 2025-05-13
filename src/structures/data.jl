@@ -57,7 +57,7 @@ function PressurePipe(
     )
 end
 function PressurePipe(
-    id, max_pressure, weymouth;
+    id, max_pressure, weymouth::Float64;
     PIN::Float64,
     POUT::Float64
 )
@@ -86,12 +86,48 @@ function PressBlendPipe(
         POUT::Any, # Outlet pressure corresponding to FLOW
         pin = [50, 53, 58, 58, 60, 63, 65, 67, 70], 
         pout = [30, 34, 35, 37, 43, 43, 45, 40, 50],
-        c2_fraction = [0.0, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.05, 0.1],
+        c2_fraction = [0.0, 0.038, 0.1, 0.0, 0.038, 0.1, 0.0, 0.038, 0.1],
         M1 = 16.042,
 		M2 = 2.016
         )
     
     weymouth_ct = weymouth_constant(FLOW, PIN, POUT)
+
+    flow = weymouth_specgrav.(weymouth_ct, pin, pout, c2_fraction, M1, M2)
+
+    fn = get_input_fn([weymouth_ct, pin, pout, c2_fraction], flow)
+
+    if isfile(fn)
+        pwa = read_from_json(fn)
+    else
+        pwa = approx(   
+            FunctionEvaluations(collect(zip(pin, pout, c2_fraction)), flow),
+            Concave(),
+            Cluster(
+                ;optimizer,
+                planes = 10,
+                strict = :none,
+                metric = :l1,
+        ))
+        println(typeof(pwa))
+        write_to_json(fn, pwa)
+    end
+    return PressBlendPipe(
+        id,
+        max_pressure,
+        weymouth_ct,
+        pwa
+    )
+end
+function PressBlendPipe(
+    id, max_pressure, optimizer, weymouth::Float64; 
+    pin = [50, 53, 58, 58, 60, 63, 65, 67, 70], 
+    pout = [30, 34, 35, 37, 43, 43, 45, 40, 50],
+    c2_fraction = [0.0, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.05, 0.1],
+    M1 = 16.042,
+    M2 = 2.016
+    )
+    weymouth_ct = weymouth_constant(weymouth) # normalise the weymouth constant
 
     flow = weymouth_specgrav.(weymouth_ct, pin, pout, c2_fraction, M1, M2)
 

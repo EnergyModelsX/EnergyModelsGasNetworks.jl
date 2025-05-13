@@ -73,6 +73,18 @@ function weymouth_constant(FLOW, PIN, POUT)
 
     return weymouth_ct
 end
+function weymouth_constant(W)
+
+    #W = FLOW^2/(PIN^2 - POUT^2)
+
+    Mᶜʰ⁴ = 16.042 # g/mol
+    Mᵃⁱʳ = 28.96 # g/mol
+    g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
+
+    weymouth_ct = W * g
+
+    return weymouth_ct
+end
 
 """
     weymouth_specgrav(weymouth, pin, pout, fractionC2, M1, M2)
