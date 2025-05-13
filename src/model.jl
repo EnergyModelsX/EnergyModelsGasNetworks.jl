@@ -68,8 +68,8 @@ function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     if !isempty(𝒜ᵖ)
         TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l)]
 
-        @variable(m, p_in[TM, 𝒯] >= 0)
-        @variable(m, p_out[TM, 𝒯] >= 0)
+        @variable(m, p_in[vcat(TM, 𝒜), 𝒯] >= 0)
+        @variable(m, p_out[vcat(TM, 𝒜), 𝒯] >= 0)
         @variable(m, has_flow[TM, 𝒯], Bin) # auxiliary binary that ensures that all transmissionmodes with flow take value 1, it can take value 1 without flow as well. Careful with this detail, it cannot be used to check actual flows.
         @variable(m, lower_pressure_into_node[TM, 𝒯], Bin) # binary for tracking lowest pressure going into a node
         
