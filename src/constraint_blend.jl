@@ -14,6 +14,9 @@ function create_blending_node(m, a::TerminalArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, 
         sum(m[:prop_source][a, s, t] for s ∈ 𝒮ᵗᵐ) == 1.0)
 
     constraints_quality(m, a, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_tracking(m, a, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    constraints_energy_content(m, a, 𝒞, ℒᵗʳᵃⁿˢ, 𝒯)
+    
 end
 function create_blending_node(m, a::PoolingArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
@@ -41,7 +44,7 @@ function create_blending_node(m, a::Area, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, �
     return nothing
 end
 
-function constraints_tracking(m, a::Union{SourceArea, PoolingArea}, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function constraints_tracking(m, a::Area, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒞ꜝ = filter(r -> is_component_track(r), 𝒞)
     c = isempty(𝒞ꜝ) ? nothing : first(𝒞ꜝ)
     if isnothing(c)
@@ -51,6 +54,7 @@ function constraints_tracking(m, a::Union{SourceArea, PoolingArea}, 𝒜, 𝒞, 
         𝒮ˢ  = getsource(a, links)
         # filter sources of ResourceComponentTrack
         𝒮 = filter(s -> c ∈ components(s), union(𝒮ᵗᵐ, 𝒮ˢ))
+        println("For area $(a.name) and component $(c.id), sources are $(𝒮)")
 
         @constraint(m, [t ∈ 𝒯],
             m[:prop_track][c, a, t] == sum(get_quality(s, c) * m[:prop_source][a, s, t] for s ∈ 𝒮))
@@ -71,8 +75,8 @@ end
 function constraints_quality(m, a::TerminalArea, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     blending_sink =[n for n in EMG.getnodesinarea(a, links) if EnergyModelsPooling.is_blending_sink(n)]   # get terminals, one terminal per terinalarea
 
+    d = first(blending_sink)
     if !isempty(blending_sink)
-        d = first(blending_sink)
         av = availability_node(a)
         
         ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
