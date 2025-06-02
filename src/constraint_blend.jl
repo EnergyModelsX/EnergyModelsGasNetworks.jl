@@ -1,5 +1,18 @@
 
 function create_blending_node(m, a::TerminalArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+
+    𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
+    𝒜ᵃ = setdiff(getadjareas(a, ℒᵗʳᵃⁿˢ), [a])
+    ℒ = Dict(ad => EMG.modes(l) for ad ∈ 𝒜ᵃ for l ∈ [EMG.corr_from_to(ad.name, a.name, ℒᵗʳᵃⁿˢ)])
+    ℒᶠ = [first(modes(l)) for l ∈ EMG.corr_from(a, ℒᵗʳᵃⁿˢ)] # ASSUMING ONLY ONE MODE PER TRANSMISSION.
+
+    @constraint(m, [t ∈ 𝒯, s ∈ 𝒮ᵗᵐ],
+        sum(m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for tm ∈ ℒ[ad])
+        - m[:prop_source][a, s, t] * sum(m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for tm ∈ ℒ[ad]) == 0)
+
+    @constraint(m, [t ∈ 𝒯],
+        sum(m[:prop_source][a, s, t] for s ∈ 𝒮ᵗᵐ) == 1.0)
+
     constraints_quality(m, a, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
 end
 function create_blending_node(m, a::PoolingArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -78,6 +91,21 @@ function constraints_quality(m, a::TerminalArea, 𝒜, ℒᵗʳᵃⁿˢ, links, 
     end
 end
 
+function constraints_energy_content(m, a::TerminalArea, 𝒞, ℒᵗʳᵃⁿˢ, 𝒯)
+
+    ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
+    c = first(filter(is_component_track, 𝒞))
+    d = first(setdiff(𝒞, [c]))
+    
+    if !isnothing(energy_delivery(a))
+        for (idx, t) in enumerate(𝒯)
+            @constraint(m,
+                m[:energy_content][a, t] >= energy_delivery(a, idx))
+            @constraint(m,
+                m[:energy_content][a, t] == sum(m[:trans_out][tm_mode, t] * (m[:prop_track][c, tm.from, t] * energy_content(c) + (1-m[:prop_track][c, tm.from, t]) * energy_content(d)) for tm ∈ ℒᵗᵒ for tm_mode ∈ modes(tm)))
+        end
+    end
+end
 
 """
     variables_node(m, 𝒩ˢⁱⁿᵏ::Vector{<:BlendingSink}, 𝒯, modeltype::EnergyModel)

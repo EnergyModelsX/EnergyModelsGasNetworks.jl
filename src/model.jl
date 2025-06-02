@@ -32,15 +32,16 @@ function variables_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒜ᵇ = filter(is_blendarea, 𝒜)
     variables_proportion(m, 𝒜ᵇ, ℒᵗʳᵃⁿˢ, links, 𝒯)
     variables_tracking_prop(m, 𝒜ᵇ, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    variables_energy_content(m, 𝒜ᵇ, 𝒯)
 end
 function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     𝒮 = [n for area in 𝒜 for n in EMG.getnodesinarea(area, links) if EMB.is_source(n)]
-    𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
+    #𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
 
-    @variable(m, 0 <= prop_source[𝒜ⁿᵗ, 𝒮, 𝒯] <= 1.0)
+    @variable(m, 0 <= prop_source[𝒜, 𝒮, 𝒯] <= 1.0)
 
     # Define y = 0 if s not associated to the area and y = 1 if s inside area
-    for a in 𝒜ⁿᵗ
+    for a in 𝒜
         𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ) 
         𝒮ˢ  = getsource(a, links)
         
@@ -55,11 +56,14 @@ function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
     end
 end
 function variables_tracking_prop(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒜ⁿᵗ = filter(!is_terminalarea, 𝒜)
+    #𝒜ⁿᵗ = filter(!is_terminalarea, 𝒜)
     𝒞ꜝ = filter(is_component_track,  𝒞)
     if !isempty(𝒞ꜝ)
-        @variable(m, 0 <= prop_track[𝒞ꜝ, 𝒜ⁿᵗ, 𝒯] <= 1.0)
+        @variable(m, 0 <= prop_track[𝒞ꜝ, 𝒜, 𝒯] <= 1.0)
     end
+end
+function variables_energy_content(m, 𝒜, 𝒯)
+    @variable(m, energy_content[𝒜, 𝒯] >= 0)
 end
 
 function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
