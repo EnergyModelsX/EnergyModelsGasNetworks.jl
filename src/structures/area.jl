@@ -31,7 +31,7 @@ A behaviour type for `NetworkAreas` for dispatching with pressure constraints.
 """
 struct Pressure <: Behaviour
 	id::Any
-	pressure::PressureArea
+	pressure::PressureDataArea
 end
 
 """
@@ -59,7 +59,7 @@ A behaviour type for ``NetworkAreas``for ensuring dispatching with blending and 
 """
 struct PressBlend <: Behaviour
 	id::String
-	pressure::PressureArea
+	pressure::PressureDataArea
 end
 
 """
@@ -127,7 +127,10 @@ struct TerminalArea <: NetworkAreas
 	lat::Real
 	node::EMB.Availability
 	behaviour::Behaviour 
+	energy:: Any 
 end
+TerminalArea(id, name, long, lat, node, behaviour) = TerminalArea(id, name, long, lat, node, behaviour, nothing)
+
 
 """
     behaviour(a::NetworkAreas)
@@ -217,3 +220,6 @@ Checks whether the area `a` is a terminal area.
 """
 is_terminalarea(a::Area) = false
 is_terminalarea(a::TerminalArea) = true
+
+energy_delivery(a::TerminalArea) = a.energy
+energy_delivery(a::TerminalArea, idx) = a.energy[idx]
