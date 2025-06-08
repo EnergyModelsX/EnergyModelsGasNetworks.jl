@@ -84,24 +84,35 @@ function PressBlendPipe(
         FLOW::Any, # CH4 flow in accordance with Weymouth equation for a given pressure drop
         PIN::Any, # Inlet pressure corresponding to FLOW
         POUT::Any, # Outlet pressure corresponding to FLOW
-        pin = [50, 53, 58, 58, 60, 63, 65, 67, 70], 
-        pout = [30, 34, 35, 37, 43, 43, 45, 40, 50],
-        c2_fraction = [0.0, 0.038, 0.1, 0.0, 0.038, 0.1, 0.0, 0.038, 0.1],
+        pin = 70, 
+        pout = 50,
+        c2_fraction = 0.2,
         M1 = 16.042,
 		M2 = 2.016
         )
     
+    p1 = [i for i ∈ pout:5:pin]
+    p2 = [i for i ∈ pout:5:pin]
+    prop = [j for j ∈ 0:0.01:c2_fraction]
+    X = hcat(
+        repeat(p1, inner = [length(p2) * length(prop)]),
+        repeat(p2, inner = [length(prop)], outer = [length(p1)]),
+        repeat(prop, outer = [length(p1) * length(p2)])
+    )
+    valid_indices = X[:, 1].^2 .>= X[:, 2].^2
+    X = X[valid_indices, :]
+
     weymouth_ct = weymouth_constant(FLOW, PIN, POUT)
 
-    flow = weymouth_specgrav.(weymouth_ct, pin, pout, c2_fraction, M1, M2)
+    flow = weymouth_specgrav.(weymouth_ct, X[:,1], X[:,2], X[:,3], M1, M2)
 
-    fn = get_input_fn([weymouth_ct, pin, pout, c2_fraction], flow)
+    fn = get_input_fn([weymouth_ct, X[:,1], X[:,2], X[:,3]], flow)
 
     if isfile(fn)
         pwa = read_from_json(fn)
     else
         pwa = approx(   
-            FunctionEvaluations(collect(zip(pin, pout, c2_fraction)), flow),
+            FunctionEvaluations(collect(zip(X[:,1], X[:,2], X[:,3])), flow),
             Concave(),
             Cluster(
                 ;optimizer,
@@ -121,23 +132,35 @@ function PressBlendPipe(
 end
 function PressBlendPipe(
     id, max_pressure, optimizer, weymouth::Float64; 
-    pin = [50, 53, 58, 58, 60, 63, 65, 67, 70], 
-    pout = [30, 34, 35, 37, 43, 43, 45, 40, 50],
-    c2_fraction = [0.0, 0.05, 0.1, 0.0, 0.05, 0.1, 0.0, 0.05, 0.1],
+    pout = 100, 
+    pin = 180,
+    c2_fraction = 0.2,
     M1 = 16.042,
     M2 = 2.016
     )
+
+    p1 = [i for i ∈ pout:5:pin]
+    p2 = [i for i ∈ pout:5:pin]
+    prop = [j for j ∈ 0:0.05:c2_fraction]
+    X = hcat(
+        repeat(p1, inner = [length(p2) * length(prop)]),
+        repeat(p2, inner = [length(prop)], outer = [length(p1)]),
+        repeat(prop, outer = [length(p1) * length(p2)])
+    )
+    valid_indices = X[:, 1].^2 .>= X[:, 2].^2
+    X = X[valid_indices, :]
+
     weymouth_ct = weymouth_constant(weymouth) # normalise the weymouth constant
 
-    flow = weymouth_specgrav.(weymouth_ct, pin, pout, c2_fraction, M1, M2)
+    flow = weymouth_specgrav.(weymouth_ct, X[:,1], X[:,2], X[:,3], M1, M2)
 
-    fn = get_input_fn([weymouth_ct, pin, pout, c2_fraction], flow)
+    fn = get_input_fn([weymouth_ct,  X[:,1], X[:,2], X[:,3]], flow)
 
     if isfile(fn)
         pwa = read_from_json(fn)
     else
         pwa = approx(   
-            FunctionEvaluations(collect(zip(pin, pout, c2_fraction)), flow),
+            FunctionEvaluations(collect(zip(X[:,1], X[:,2], X[:,3])), flow),
             Concave(),
             Cluster(
                 ;optimizer,
