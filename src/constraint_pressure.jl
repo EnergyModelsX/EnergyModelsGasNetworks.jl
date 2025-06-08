@@ -127,7 +127,7 @@ function pressure_balance(m, a::TerminalArea, data::PressureFixedArea, ℒᵗʳ�
 
     for tm_in ∈ TM_in
         @constraint(m, [t ∈ 𝒯],
-            m[:p_out][tm_in, t] == pressure(a, t)  * m[:has_flow][tm_in, t])
+            m[:p_out][tm_in, t] == pressure(a, t))
         @constraint(m, [t ∈ 𝒯],
             m[:p_out][tm_in, t] == m[:p_in][a, t])
     end
