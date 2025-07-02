@@ -75,8 +75,6 @@ function weymouth_constant(FLOW, PIN, POUT)
 end
 function weymouth_constant(W)
 
-    #W = FLOW^2/(PIN^2 - POUT^2)
-
     Mᶜʰ⁴ = 16.042 # g/mol
     Mᵃⁱʳ = 28.96 # g/mol
     g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
@@ -87,22 +85,52 @@ function weymouth_constant(W)
 end
 
 """
-    weymouth_specgrav(weymouth, pin, pout, fractionC2, M1, M2)
+    calculate_flow(constant, x1, x2, x3)
 
-Calculates the flow of gas using the Weymouth equation. 
+Calculates the flow of gas with the Weymouth equation using the normalised weymouth constant. 
 
-Typically, the flow constant in the Weymouth equation depends on the specific gravity of the gas. Here, we need instead a normalised constant with respect to the specific gravity (or independent of specific gravity).
-This allows to recalculate the flows considering the different proportions of the components.
+Typically, the constant in the Weymouth equation depends on the specific gravity of the gas. Here, we need instead a normalised it 
+with respect to the specific gravity. This allows to calculate the flows considering the different proportions of the components.
 
 # Variables
-- **weymouth**: flow constant **independent on the specific gravity of the mixture**.
-- **pin**: Inlet pressure.
-- **pout**: Outlet pressure.
-- **fractionC2**: Fraction of the second component.
-- **M1**: Molecular mass of the first component.
-- **M2**: Molecular mass of the second component.
+- constant::Float64 -> Normalised Weymouth constant
+- x1::Float64 -> Inlet pressures
+- x2::Float64 -> Outlet pressures
+- x3::Float64 -> Proportion of hydrogen
 """
-function weymouth_specgrav(weymouth_ct, pin, pout, fractionC2, M1, M2) 
-    Mᵃⁱʳ = 28.96 # g/mol
-    return sqrt(weymouth_ct * (pin^2 - pout^2) * (Mᵃⁱʳ/ (M1 * (1 - fractionC2) + M2 * fractionC2)))
+function calculate_flow(constant, x1, x2, x3)
+	M1 = 16.042
+	M2 = 2.016
+	M3 = 28.96
+
+	return sqrt(constant * (x1^2 - x2^2) * (M3/ (M1 * (1 - x3) + M2 * x3)))
+end
+
+"""
+    calculate_X(x1, x2, x3)
+
+Defines the points (inlet and outlet pressures and proportion) for the surface for the PWA.
+"""
+function calculate_X(x1, x2, x3)
+	X = hcat(
+        repeat(x1, inner = [length(x2) * length(x3)]),
+        repeat(x2, inner = [length(x3)], outer = [length(x1)]),
+        repeat(x3, outer = [length(x1) * length(x2)])
+    )
+    valid_indices = X[:, 1].^2 .> X[:, 2].^2
+    X = X[valid_indices, :]
+	return X
+end
+
+"""
+    test_approx(pwa, constant, pin, pout, prop)
+
+Compares the approximation results with the value applying the Weymouth equation
+"""
+function test_approx(pwa, constant, pin, pout, prop)
+    for p_out in pout:pin
+        println(PiecewiseAffineApprox.evaluate(pwa, (pin, p_out, prop)), "\t", 
+                calculate_flow(constant, pin, p_out, prop), "\t", 
+                PiecewiseAffineApprox.evaluate(pwa, (pin, p_out, prop))>=calculate_flow(constant, pin, p_out, prop))
+    end
 end
