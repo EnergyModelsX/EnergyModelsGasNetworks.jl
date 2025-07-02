@@ -795,7 +795,7 @@ end
 	M_h2 = 2.016
 
     weymouth = EMP.weymouth_constant(FLOW, PIN, POUT)
-    z = EMP.weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
+    z = EMP.calculate_flow.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
     
 	pwa1 = approx(
 		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
@@ -828,7 +828,7 @@ end
     
     weymouth = EMP.weymouth_constant(FLOW, PIN, POUT)
 
-    z = EMP.weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
+    z = EMP.calculate_flow.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
 
 	pwa = approx(
 		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
