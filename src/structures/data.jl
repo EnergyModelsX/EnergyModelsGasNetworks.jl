@@ -86,41 +86,31 @@ function PressBlendPipe(
         POUT::Any, # Outlet pressure corresponding to FLOW
         pin = 70, 
         pout = 50,
-        c2_fraction = 0.2,
-        M1 = 16.042,
-		M2 = 2.016
-        )
+        prop = 0.2)
     
-    p1 = [i for i ∈ pout:5:pin]
-    p2 = [i for i ∈ pout:5:pin]
-    prop = [j for j ∈ 0:0.01:c2_fraction]
-    X = hcat(
-        repeat(p1, inner = [length(p2) * length(prop)]),
-        repeat(p2, inner = [length(prop)], outer = [length(p1)]),
-        repeat(prop, outer = [length(p1) * length(p2)])
-    )
-    valid_indices = X[:, 1].^2 .>= X[:, 2].^2
-    X = X[valid_indices, :]
+    x1 = [i for i ∈ pout:1:pin]
+    x2 = [i for i ∈ pout:1:pin]
+    x3 = [j for j ∈ 0:0.01:prop]
+    
+    X = calculate_X(x1, x2, x3)
+    weymouth_ct = round(weymouth_constant(FLOW, PIN, POUT), digits=4) # normalised the weymouth constant
+    z = calculate_flow.(weymouth_ct, X[:,1], X[:,2], X[:,3])
 
-    weymouth_ct = weymouth_constant(FLOW, PIN, POUT)
-
-    flow = weymouth_specgrav.(weymouth_ct, X[:,1], X[:,2], X[:,3], M1, M2)
-
-    fn = get_input_fn([weymouth_ct, X[:,1], X[:,2], X[:,3]], flow)
+    fn = get_input_fn([weymouth_ct, X[:,1], X[:,2], X[:,3]], z)
 
     if isfile(fn)
         pwa = read_from_json(fn)
     else
         pwa = approx(   
-            FunctionEvaluations(collect(zip(X[:,1], X[:,2], X[:,3])), flow),
+            FunctionEvaluations(collect(zip(X[:,1], X[:,2], X[:,3])), z),
             Concave(),
             Cluster(
                 ;optimizer,
                 planes = 10,
-                strict = :none,
+                strict = :outer,
                 metric = :l1,
         ))
-        println(typeof(pwa))
+        test_approx(pwa, constant, pin, pout, prop)
         write_to_json(fn, pwa)
     end
     return PressBlendPipe(
@@ -131,46 +121,32 @@ function PressBlendPipe(
     )
 end
 function PressBlendPipe(
-    id, max_pressure, optimizer, weymouth::Float64; 
-    pout = 100, 
-    pin = 180,
-    c2_fraction = 0.2,
-    M1 = 16.042,
-    M2 = 2.016
-    )
+    id, max_pressure, optimizer, weymouth::Float64; pin=175, pout=145, prop=0.2)
 
-    p1 = [i for i ∈ pout:5:pin]
-    p2 = [i for i ∈ pout:5:pin]
-    prop = [j for j ∈ 0:0.05:c2_fraction]
-    X = hcat(
-        repeat(p1, inner = [length(p2) * length(prop)]),
-        repeat(p2, inner = [length(prop)], outer = [length(p1)]),
-        repeat(prop, outer = [length(p1) * length(p2)])
-    )
-    valid_indices = X[:, 1].^2 .>= X[:, 2].^2
-    X = X[valid_indices, :]
+    x1 = [i for i ∈ pout:1:pin]
+    x2 = [i for i ∈ pout:1:pin]
+    x3 = [i for i ∈ 0.00:0.01:prop]
 
-    weymouth_ct = weymouth_constant(weymouth) # normalise the weymouth constant
+    # Define points of the curve
+    X = calculate_X(x1, x2, x3)    
+    weymouth_ct = round(weymouth_constant(weymouth), digits=4) # normalise the weymouth constant
+    z = calculate_flow.(weymouth_ct, X[:,1], X[:,2], X[:,3])
 
-    flow = weymouth_specgrav.(weymouth_ct, X[:,1], X[:,2], X[:,3], M1, M2)
-
-    fn = get_input_fn([weymouth_ct,  X[:,1], X[:,2], X[:,3]], flow)
+    # Generate/read the pwa
+    fn = get_input_fn([weymouth_ct,  X[:,1], X[:,2], X[:,3]], z)
 
     if isfile(fn)
         pwa = read_from_json(fn)
     else
-        pwa = approx(   
-            FunctionEvaluations(collect(zip(X[:,1], X[:,2], X[:,3])), flow),
+        pwa = approx(
+            FunctionEvaluations(collect(zip(X[:, 1], X[:, 2], X[:, 3])), z),
             Concave(),
-            Cluster(
-                ;optimizer,
-                planes = 10,
-                strict = :none,
-                metric = :l1,
-        ))
-        println(typeof(pwa))
+            Cluster(; optimizer, planes = 10, strict = :outer, metric = :l1))
+        test_approx(pwa, constant, pin, pout, prop)
+        
         write_to_json(fn, pwa)
     end
+
     return PressBlendPipe(
         id,
         max_pressure,
