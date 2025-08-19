@@ -110,11 +110,3 @@ Checks, whether node `n` is a `BlendingSink` node
 """
 is_blending_sink(::EMB.Node) = false
 is_blending_sink(::BlendingSink) = true
-
-surplus_penalty(n::BlendingSink) = nothing
-surplus_penalty(n::BlendingSink, t) = nothing
-deficit_penalty(n::BlendingSink) = nothing
-deficit_penalty(n::BlendingSink, t) = nothing
-
-price_penalty(n::BlendingSink) = n.penalty[:price]
-price_penalty(n::BlendingSink, t) = n.penalty[:price][t]
