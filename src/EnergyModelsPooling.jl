@@ -15,13 +15,13 @@ include("utils.jl")
 include("scratch.jl")
 include("structures/resource.jl")
 include("structures/node.jl")
-include("structures/area.jl")
 include("structures/data.jl")
+include("structures/area.jl")
 include("constraint_blend.jl")
 include("constraint_pressure.jl")
 include("model.jl")
 
-export weymouth_specgrav
+export calculate_flow
 export ComponentBlend, AbstractComponent, ComponentTrack
 export SourceComponent, BlendingSink
 export SourceArea, TerminalArea, PoolingArea, Pressure, Blending, PressBlend

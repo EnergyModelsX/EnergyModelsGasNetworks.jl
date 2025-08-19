@@ -7,19 +7,3 @@ function delete_cache()
 		rm(joinpath(curve_cache, f))
 	end
 end
-
-function _calculate_input(pin, pout)
-    p1 = [i for i ∈ pout:5:pin]
-    p2 = [j for j ∈ pout:5:pin]
-    prop_H2 = [j for j ∈ 0:0.1:0.2]
-
-    X = hcat(
-        repeat(p1, inner = [length(p2) * length(prop_H2)]),
-        repeat(p2, inner = [length(prop_H2)], outer = [length(p1)]),
-        repeat(prop_H2, outer = [length(p1) * length(p2)])
-    )
-    valid_indices = X[:, 1].^2 .>= X[:, 2].^2
-    X = X[valid_indices, :]
-
-    return X
-end

@@ -179,8 +179,8 @@ end
             SourceArea("1", "Supply 1", 10, 10, areas["1"], blending),
             SourceArea("2", "Supply 2", 10, 10, areas["2"], blending),
             SourceArea("3", "Supply 3", 10, 10, areas["3"], blending),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], blending, Dict(NG => FixedProfile(0))),
-            PoolingArea("5", "Blend 5", 10, 10, areas["5"], blending, Dict(NG => FixedProfile(0))),
+            PoolingArea("4", "Blend 4", 10, 10, areas["4"], blending),
+            PoolingArea("5", "Blend 5", 10, 10, areas["5"], blending),
             TerminalArea("6", "Terminal 6", 10, 10, areas["6"], blending),
             TerminalArea("7", "Terminal 7", 10, 10, areas["7"], blending),
         ]
@@ -417,26 +417,29 @@ end
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
+        behaviour_max = EMP.Pressure("MaxPressure", EMP.PressureMaxArea(FixedProfile(200)))
+        behaviour_min = EMP.Pressure("MinPressure", EMP.PressureMinArea(FixedProfile(30)))
+
         area = [
-            SourceArea("1", "Supply 1", 10, 10, areas["1"], Pressure(70)), # outlet pressure
-            SourceArea("2", "Supply 2", 10, 10, areas["2"], Pressure(70)),
-            SourceArea("3", "Supply 3", 10, 10, areas["3"], Pressure(70)),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], Pressure(0), Dict(Gas => FixedProfile(0))),
-            PoolingArea("5", "Blend 5", 10, 10, areas["5"], Pressure(0), Dict(Gas => FixedProfile(0))),
-            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], Pressure(30)),
-            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], Pressure(30)), #inlet pressure
+            SourceArea("1", "Supply 1", 10, 10, areas["1"], behaviour_max),
+            SourceArea("2", "Supply 2", 10, 10, areas["2"], behaviour_max),
+            SourceArea("3", "Supply 3", 10, 10, areas["3"], behaviour_max),
+            PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max), # TODO: Fix as PoolingAreas do not hae any pressure behaviour for the moment
+            PoolingArea("5", "Blend 5", 10, 10, areas["5"], behaviour_max),
+            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], behaviour_min),
+            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min), 
         ]
 
         # Create transmission modes
         # Note: The inlet and outlets do not affect as the trans_out are not associated to Resources
         # and the different flows are tracked by prop_source variable
         fixed_O = FixedProfile(0.0)
-        lin_pressures = calculate_linearise_pressures()
         pressure_data = PressurePipe(
             "Weymouth",
-            1e6, # max_pressure
-            5.37178761089193, # weymouth
-            lin_pressures
+            1e6; # max_pressure
+            FLOW = 67.5, #MSm3/d
+            PIN = 189.3, #barg
+            POUT = 147.5, #barg
         )
         tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
         tm_15 = PipeSimple("tm_15", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
@@ -645,14 +648,17 @@ end
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
+        behaviour_max = EMP.PressBlend("MaxPressure", EMP.PressureMaxArea(FixedProfile(200)))
+        behaviour_min = EMP.PressBlend("MinPressure", EMP.PressureMinArea(FixedProfile(0)))
+
         area = [
-            SourceArea("1", "Supply 1", 10, 10, areas["1"], PressBlend(70)), # outlet pressure
-            SourceArea("2", "Supply 2", 10, 10, areas["2"], PressBlend(70)),
-            SourceArea("3", "Supply 3", 10, 10, areas["3"], PressBlend(70)),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], PressBlend(0), Dict(Gas => FixedProfile(0))),
-            PoolingArea("5", "Blend 5", 10, 10, areas["5"], PressBlend(0), Dict(Gas => FixedProfile(0))),
-            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], PressBlend(30)),
-            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], PressBlend(30)), #inlet pressure
+            SourceArea("1", "Supply 1", 10, 10, areas["1"], behaviour_max), # outlet pressure
+            SourceArea("2", "Supply 2", 10, 10, areas["2"], behaviour_max),
+            SourceArea("3", "Supply 3", 10, 10, areas["3"], behaviour_max),
+            PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max),
+            PoolingArea("5", "Blend 5", 10, 10, areas["5"], behaviour_max),
+            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], behaviour_min),
+            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min), #inlet pressure
         ]
 
         # Create transmission modes
@@ -664,16 +670,19 @@ end
         presblend_data = PressBlendPipe(
             "Weymouth",
             80, # max_pressure
-            HiGHS.Optimizer
+            HiGHS.Optimizer;
+            FLOW = 67.5, #MSm3/d
+            PIN = 189.3, #barg
+            POUT = 147.5, #barg
         )
 
         # Dispatch with Taylor approximation
-        lin_pressures = calculate_linearise_pressures()
         pressure_data = PressurePipe(
             "Taylor",
-            1e6,
-            5.37178761089193, # This must change based on the type of component transported in the pipeline, here assumed the same value for H2 and NG
-            lin_pressures
+            1e6;
+            FLOW = 67.5, #MSm3/d
+            PIN = 189.3, #barg
+            POUT = 147.5, #barg
         )
 
         tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
@@ -747,6 +756,9 @@ end
 		"Weymouth",
 		80, # max_pressure
 		HiGHS.Optimizer,
+        FLOW = 67.5, #MSm3/d
+        PIN = 189.3, #barg
+        POUT = 147.5, #barg
 		pin = [50, 63, 70], 
    		pout = [30, 43, 50],
     	h2_fraction = [0.0, 0.05, 0.1],
@@ -758,6 +770,9 @@ end
 		"Weymouth",
 		80, # max_pressure
 		HiGHS.Optimizer,
+        FLOW = 67.5, #MSm3/d
+        PIN = 189.3, #barg
+        POUT = 147.5, #barg
 		M1 = 16.042,
 		M2 = 2.016
 	)
@@ -770,14 +785,17 @@ end
 
 @testitem "Testing Get and Read" setup=[MyTests] begin
 
-    weymouth=58
+    FLOW = 67.5 #MSm3/d
+    PIN = 189.3 #barg
+    POUT = 147.5 #barg    
     pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 35, 37, 43, 45, 40, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
 	M_ch4 = 16.042 # molecular weight
 	M_h2 = 2.016
 
-    z = weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
+    weymouth = EMP.weymouth_constant(FLOW, PIN, POUT)
+    z = EMP.calculate_flow.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
     
 	pwa1 = approx(
 		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
@@ -801,12 +819,16 @@ end
 	M_ch4 = 16.042 # molecular weight
 	M_h2 = 2.016
 
-	weymouth = 58
+	FLOW = 67.5 #MSm3/d
+    PIN = 189.3 #barg
+    POUT = 147.5 #barg
     pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 36, 37, 43, 45, 41, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
+    
+    weymouth = EMP.weymouth_constant(FLOW, PIN, POUT)
 
-    z = weymouth_specgrav.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
+    z = EMP.calculate_flow.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
 
 	pwa = approx(
 		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
