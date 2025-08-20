@@ -1,13 +1,13 @@
 module EnergyModelsPooling
 
-using JuMP
 using EnergyModelsBase; const EMB = EnergyModelsBase
 using EnergyModelsGeography; const EMG = EnergyModelsGeography
 using TimeStruct
-using MetaGraphs
-using Graphs
+using JuMP
+
 using PiecewiseAffineApprox
 using LinearAlgebra
+
 using Scratch
 using JSON3
 
