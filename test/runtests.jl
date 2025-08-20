@@ -1,33 +1,29 @@
-using TestItemRunner
+using Test
 
-@run_package_tests verbose = true
+using Pkg
+Pkg.activate(@__DIR__)
 
-@testsnippet MyTests begin
-    using Pkg
-    Pkg.activate(@__DIR__)
-    
-    using TestItems
+using Test
 
-    using Alpine
-    using Ipopt
-    using HiGHS
-    using Juniper 
-    using PiecewiseAffineApprox
+using Alpine
+using Ipopt
+using HiGHS
+using Juniper 
+using PiecewiseAffineApprox
 
-    using JuMP
-    using TimeStruct
-    using EnergyModelsBase
-    using EnergyModelsGeography
-    using EnergyModelsPooling
+using JuMP
+using TimeStruct
+using EnergyModelsBase
+using EnergyModelsGeography
+using EnergyModelsPooling
 
-    const EMB = EnergyModelsBase
-    const EMG = EnergyModelsGeography
-    const EMP = EnergyModelsPooling
+const EMB = EnergyModelsBase
+const EMG = EnergyModelsGeography
+const EMP = EnergyModelsPooling
 
-    include("test_utils.jl")
-end
+include("test_utils.jl")
 
-@testitem "Only Blend" setup=[MyTests] begin
+@testset "Only Blend" begin
     
     function generate_case()
 
@@ -50,8 +46,8 @@ end
 
         # Initialise EMB model
         model = OperationalModel(
-            Dict( CO2 => StrategicProfile([160.0])),
-            Dict( CO2 => FixedProfile(0)),
+            Dict(CO2 => FixedProfile(0)),
+            Dict(CO2 => FixedProfile(0)),
             CO2)
 
         areas = Dict()
@@ -82,7 +78,7 @@ end
             GeoAvailability(201, products),
             SourceComponent(
                 202,
-                FixedProfile(100), # Capacity
+                FixedProfile(200), # Capacity
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
@@ -141,10 +137,10 @@ end
             BlendingSink(
                 602,
                 FixedProfile(100), # Capacity
-                Dict(:price => FixedProfile(-190)), # Penalty
+                Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 0.2, NG => 1), # upperbound
-                Dict(H2 => 0) # lowerbound
+                Dict(H2 => 0, NG => 0) # lowerbound
             )
         ]
         l = [
@@ -160,10 +156,10 @@ end
             BlendingSink(
                 702,
                 FixedProfile(50), # Capacity
-                Dict(:price => FixedProfile(-190)), # Penalty
+                Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 0.2, NG => 1), # upperbound
-                Dict(H2 => 0) # lowerbound
+                Dict(H2 => 0, NG => 0) # lowerbound
             )
         ]
         l = [
@@ -174,15 +170,16 @@ end
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
+        # define behaviour of the areas for only blending
         blending = EMP.Blending("blend")
         area = [
             SourceArea("1", "Supply 1", 10, 10, areas["1"], blending),
             SourceArea("2", "Supply 2", 10, 10, areas["2"], blending),
             SourceArea("3", "Supply 3", 10, 10, areas["3"], blending),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], blending),
-            PoolingArea("5", "Blend 5", 10, 10, areas["5"], blending),
-            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], blending),
-            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], blending),
+            PoolingArea("4", "Joint 4", 10, 10, areas["4"], blending),
+            PoolingArea("5", "Joint 5", 10, 10, areas["5"], blending),
+            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], blending, nothing),
+            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], blending, nothing),
         ]
 
         # Create transmission modes
@@ -231,9 +228,19 @@ end
     m = EMP.create_model(case, model)
     m = optimize(m, nlp_constraints=true)
 
-    println(termination_status(m))
+    #______TEST: OBJECTIVE________
     @test termination_status(m) == MOI.OPTIMAL
-    
+    supply_node = filter(n -> n.id == 202, case[:nodes])
+    @test first(value.(m[:cap_use][supply_node, :])) == 100
+    supply_node = filter(n -> n.id == 302, case[:nodes])
+    @test first(value.(m[:cap_use][supply_node, :])) == 50
+
+    # check the amount of h2 is approx 0.2 in 
+    supply_node = filter(n -> n.id == 102, case[:nodes])
+    terminal_node = filter(n -> n.id == 402, case[:nodes])
+    terminal_node2 = filter(n -> n.id == 502, case[:nodes])
+    @test isapprox(first(value.(m[:cap_use][supply_node, :])) / (first(value.(m[:cap_use][terminal_node, :])) + first(value.(m[:cap_use][terminal_node2, :]))), 
+                    0.2)
 
     ℒ = case[:transmission]
     𝒯 = case[:T]
@@ -269,14 +276,6 @@ end
 
     @test sum(value.(m[:trans_out])[p, T[1]] * value.(m[:prop_source][areas[i], source, T[1]]) for (i, p) in enumerate(pipelines))/sum(value.(m[:trans_out])[p, T[1]] for p in pipelines) <=
         EMP.get_upper(sink, case[:components][2])
-    
-    #_______PRINT RESULTS________
-    @info "FLOW:"
-    @info filter(:y => x -> x > 0, df_variable(m, :trans_in))
-    @info "Proportion flow:"
-    @info filter(:y => x -> x > 0, df_variable(m, :prop_source))
-    @info "Proportion H2:"
-    @info filter(:y => x -> x > 0, df_variable(m, :prop_track))
 
 end
 
