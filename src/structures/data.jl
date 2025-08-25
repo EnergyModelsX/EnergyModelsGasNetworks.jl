@@ -34,7 +34,7 @@ struct PressurePipe <: PressureData
     id::Any
     max_pressure::Int
     weymouth::Float64  # Weymouth constant
-    lin_pressures::Vector{Tuple{<:Real, <:Real}}
+    lin_pressures::Vector{Tuple{<:Real,<:Real}}
 end
 function PressurePipe(
     id, maxpressure;
@@ -46,30 +46,30 @@ function PressurePipe(
     weymouth = FLOW^2/(PIN^2 - POUT^2)
 
     # Calculate linearised pressures
-    pressures = range(PIN, POUT, length=150)
-    lin_pressures = [(PIN, p) for p in pressures[2:end]]
-    
+    pressures = range(PIN, POUT, length = 150)
+    lin_pressures = [(PIN, p) for p ∈ pressures[2:end]]
+
     return PressurePipe(
         id,
         maxpressure,
         weymouth,
-        lin_pressures
+        lin_pressures,
     )
 end
 function PressurePipe(
     id, max_pressure, weymouth::Float64;
     PIN::Float64,
-    POUT::Float64
+    POUT::Float64,
 )
-     # Calculate linearised pressures
-     pressures = range(PIN, POUT, length=150)
-     lin_pressures = [(float(PIN), p) for p in pressures[2:end]]
-    
-     return PressurePipe(
+    # Calculate linearised pressures
+    pressures = range(PIN, POUT, length = 150)
+    lin_pressures = [(float(PIN), p) for p ∈ pressures[2:end]]
+
+    return PressurePipe(
         id,
         max_pressure,
         weymouth,
-        lin_pressures
+        lin_pressures,
     )
 end
 
@@ -80,36 +80,35 @@ struct PressBlendPipe <: PressureData
     pwa::Any
 end
 function PressBlendPipe(
-        id, max_pressure, optimizer; 
-        FLOW::Any, # CH4 flow in accordance with Weymouth equation for a given pressure drop
-        PIN::Any, # Inlet pressure corresponding to FLOW
-        POUT::Any, # Outlet pressure corresponding to FLOW
-        pin = 70, 
-        pout = 50,
-        prop = 0.2)
-    
+    id, max_pressure, optimizer;
+    FLOW::Any, # CH4 flow in accordance with Weymouth equation for a given pressure drop
+    PIN::Any, # Inlet pressure corresponding to FLOW
+    POUT::Any, # Outlet pressure corresponding to FLOW
+    pin = 70,
+    pout = 50,
+    prop = 0.2)
     x1 = [i for i ∈ pout:1:pin]
     x2 = [i for i ∈ pout:1:pin]
     x3 = [j for j ∈ 0:0.01:prop]
-    
-    X = calculate_X(x1, x2, x3)
-    weymouth_ct = round(weymouth_constant(FLOW, PIN, POUT), digits=4) # normalised the weymouth constant
-    z = calculate_flow.(weymouth_ct, X[:,1], X[:,2], X[:,3])
 
-    fn = get_input_fn([weymouth_ct, X[:,1], X[:,2], X[:,3]], z)
+    X = calculate_X(x1, x2, x3)
+    weymouth_ct = round(weymouth_constant(FLOW, PIN, POUT), digits = 4) # normalised the weymouth constant
+    z = calculate_flow.(weymouth_ct, X[:, 1], X[:, 2], X[:, 3])
+
+    fn = get_input_fn([weymouth_ct, X[:, 1], X[:, 2], X[:, 3]], z)
 
     if isfile(fn)
         pwa = read_from_json(fn)
     else
-        pwa = approx(   
-            FunctionEvaluations(collect(zip(X[:,1], X[:,2], X[:,3])), z),
+        pwa = approx(
+            FunctionEvaluations(collect(zip(X[:, 1], X[:, 2], X[:, 3])), z),
             Concave(),
             Cluster(
-                ;optimizer,
+                ; optimizer,
                 planes = 10,
                 strict = :outer,
                 metric = :l1,
-        ))
+            ))
         test_approx(pwa, weymouth_ct, pin, pout, prop)
         write_to_json(fn, pwa)
     end
@@ -117,23 +116,22 @@ function PressBlendPipe(
         id,
         max_pressure,
         weymouth_ct,
-        pwa
+        pwa,
     )
 end
 function PressBlendPipe(
-    id, max_pressure, optimizer, weymouth::Float64; pin=175, pout=145, prop=0.2)
-
+    id, max_pressure, optimizer, weymouth::Float64; pin = 175, pout = 145, prop = 0.2)
     x1 = [i for i ∈ pout:1:pin]
     x2 = [i for i ∈ pout:1:pin]
     x3 = [i for i ∈ 0.00:0.01:prop]
 
     # Define points of the curve
-    X = calculate_X(x1, x2, x3)    
-    weymouth_ct = round(weymouth_constant(weymouth), digits=4) # normalise the weymouth constant
-    z = calculate_flow.(weymouth_ct, X[:,1], X[:,2], X[:,3])
+    X = calculate_X(x1, x2, x3)
+    weymouth_ct = round(weymouth_constant(weymouth), digits = 4) # normalise the weymouth constant
+    z = calculate_flow.(weymouth_ct, X[:, 1], X[:, 2], X[:, 3])
 
     # Generate/read the pwa
-    fn = get_input_fn([weymouth_ct,  X[:,1], X[:,2], X[:,3]], z)
+    fn = get_input_fn([weymouth_ct, X[:, 1], X[:, 2], X[:, 3]], z)
 
     if isfile(fn)
         pwa = read_from_json(fn)
@@ -143,7 +141,7 @@ function PressBlendPipe(
             Concave(),
             Cluster(; optimizer, planes = 10, strict = :outer, metric = :l1))
         test_approx(pwa, weymouth_ct, pin, pout, prop)
-        
+
         write_to_json(fn, pwa)
     end
 
@@ -151,13 +149,13 @@ function PressBlendPipe(
         id,
         max_pressure,
         weymouth_ct,
-        pwa
+        pwa,
     )
 end
 
-function has_pressuredata(tm::PipeMode) 
+function has_pressuredata(tm::PipeMode)
     return any(typeof(data) <: PressureData for data ∈ tm.data)
-end 
+end
 
 is_pressurepipe(data::PressureData) = false
 is_pressurepipe(data::PressurePipe) = true
@@ -204,4 +202,3 @@ function get_pwa(tm::PipeMode)
         throw(ArgumentError("Pipeline $tm does not have data type PressureData"))
     end
 end
-

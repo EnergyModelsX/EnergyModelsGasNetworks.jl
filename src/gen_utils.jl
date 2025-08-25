@@ -29,7 +29,7 @@ end
 
 function write_constraints_to_file(model::Model, filename::String)
     open(filename, "w") do file
-        for T in JuMP.list_of_constraint_types(model)
+        for T ∈ JuMP.list_of_constraint_types(model)
             cs = all_constraints(model, T...)
             println(file, T)
             println(file, "\n", cs)
@@ -49,17 +49,17 @@ function create_locatedsink(file_path, locations, resource)
     cap = Dict()
 
     # Loop through sheets and populate id list and cap dictionary
-    for (i,sheet_name) in enumerate(sheet_names[2:end])   #avoid time
+    for (i, sheet_name) ∈ enumerate(sheet_names[2:end])   #avoid time
         sheet = load_xlsx[sheet_name]
         header = sheet[1, :]
         unique!(append!(ids, vec(header)[2:end]))   #avoid time
 
-        for (j, head) in enumerate(header[2:end]) #avoid time
+        for (j, head) ∈ enumerate(header[2:end]) #avoid time
             col = sheet[:, j+1]     #avoid time
             col_val = col[2:end]
             if !haskey(cap, head)
                 # If flight was not added in previous periods, generate empty demands of those missing periods
-                zero_vectors = [zeros(length(col_val)) for _ in 1:i-1] 
+                zero_vectors = [zeros(length(col_val)) for _ ∈ 1:(i-1)]
                 cap[head] = zero_vectors
 
                 # Add current demand
@@ -74,13 +74,13 @@ function create_locatedsink(file_path, locations, resource)
     # Get location
     # Get path and initiliase location dictionary
     node_path = joinpath(file_path, "1_Aircraft.xlsx")
-    location = Dict{String, Location}()
+    location = Dict{String,Location}()
 
     # Loop through the sheet "Nodes" to get the id and corresponding gate
-    XLSX.openxlsx(node_path, enable_cache=false) do f
+    XLSX.openxlsx(node_path, enable_cache = false) do f
         sheet = f["Nodes"]
-        for r in XLSX.eachrow(sheet)
-            if XLSX.row_number(r) in [1,2]
+        for r ∈ XLSX.eachrow(sheet)
+            if XLSX.row_number(r) in [1, 2]
                 continue
             else
                 id = r[1]
@@ -91,17 +91,16 @@ function create_locatedsink(file_path, locations, resource)
         end
     end
 
-    
     # Populate structs
-    
+
     sinks = []
-    for id in ids
+    for id ∈ ids
         sink = LocatedSink(
             id,
-            StrategicProfile([OperationalProfile(cap[id][k]) for k in 1:length(cap[id])]),
+            StrategicProfile([OperationalProfile(cap[id][k]) for k ∈ 1:length(cap[id])]),
             Dict(:surplus => FixedProfile(0), :deficit => FixedProfile(1e12)),
             Dict(resource => 1),
-            location[id]
+            location[id],
         )
 
         append!(sinks, [sink])
@@ -114,9 +113,15 @@ end
 Returns a `DataFrame` with the values of the variables from the JuMP container `var`.
 The column names of the `DataFrame` can be specified for the indexing columns in `dim_names`
 """
-function convert_container_to_df(m, var_name::Symbol; col_names::Vector{Symbol}=Vector{Symbol}(), save_to_excel=false, file_name::String="")
+function convert_container_to_df(
+    m,
+    var_name::Symbol;
+    col_names::Vector{Symbol} = Vector{Symbol}(),
+    save_to_excel = false,
+    file_name::String = "",
+)
     var = m[var_name]
-    
+
     # Convert variable in dataframe
     table = Containers.rowtable(var)
     df = DataFrames.DataFrame(table)
@@ -137,15 +142,14 @@ function convert_container_to_df(m, var_name::Symbol; col_names::Vector{Symbol}=
         df_ = df_structs_to_strings!(df)
         save_df_to_excel(file_name, df_, string(var_name))
     end
-    
+
     return df
 end
 
 function show_variable(m, element::Symbol)
+    val = Containers.rowtable(value, m[element])
 
-        val = Containers.rowtable(value, m[element])
-
-        return PrettyTables.pretty_table(val)
+    return PrettyTables.pretty_table(val)
 end
 
 function df_variable(m, element::Symbol)
@@ -171,7 +175,7 @@ function save_df_to_excel(file_name::String, df::DataFrame, sheet_name)
 end
 
 function df_structs_to_strings!(df::DataFrame)
-    for col in names(df)
+    for col ∈ names(df)
         if !(eltype(df[!, col]) in [Int, Float64, String, Bool])
             df[!, col] = string.(df[!, col])
         end
@@ -182,7 +186,7 @@ end
 # Function to write all constraints to a file
 function write_constraints_to_file(model::Model, filename::String)
     open(filename, "w") do file
-        for T in JuMP.list_of_constraint_types(model)
+        for T ∈ JuMP.list_of_constraint_types(model)
             cs = all_constraints(model, T...)
             println(file, T)
             println(file, "\n", cs)

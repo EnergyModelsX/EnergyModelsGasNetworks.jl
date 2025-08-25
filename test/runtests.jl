@@ -19,13 +19,12 @@ const EMP = EnergyModelsPooling
 include("test_utils.jl")
 
 @testset "Only Blend" begin
-    
     function generate_case()
 
         # Define resources
         NG = AbstractComponent("NG", 0.0)
         H2 = ComponentTrack("H2", 0.0, 1)
-        
+
         Gas = EMP.ComponentBlend("Gas", [NG, H2])
         CO2 = ResourceEmit("CO2", 1.0)
         products = [CO2, Gas]
@@ -58,11 +57,11 @@ include("test_utils.jl")
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
-                Dict(H2 => 1) # Quality
+                Dict(H2 => 1), # Quality
             ),
         ]
         l = [
-            Direct(130, n[2], n[1], Linear())
+            Direct(130, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -77,16 +76,16 @@ include("test_utils.jl")
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
-                Dict(NG => 1)
-            )
+                Dict(NG => 1),
+            ),
         ]
         l = [
-            Direct(210, n[2], n[1], Linear())
+            Direct(210, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
         areas["2"] = n[1] # link area with GeoAvailability node
-        
+
         # Nodes in Area 3
         n = [
             GeoAvailability(301, products),
@@ -96,11 +95,11 @@ include("test_utils.jl")
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
-                Dict(NG => 1)
-            )
+                Dict(NG => 1),
+            ),
         ]
         l = [
-            Direct(310, n[2], n[1], Linear())
+            Direct(310, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -108,7 +107,7 @@ include("test_utils.jl")
 
         # Nodes in Area 4
         n = [
-            GeoAvailability(401, products)
+            GeoAvailability(401, products),
         ]
         l = [
         ]
@@ -118,7 +117,7 @@ include("test_utils.jl")
 
         # Nodes in Area 5
         n = [
-            GeoAvailability(501, products)
+            GeoAvailability(501, products),
         ]
         l = [
         ]
@@ -135,11 +134,11 @@ include("test_utils.jl")
                 Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 0.2, NG => 1), # upperbound
-                Dict(H2 => 0, NG => 0) # lowerbound
-            )
+                Dict(H2 => 0, NG => 0), # lowerbound
+            ),
         ]
         l = [
-            Direct(610, n[1], n[2], Linear())
+            Direct(610, n[1], n[2], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -154,11 +153,11 @@ include("test_utils.jl")
                 Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 0.2, NG => 1), # upperbound
-                Dict(H2 => 0, NG => 0) # lowerbound
-            )
+                Dict(H2 => 0, NG => 0), # lowerbound
+            ),
         ]
         l = [
-            Direct(710, n[1], n[2], Linear())
+            Direct(710, n[1], n[2], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -181,16 +180,136 @@ include("test_utils.jl")
         # Note: The inlet and outlets do not affect as the trans_out are not associated to Resources
         # and the different flows are tracked by prop_source variable
         fixed_O = FixedProfile(0.0)
-        tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_15 = PipeSimple("tm_15", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_24 = PipeSimple("tm_24", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_25 = PipeSimple("tm_25", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_34 = PipeSimple("tm_34", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_35 = PipeSimple("tm_35", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_46 = PipeSimple("tm_46", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_47 = PipeSimple("tm_47", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_56 = PipeSimple("tm_56", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
-        tm_57 = PipeSimple("tm_57", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, 1, Data[])
+        tm_14 = PipeSimple(
+            "tm_14",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_15 = PipeSimple(
+            "tm_15",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_24 = PipeSimple(
+            "tm_24",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_25 = PipeSimple(
+            "tm_25",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_34 = PipeSimple(
+            "tm_34",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_35 = PipeSimple(
+            "tm_35",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_46 = PipeSimple(
+            "tm_46",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_47 = PipeSimple(
+            "tm_47",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_56 = PipeSimple(
+            "tm_56",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
+        tm_57 = PipeSimple(
+            "tm_57",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            1,
+            Data[],
+        )
 
         # Create transmission corriders between areas
         transmission = [
@@ -207,21 +326,21 @@ include("test_utils.jl")
         ]
 
         case = Dict(
-            :areas          => area,
-            :transmission   => Array{Transmission}(transmission),
-            :nodes          => Array{EMB.Node}(nodes),
-            :links          => Array{Link}(links),
-            :products       => products,
-            :components     => components,
-            :T              => T,
-        )    
+            :areas        => area,
+            :transmission => Array{Transmission}(transmission),
+            :nodes        => Array{EMB.Node}(nodes),
+            :links        => Array{Link}(links),
+            :products     => products,
+            :components   => components,
+            :T            => T,
+        )
 
         return case, model
     end
 
     case, model = generate_case()
     m = EMP.create_model(case, model)
-    m = optimize(m, nlp_constraints=true)
+    m = optimize(m, nlp_constraints = true)
 
     #______TEST: OBJECTIVE________
     @test termination_status(m) == MOI.OPTIMAL
@@ -234,41 +353,47 @@ include("test_utils.jl")
     𝒯 = case[:T]
     T = collect(𝒯)
     𝒜 = case[:areas]
-    
+
     a1 = 𝒜[1]
     a2 = 𝒜[2]
     a3 = 𝒜[3]
     a4 = 𝒜[4]
     a6 = 𝒜[6]
 
-    TM_to = [tm for l in ℒ for tm in modes(l) if l.to == a4]
-    TM_from = [tm for l in ℒ for tm in modes(l) if l.from == a4]
+    TM_to = [tm for l ∈ ℒ for tm ∈ modes(l) if l.to == a4]
+    TM_from = [tm for l ∈ ℒ for tm ∈ modes(l) if l.from == a4]
 
     #_______TEST: FLOW QUANTIIES________
     # Test the inflows equals the outflows through areas
-    @test isapprox(sum(value.(m[:trans_out])[tm, t] for tm ∈ TM_to for t ∈ 𝒯), 
-            sum(value.(m[:trans_in])[tm, t] for tm ∈ TM_from for t ∈ 𝒯), atol=TEST_ATOL)
-    
+    @test isapprox(sum(value.(m[:trans_out])[tm, t] for tm ∈ TM_to for t ∈ 𝒯),
+        sum(value.(m[:trans_in])[tm, t] for tm ∈ TM_from for t ∈ 𝒯), atol = TEST_ATOL)
+
     #_______TEST: FLOW PROPORTIONS________
     source = case[:nodes][2]
-    pipeline = first([tm for l in filter(x -> x.from == a1 && x.to == a4, ℒ) for tm in modes(l)])
+    pipeline =
+        first([tm for l ∈ filter(x -> x.from == a1 && x.to == a4, ℒ) for tm ∈ modes(l)])
     # Test if the proportions of flows in blending areas is correct
-    @test isapprox(value.(m[:trans_out])[pipeline, T[1]]/sum(value.(m[:trans_out])[p, T[1]] for p ∈ TM_to),
-                value.(m[:prop_source][a4, source, T[1]]), atol=TEST_ATOL)
-    
+    @test isapprox(
+        value.(m[:trans_out])[
+            pipeline,
+            T[1],
+        ]/sum(value.(m[:trans_out])[p, T[1]] for p ∈ TM_to),
+        value.(m[:prop_source][a4, source, T[1]]), atol = TEST_ATOL)
+
     #_______TEST: PROP H2 AT TERMINALS________
     source = case[:nodes][2]
-    pipelines = [tm for l in filter(x -> x.to == a6, ℒ) for tm in modes(l)]
+    pipelines = [tm for l ∈ filter(x -> x.to == a6, ℒ) for tm ∈ modes(l)]
     areas = [𝒜[4], 𝒜[5]]
     sink = case[:nodes][10]
 
-    @test sum(value.(m[:trans_out])[p, T[1]] * value.(m[:prop_source][areas[i], source, T[1]]) for (i, p) in enumerate(pipelines))/sum(value.(m[:trans_out])[p, T[1]] for p in pipelines) <=
-        EMP.get_upper(sink, case[:components][2]) + TEST_ATOL
-
+    @test sum(
+        value.(m[:trans_out])[p, T[1]] * value.(m[:prop_source][areas[i], source, T[1]]) for
+        (i, p) ∈ enumerate(pipelines)
+    )/sum(value.(m[:trans_out])[p, T[1]] for p ∈ pipelines) <=
+          EMP.get_upper(sink, case[:components][2]) + TEST_ATOL
 end
 
 @testset "Pressure + 1 Resource" begin
-    
     function generate_case()
 
         # Define resources    
@@ -287,8 +412,8 @@ end
 
         # Initialise EMB model
         model = OperationalModel(
-            Dict( CO2 => FixedProfile(0)),
-            Dict( CO2 => FixedProfile(0)),
+            Dict(CO2 => FixedProfile(0)),
+            Dict(CO2 => FixedProfile(0)),
             CO2)
 
         areas = Dict()
@@ -307,7 +432,7 @@ end
             ),
         ]
         l = [
-            Direct(130, n[2], n[1], Linear())
+            Direct(130, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -322,15 +447,15 @@ end
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
-            )
+            ),
         ]
         l = [
-            Direct(210, n[2], n[1], Linear())
+            Direct(210, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
         areas["2"] = n[1] # link area with GeoAvailability node
-        
+
         # Nodes in Area 3
         n = [
             GeoAvailability(301, products),
@@ -340,10 +465,10 @@ end
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
-            )
+            ),
         ]
         l = [
-            Direct(310, n[2], n[1], Linear())
+            Direct(310, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -351,7 +476,7 @@ end
 
         # Nodes in Area 4
         n = [
-            GeoAvailability(401, products)
+            GeoAvailability(401, products),
         ]
         l = [
         ]
@@ -361,7 +486,7 @@ end
 
         # Nodes in Area 5
         n = [
-            GeoAvailability(501, products)
+            GeoAvailability(501, products),
         ]
         l = [
         ]
@@ -377,10 +502,10 @@ end
                 FixedProfile(100), # Capacity
                 Dict(:surplus => FixedProfile(-190), :deficit => FixedProfile(190)), # Penalty
                 Dict(Gas => 1), # Input
-            )
+            ),
         ]
         l = [
-            Direct(610, n[1], n[2], Linear())
+            Direct(610, n[1], n[2], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -394,10 +519,10 @@ end
                 FixedProfile(50), # Capacity
                 Dict(:surplus => FixedProfile(-190), :deficit => FixedProfile(190)), # Penalty
                 Dict(Gas => 1), # Input
-            )
+            ),
         ]
         l = [
-            Direct(710, n[1], n[2], Linear())
+            Direct(710, n[1], n[2], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -414,7 +539,7 @@ end
             PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max),
             PoolingArea("5", "Blend 5", 10, 10, areas["5"], behaviour_max),
             TerminalArea("6", "Terminal 6", 10, 10, areas["6"], behaviour_min),
-            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min), 
+            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min),
         ]
 
         # Create transmission modes
@@ -428,16 +553,126 @@ end
             PIN = 189.3, #barg
             POUT = 147.5, #barg
         )
-        tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_15 = PipeSimple("tm_15", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_24 = PipeSimple("tm_24", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_25 = PipeSimple("tm_25", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_34 = PipeSimple("tm_34", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_35 = PipeSimple("tm_35", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_46 = PipeSimple("tm_46", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_47 = PipeSimple("tm_47", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_56 = PipeSimple("tm_56", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_57 = PipeSimple("tm_57", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
+        tm_14 = PipeSimple(
+            "tm_14",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_15 = PipeSimple(
+            "tm_15",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_24 = PipeSimple(
+            "tm_24",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_25 = PipeSimple(
+            "tm_25",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_34 = PipeSimple(
+            "tm_34",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_35 = PipeSimple(
+            "tm_35",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_46 = PipeSimple(
+            "tm_46",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_47 = PipeSimple(
+            "tm_47",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_56 = PipeSimple(
+            "tm_56",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_57 = PipeSimple(
+            "tm_57",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
 
         # Create transmission corriders between areas
         transmission = [
@@ -454,15 +689,15 @@ end
         ]
 
         case = Dict(
-            :areas          => area,
-            :transmission   => Array{Transmission}(transmission),
-            :nodes          => Array{EMB.Node}(nodes),
-            :links          => Array{Link}(links),
-            :products       => products,
-            :components     => components,
-            :T              => T,
-            :pwa            => nothing
-        )    
+            :areas        => area,
+            :transmission => Array{Transmission}(transmission),
+            :nodes        => Array{EMB.Node}(nodes),
+            :links        => Array{Link}(links),
+            :products     => products,
+            :components   => components,
+            :T            => T,
+            :pwa          => nothing,
+        )
 
         return case, model
     end
@@ -470,20 +705,18 @@ end
     case, model = generate_case()
     m = EMP.create_model(case, model)
     m = optimize(m, nlp_constraints = false)
-    
+
     #_______TEST: Optimal solution_______#
     println(termination_status(m))
     @test termination_status(m) == OPTIMAL
 end
 
-
 @testset "Pressure + Blend + 2 Resource" begin
-   
     function generate_case()
         # Define resources
         NG = AbstractComponent("NG", 0.0)
         H2 = ComponentTrack("H2", 0.0, 0.2)
-        
+
         Gas = EMP.ComponentBlend("Gas", [NG, H2])
         CO2 = ResourceEmit("CO2", 1.0)
         products = [CO2, Gas]
@@ -499,8 +732,8 @@ end
 
         # Initialise EMB model
         model = OperationalModel(
-            Dict( CO2 => FixedProfile(0)),
-            Dict( CO2 => FixedProfile(0)),
+            Dict(CO2 => FixedProfile(0)),
+            Dict(CO2 => FixedProfile(0)),
             CO2)
 
         areas = Dict()
@@ -516,11 +749,11 @@ end
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
-                Dict(H2 => 1) # Quality
+                Dict(H2 => 1), # Quality
             ),
         ]
         l = [
-            Direct(130, n[2], n[1], Linear())
+            Direct(130, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -535,16 +768,16 @@ end
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
-                Dict(NG => 1)
-            )
+                Dict(NG => 1),
+            ),
         ]
         l = [
-            Direct(210, n[2], n[1], Linear())
+            Direct(210, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
         areas["2"] = n[1] # link area with GeoAvailability node
-        
+
         # Nodes in Area 3
         n = [
             GeoAvailability(301, products),
@@ -554,11 +787,11 @@ end
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
-                Dict(NG => 1)
-                )
+                Dict(NG => 1),
+            ),
         ]
         l = [
-            Direct(310, n[2], n[1], Linear())
+            Direct(310, n[2], n[1], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -566,7 +799,7 @@ end
 
         # Nodes in Area 4
         n = [
-            GeoAvailability(401, products)
+            GeoAvailability(401, products),
         ]
         l = [
         ]
@@ -576,7 +809,7 @@ end
 
         # Nodes in Area 5
         n = [
-            GeoAvailability(501, products)
+            GeoAvailability(501, products),
         ]
         l = [
         ]
@@ -593,11 +826,11 @@ end
                 Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 1, NG => 1), # upperbound
-                Dict(H2 => 0) # lowerbound
-            )
+                Dict(H2 => 0), # lowerbound
+            ),
         ]
         l = [
-            Direct(610, n[1], n[2], Linear())
+            Direct(610, n[1], n[2], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
@@ -612,18 +845,19 @@ end
                 Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 1, NG => 1), # upperbound
-                Dict(H2 => 0) # lowerbound
-            )
+                Dict(H2 => 0), # lowerbound
+            ),
         ]
         l = [
-            Direct(710, n[1], n[2], Linear())
+            Direct(710, n[1], n[2], Linear()),
         ]
         append!(nodes, n)
         append!(links, l)
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
-        behaviour_max = EMP.PressBlend("MaxPressure", EMP.PressureMaxArea(FixedProfile(200)))
+        behaviour_max =
+            EMP.PressBlend("MaxPressure", EMP.PressureMaxArea(FixedProfile(200)))
         behaviour_min = EMP.PressBlend("MinPressure", EMP.PressureMinArea(FixedProfile(0)))
 
         area = [
@@ -640,35 +874,145 @@ end
         # Note: The inlet and outlets do not affect as the trans_out are not associated to Resources
         # and the different flows are tracked by prop_source variable
         fixed_O = FixedProfile(0.0)
-        
+
         # Dispatch with PWA
         @info "Calculating the PWA for pipes with 2 resources"
         presblend_data = PressBlendPipe(
             "Weymouth",
             80, # max_pressure
             HiGHS.Optimizer,
-            0.2484 # weymouth
+            0.2484, # weymouth
         )
 
         # Dispatch with Taylor approximation
         pressure_data = PressurePipe(
             "Taylor",
-            1e6, 
+            1e6,
             0.2484; # weymouth
             PIN = 200.0,
             POUT = 130.0,
         )
 
-        tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_15 = PipeSimple("tm_15", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_24 = PipeSimple("tm_24", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_25 = PipeSimple("tm_25", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_34 = PipeSimple("tm_34", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_35 = PipeSimple("tm_35", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
-        tm_46 = PipeSimple("tm_46", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [presblend_data])
-        tm_47 = PipeSimple("tm_47", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [presblend_data])
-        tm_56 = PipeSimple("tm_56", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [presblend_data])
-        tm_57 = PipeSimple("tm_57", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [presblend_data])
+        tm_14 = PipeSimple(
+            "tm_14",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_15 = PipeSimple(
+            "tm_15",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_24 = PipeSimple(
+            "tm_24",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_25 = PipeSimple(
+            "tm_25",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_34 = PipeSimple(
+            "tm_34",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_35 = PipeSimple(
+            "tm_35",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [pressure_data],
+        )
+        tm_46 = PipeSimple(
+            "tm_46",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [presblend_data],
+        )
+        tm_47 = PipeSimple(
+            "tm_47",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [presblend_data],
+        )
+        tm_56 = PipeSimple(
+            "tm_56",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [presblend_data],
+        )
+        tm_57 = PipeSimple(
+            "tm_57",
+            Gas,
+            Gas,
+            Gas,
+            fixed_O,
+            FixedProfile(1e6),
+            fixed_O,
+            fixed_O,
+            fixed_O,
+            [presblend_data],
+        )
 
         # Create transmission corriders between areas
         transmission = [
@@ -685,14 +1029,14 @@ end
         ]
 
         case = Dict(
-            :areas          => area,
-            :transmission   => Array{Transmission}(transmission),
-            :nodes          => Array{EMB.Node}(nodes),
-            :links          => Array{Link}(links),
-            :products       => products,
-            :components     => components,
-            :T              => T,
-        )    
+            :areas        => area,
+            :transmission => Array{Transmission}(transmission),
+            :nodes        => Array{EMB.Node}(nodes),
+            :links        => Array{Link}(links),
+            :products     => products,
+            :components   => components,
+            :T            => T,
+        )
 
         return case, model
     end
@@ -704,37 +1048,35 @@ end
     #_______TEST: Optimal solution_______#
     println(termination_status(m))
     @test termination_status(m) == MOI.OPTIMAL
-
 end
 
 @testset "Testing Get and Read" begin
-
     FLOW = 67.5 #MSm3/d
     PIN = 189.3 #barg
     POUT = 147.5 #barg    
-    pin = [50,  58, 58, 63, 65, 67, 70] 
+    pin = [50, 58, 58, 63, 65, 67, 70]
     pout = [30, 35, 37, 43, 45, 40, 50]
-    h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
+    h2_fraction = [0.0, 0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
 
     X = EMP.calculate_X(pin, pout, h2_fraction)
-    weymouth = round(EMP.weymouth_constant(FLOW, PIN, POUT), digits=4)
-    z = EMP.calculate_flow.(weymouth, X[:,1], X[:,2], X[:,3])
-    
+    weymouth = round(EMP.weymouth_constant(FLOW, PIN, POUT), digits = 4)
+    z = EMP.calculate_flow.(weymouth, X[:, 1], X[:, 2], X[:, 3])
+
     fn = EMP.get_input_fn([weymouth, pin, pout, h2_fraction], z)
 
-	pwa1 = approx(
-		FunctionEvaluations(collect(zip(X[:,1], X[:,2], X[:,3])), z),
-		Concave(),
-		Cluster(
-			; optimizer = HiGHS.Optimizer,
-			planes = 10,
-			strict = :outer,
-			metric = :l1,
-		))
+    pwa1 = approx(
+        FunctionEvaluations(collect(zip(X[:, 1], X[:, 2], X[:, 3])), z),
+        Concave(),
+        Cluster(
+            ; optimizer = HiGHS.Optimizer,
+            planes = 10,
+            strict = :outer,
+            metric = :l1,
+        ))
 
-	EMP.write_to_json(fn, pwa1)
+    EMP.write_to_json(fn, pwa1)
 
-	fn1 = EMP.get_input_fn([weymouth, pin, pout, h2_fraction], z)
-	@test isfile(fn1)
-	@test EMP.read_from_json(fn1) !== nothing
+    fn1 = EMP.get_input_fn([weymouth, pin, pout, h2_fraction], z)
+    @test isfile(fn1)
+    @test EMP.read_from_json(fn1) !== nothing
 end
