@@ -15,23 +15,23 @@ A source node with specific qualities of ResourceComponent resources.
 """
 
 struct SourceComponent <: EMB.Source
-	id::Any
-	cap::TimeProfile
-	opex_var::TimeProfile
-	opex_fixed::TimeProfile
-	output::Dict{<:Resource, <:Real}
-	quality::Dict{<:Component, <:Real}
-	data::Vector{Data}
+    id::Any
+    cap::TimeProfile
+    opex_var::TimeProfile
+    opex_fixed::TimeProfile
+    output::Dict{<:Resource,<:Real}
+    quality::Dict{<:Component,<:Real}
+    data::Vector{Data}
 end
 function SourceComponent(
-	id,
-	cap::TimeProfile,
-	opex_var::TimeProfile,
-	opex_fixed::TimeProfile,
-	output::Dict{<:Resource, <:Real},
-	quality::Dict{<:Component, <:Real},
+    id,
+    cap::TimeProfile,
+    opex_var::TimeProfile,
+    opex_fixed::TimeProfile,
+    output::Dict{<:Resource,<:Real},
+    quality::Dict{<:Component,<:Real},
 )
-	return SourceComponent(id, cap, opex_var, opex_fixed, output, quality, Data[])
+    return SourceComponent(id, cap, opex_var, opex_fixed, output, quality, Data[])
 end
 
 """ A reference `BlendingSink` node
@@ -47,53 +47,51 @@ end
 `data` is conditional through usage of a constructor.
 """
 struct BlendingSink <: EMB.Sink
-	id::Any
-	cap::TimeProfile
-	penalty::Dict{Symbol, <:TimeProfile}
-	input::Dict{<:Resource, <:Real}
-	upperbound::Dict{<:Component, <:Real}
-	lowerbound::Dict{<:Component, <:Real}
-	data::Vector{Data}
+    id::Any
+    cap::TimeProfile
+    penalty::Dict{Symbol,<:TimeProfile}
+    input::Dict{<:Resource,<:Real}
+    upperbound::Dict{<:Component,<:Real}
+    lowerbound::Dict{<:Component,<:Real}
+    data::Vector{Data}
 end
 function BlendingSink(
-	id,
-	cap::TimeProfile,
-	penalty::Dict{<:Any, <:TimeProfile},
-	input::Dict{<:Resource, <:Real},
-	upperbound::Dict{<:Component, <:Real},
-	lowerbound::Dict{<:Component, <:Real},
+    id,
+    cap::TimeProfile,
+    penalty::Dict{<:Any,<:TimeProfile},
+    input::Dict{<:Resource,<:Real},
+    upperbound::Dict{<:Component,<:Real},
+    lowerbound::Dict{<:Component,<:Real},
 )
-	return BlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
+    return BlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
 end
 
 components(n::SourceComponent) = collect(keys(n.quality))
 
 function get_quality(s::SourceComponent, p::Component)
-	return get(s.quality, p, 0)
+    return get(s.quality, p, 0)
 end
 
 res_upper(n::BlendingSink) = collect(keys(n.upperbound))
 res_lower(n::BlendingSink) = collect(keys(n.lowerbound))
 
 function get_upper(s::BlendingSink, p::Component)
-	upperbound = s.upperbound
-	if p in keys(upperbound)
-		return upperbound[p]
-	else
-		return 0
-	end
+    upperbound = s.upperbound
+    if p in keys(upperbound)
+        return upperbound[p]
+    else
+        return 0
+    end
 end
 
 function get_lower(s::BlendingSink, p::Component)
-	lowerbound = s.lowerbound
-	if p in keys(lowerbound)
-		return lowerbound[p]
-	else
-		return 0
-	end
+    lowerbound = s.lowerbound
+    if p in keys(lowerbound)
+        return lowerbound[p]
+    else
+        return 0
+    end
 end
-
-
 
 """
 	is_geoavailability(n::Node)

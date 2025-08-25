@@ -1,8 +1,10 @@
 module EnergyModelsPooling
 
 using JuMP
-using EnergyModelsBase; const EMB = EnergyModelsBase
-using EnergyModelsGeography; const EMG = EnergyModelsGeography
+using EnergyModelsBase;
+const EMB = EnergyModelsBase
+using EnergyModelsGeography;
+const EMG = EnergyModelsGeography
 using TimeStruct
 using MetaGraphs
 using Graphs
@@ -27,6 +29,5 @@ export SourceComponent, BlendingSink
 export SourceArea, TerminalArea, PoolingArea, Pressure, Blending, PressBlend
 export PressurePipe, PressBlendPipe
 export create_model, pwa
-
 
 end
