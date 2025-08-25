@@ -110,7 +110,7 @@ function PressBlendPipe(
                 strict = :outer,
                 metric = :l1,
         ))
-        test_approx(pwa, constant, pin, pout, prop)
+        test_approx(pwa, weymouth_ct, pin, pout, prop)
         write_to_json(fn, pwa)
     end
     return PressBlendPipe(
@@ -142,7 +142,7 @@ function PressBlendPipe(
             FunctionEvaluations(collect(zip(X[:, 1], X[:, 2], X[:, 3])), z),
             Concave(),
             Cluster(; optimizer, planes = 10, strict = :outer, metric = :l1))
-        test_approx(pwa, constant, pin, pout, prop)
+        test_approx(pwa, weymouth_ct, pin, pout, prop)
         
         write_to_json(fn, pwa)
     end
