@@ -66,7 +66,7 @@ function weymouth_constant(FLOW, PIN, POUT)
     W = FLOW^2/(PIN^2 - POUT^2)
 
     Mᶜʰ⁴ = 16.042 # g/mol
-    Mᵃⁱʳ = 28.96 # g/mol
+    Mᵃⁱʳ = 28.96 # g/mol # TODO: Generalise to other types of Resources
     g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
 
     weymouth_ct = W * g
@@ -76,7 +76,7 @@ end
 function weymouth_constant(W)
 
     Mᶜʰ⁴ = 16.042 # g/mol
-    Mᵃⁱʳ = 28.96 # g/mol
+    Mᵃⁱʳ = 28.96 # g/mol # TODO: Generalise to other types of Resources
     g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
 
     weymouth_ct = W * g
