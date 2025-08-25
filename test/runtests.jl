@@ -1,33 +1,27 @@
-using TestItemRunner
+using Pkg
+Pkg.activate(@__DIR__)
 
-@run_package_tests verbose = true
+using Test
 
-@testsnippet MyTests begin
-    using Pkg
-    Pkg.activate(@__DIR__)
-    
-    using TestItems
+using Alpine
+using Ipopt
+using Juniper
+using HiGHS
+using PiecewiseAffineApprox
 
-    using Alpine
-    using Ipopt
-    using HiGHS
-    using Juniper 
-    using PiecewiseAffineApprox
+using JuMP
+using TimeStruct
+using EnergyModelsBase
+using EnergyModelsGeography
+using EnergyModelsPooling
 
-    using JuMP
-    using TimeStruct
-    using EnergyModelsBase
-    using EnergyModelsGeography
-    using EnergyModelsPooling
+const EMB = EnergyModelsBase
+const EMG = EnergyModelsGeography
+const EMP = EnergyModelsPooling
 
-    const EMB = EnergyModelsBase
-    const EMG = EnergyModelsGeography
-    const EMP = EnergyModelsPooling
+include("test_utils.jl")
 
-    include("test_utils.jl")
-end
-
-@testitem "Only Blend" setup=[MyTests] begin
+@testset "Only Blend" begin
     
     function generate_case()
 
@@ -50,8 +44,8 @@ end
 
         # Initialise EMB model
         model = OperationalModel(
-            Dict( CO2 => StrategicProfile([160.0])),
-            Dict( CO2 => FixedProfile(0)),
+            Dict(CO2 => FixedProfile(0)),
+            Dict(CO2 => FixedProfile(0)),
             CO2)
 
         areas = Dict()
@@ -82,7 +76,7 @@ end
             GeoAvailability(201, products),
             SourceComponent(
                 202,
-                FixedProfile(100), # Capacity
+                FixedProfile(200), # Capacity
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
@@ -141,10 +135,10 @@ end
             BlendingSink(
                 602,
                 FixedProfile(100), # Capacity
-                Dict(:price => FixedProfile(-190)), # Penalty
+                Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 0.2, NG => 1), # upperbound
-                Dict(H2 => 0) # lowerbound
+                Dict(H2 => 0, NG => 0) # lowerbound
             )
         ]
         l = [
@@ -160,10 +154,10 @@ end
             BlendingSink(
                 702,
                 FixedProfile(50), # Capacity
-                Dict(:price => FixedProfile(-190)), # Penalty
+                Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 0.2, NG => 1), # upperbound
-                Dict(H2 => 0) # lowerbound
+                Dict(H2 => 0, NG => 0) # lowerbound
             )
         ]
         l = [
@@ -174,15 +168,16 @@ end
         areas["7"] = n[1] # link area with GeoAvailability node
 
         # Create individual Areas
+        # define behaviour of the areas for only blending
         blending = EMP.Blending("blend")
         area = [
             SourceArea("1", "Supply 1", 10, 10, areas["1"], blending),
             SourceArea("2", "Supply 2", 10, 10, areas["2"], blending),
             SourceArea("3", "Supply 3", 10, 10, areas["3"], blending),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], blending),
-            PoolingArea("5", "Blend 5", 10, 10, areas["5"], blending),
-            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], blending),
-            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], blending),
+            PoolingArea("4", "Joint 4", 10, 10, areas["4"], blending),
+            PoolingArea("5", "Joint 5", 10, 10, areas["5"], blending),
+            TerminalArea("6", "Terminal 6", 10, 10, areas["6"], blending, nothing),
+            TerminalArea("7", "Terminal 7", 10, 10, areas["7"], blending, nothing),
         ]
 
         # Create transmission modes
@@ -231,9 +226,12 @@ end
     m = EMP.create_model(case, model)
     m = optimize(m, nlp_constraints=true)
 
-    println(termination_status(m))
+    #______TEST: OBJECTIVE________
     @test termination_status(m) == MOI.OPTIMAL
-    
+    supply_node = filter(n -> n.id == 202, case[:nodes])
+    @test first(value.(m[:cap_use][supply_node, :])) == 200
+    supply_node = filter(n -> n.id == 302, case[:nodes])
+    @test first(value.(m[:cap_use][supply_node, :])) == 50
 
     ℒ = case[:transmission]
     𝒯 = case[:T]
@@ -269,18 +267,10 @@ end
 
     @test sum(value.(m[:trans_out])[p, T[1]] * value.(m[:prop_source][areas[i], source, T[1]]) for (i, p) in enumerate(pipelines))/sum(value.(m[:trans_out])[p, T[1]] for p in pipelines) <=
         EMP.get_upper(sink, case[:components][2])
-    
-    #_______PRINT RESULTS________
-    @info "FLOW:"
-    @info filter(:y => x -> x > 0, df_variable(m, :trans_in))
-    @info "Proportion flow:"
-    @info filter(:y => x -> x > 0, df_variable(m, :prop_source))
-    @info "Proportion H2:"
-    @info filter(:y => x -> x > 0, df_variable(m, :prop_track))
 
 end
 
-@testitem "Pressure + 1 Resource" setup=[MyTests] begin
+@testset "Pressure + 1 Resource" begin
     
     function generate_case()
 
@@ -300,7 +290,7 @@ end
 
         # Initialise EMB model
         model = OperationalModel(
-            Dict( CO2 => StrategicProfile([160.0])),
+            Dict( CO2 => FixedProfile(0)),
             Dict( CO2 => FixedProfile(0)),
             CO2)
 
@@ -424,7 +414,7 @@ end
             SourceArea("1", "Supply 1", 10, 10, areas["1"], behaviour_max),
             SourceArea("2", "Supply 2", 10, 10, areas["2"], behaviour_max),
             SourceArea("3", "Supply 3", 10, 10, areas["3"], behaviour_max),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max), # TODO: Fix as PoolingAreas do not hae any pressure behaviour for the moment
+            PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max),
             PoolingArea("5", "Blend 5", 10, 10, areas["5"], behaviour_max),
             TerminalArea("6", "Terminal 6", 10, 10, areas["6"], behaviour_min),
             TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min), 
@@ -435,7 +425,7 @@ end
         # and the different flows are tracked by prop_source variable
         fixed_O = FixedProfile(0.0)
         pressure_data = PressurePipe(
-            "Weymouth",
+            "Taylor",
             1e6; # max_pressure
             FLOW = 67.5, #MSm3/d
             PIN = 189.3, #barg
@@ -487,22 +477,10 @@ end
     #_______TEST: Optimal solution_______#
     println(termination_status(m))
     @test termination_status(m) == OPTIMAL
-
-    #_______PRINT: Results_______#
-    @info "FLOW:"
-    @info filter(:y => x -> x > 0, df_variable(m, :trans_in))
-    @info "Inlet pressures"
-    @info filter(:y => x -> x > 0, df_variable(m, :p_in))
-    @info "Outlet pressures"
-    @info df_variable(m, :p_out)
-    @info "Has Flow"
-    @info df_variable(m, :has_flow)
-    @info "Lower_pressure_into_node"
-    @info df_variable(m, :lower_pressure_into_node)
 end
 
 
-@testitem "Pressure + Blend + 2 Resource" setup=[MyTests] begin
+@testset "Pressure + Blend + 2 Resource" begin
    
     function generate_case()
         # Define resources
@@ -524,7 +502,7 @@ end
 
         # Initialise EMB model
         model = OperationalModel(
-            Dict( CO2 => StrategicProfile([160.0])),
+            Dict( CO2 => FixedProfile(0)),
             Dict( CO2 => FixedProfile(0)),
             CO2)
 
@@ -537,7 +515,7 @@ end
             GeoAvailability(101, products),
             SourceComponent(
                 102,
-                FixedProfile(150), # Capacity
+                FixedProfile(300), # Capacity
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
@@ -556,7 +534,7 @@ end
             GeoAvailability(201, products),
             SourceComponent(
                 202,
-                FixedProfile(100), # Capacity
+                FixedProfile(300), # Capacity
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
@@ -575,7 +553,7 @@ end
             GeoAvailability(301, products),
             SourceComponent(
                 302,
-                FixedProfile(50), # Capacity
+                FixedProfile(300), # Capacity
                 FixedProfile(0), # Var. OPEX
                 FixedProfile(0), # Fix. OPEX
                 Dict(Gas => 1), # Output
@@ -615,7 +593,7 @@ end
             BlendingSink(
                 602,
                 FixedProfile(100), # Capacity
-                Dict(:price => FixedProfile(-190)), # Penalty
+                Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 1, NG => 1), # upperbound
                 Dict(H2 => 0) # lowerbound
@@ -634,7 +612,7 @@ end
             BlendingSink(
                 702,
                 FixedProfile(50), # Capacity
-                Dict(:price => FixedProfile(-190)), # Penalty
+                Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 1, NG => 1), # upperbound
                 Dict(H2 => 0) # lowerbound
@@ -667,22 +645,21 @@ end
         fixed_O = FixedProfile(0.0)
         
         # Dispatch with PWA
+        @info "Calculating the PWA for pipes with 2 resources"
         presblend_data = PressBlendPipe(
             "Weymouth",
             80, # max_pressure
-            HiGHS.Optimizer;
-            FLOW = 67.5, #MSm3/d
-            PIN = 189.3, #barg
-            POUT = 147.5, #barg
+            HiGHS.Optimizer,
+            0.2484 # weymouth
         )
 
         # Dispatch with Taylor approximation
         pressure_data = PressurePipe(
             "Taylor",
-            1e6;
-            FLOW = 67.5, #MSm3/d
-            PIN = 189.3, #barg
-            POUT = 147.5, #barg
+            1e6, 
+            0.2484; # weymouth
+            PIN = 200.0,
+            POUT = 130.0,
         )
 
         tm_14 = PipeSimple("tm_14", Gas, Gas, Gas, fixed_O, FixedProfile(1e6), fixed_O, fixed_O, fixed_O, [pressure_data])
@@ -710,9 +687,6 @@ end
             Transmission(area[5], area[7], [tm_57]),
         ]
 
-        # Generate the pwa
-
-
         case = Dict(
             :areas          => area,
             :transmission   => Array{Transmission}(transmission),
@@ -733,57 +707,10 @@ end
     #_______TEST: Optimal solution_______#
     println(termination_status(m))
     @test termination_status(m) == MOI.OPTIMAL
-    
-    #_______PRINT: Results_______#
-    @info "FLOW:"
-    @info filter(:y => x -> x > 0, df_variable(m, :trans_in))
-    @info "Inlet pressures"
-    @info filter(:y => x -> x > 0, df_variable(m, :p_in))
-    @info "Outlet pressures"
-    @info df_variable(m, :p_out)
-    @info "Proportion H2"
-    @info df_variable(m, :prop_track)
-    @info "Has Flow"
-    @info df_variable(m, :has_flow)
-    @info "Lower_pressure_into_node"
-    @info df_variable(m, :lower_pressure_into_node)
+
 end
 
-@testitem "Generation of PressBlendPipe" setup=[MyTests] begin
-	
-	# 3 points is not enough to generate a PWA
-	@test_throws Exception PressBlendPipe(
-		"Weymouth",
-		80, # max_pressure
-		HiGHS.Optimizer,
-        FLOW = 67.5, #MSm3/d
-        PIN = 189.3, #barg
-        POUT = 147.5, #barg
-		pin = [50, 63, 70], 
-   		pout = [30, 43, 50],
-    	h2_fraction = [0.0, 0.05, 0.1],
-		M1 = 16.042,
-		M2 = 2.016
-	)
-
-	presblend_data = PressBlendPipe(
-		"Weymouth",
-		80, # max_pressure
-		HiGHS.Optimizer,
-        FLOW = 67.5, #MSm3/d
-        PIN = 189.3, #barg
-        POUT = 147.5, #barg
-		M1 = 16.042,
-		M2 = 2.016
-	)
-
-	pwa = EMP.get_pwa(presblend_data)
-	@test isa(pwa, PiecewiseAffineApprox.PWAFunc)
-
-	EMP.delete_cache()
-end
-
-@testitem "Testing Get and Read" setup=[MyTests] begin
+@testset "Testing Get and Read" begin
 
     FLOW = 67.5 #MSm3/d
     PIN = 189.3 #barg
@@ -791,68 +718,26 @@ end
     pin = [50,  58, 58, 63, 65, 67, 70] 
     pout = [30, 35, 37, 43, 45, 40, 50]
     h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
-	M_ch4 = 16.042 # molecular weight
-	M_h2 = 2.016
 
-    weymouth = EMP.weymouth_constant(FLOW, PIN, POUT)
-    z = EMP.calculate_flow.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
+    X = EMP.calculate_X(pin, pout, h2_fraction)
+    weymouth = round(EMP.weymouth_constant(FLOW, PIN, POUT), digits=4)
+    z = EMP.calculate_flow.(weymouth, X[:,1], X[:,2], X[:,3])
     
+    fn = EMP.get_input_fn([weymouth, pin, pout, h2_fraction], z)
+
 	pwa1 = approx(
-		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
+		FunctionEvaluations(collect(zip(X[:,1], X[:,2], X[:,3])), z),
 		Concave(),
 		Cluster(
 			; optimizer = HiGHS.Optimizer,
 			planes = 10,
-			strict = :none,
+			strict = :outer,
 			metric = :l1,
 		))
 
-	fn = EMP.get_input_fn([weymouth, pin, pout, h2_fraction], z)
 	EMP.write_to_json(fn, pwa1)
 
 	fn1 = EMP.get_input_fn([weymouth, pin, pout, h2_fraction], z)
 	@test isfile(fn1)
 	@test EMP.read_from_json(fn1) !== nothing
 end
-
-@testitem "Testing No Saving and Get" setup=[MyTests] begin
-	M_ch4 = 16.042 # molecular weight
-	M_h2 = 2.016
-
-	FLOW = 67.5 #MSm3/d
-    PIN = 189.3 #barg
-    POUT = 147.5 #barg
-    pin = [50,  58, 58, 63, 65, 67, 70] 
-    pout = [30, 36, 37, 43, 45, 41, 50]
-    h2_fraction = [0.0,  0.1, 0.0, 0.05, 0.0, 0.05, 0.1]
-    
-    weymouth = EMP.weymouth_constant(FLOW, PIN, POUT)
-
-    z = EMP.calculate_flow.(weymouth, pin, pout, h2_fraction, M_ch4, M_h2)
-
-	pwa = approx(
-		FunctionEvaluations(collect(zip(pin, pout, h2_fraction)), z),
-		Concave(),
-		Cluster(
-			; optimizer = HiGHS.Optimizer,
-			planes = 10,
-			strict = :none,
-			metric = :l1,
-		))
-
-	fn = EMP.get_input_fn([weymouth, pin, pout, h2_fraction], z)
-	@test isfile(fn) == false # despite generating pwa, it is not saved so no file is found
-
-	EMP.delete_cache()
-end
-
-
-
-
-
-# include("case1.jl")
-# include("case2.jl")
-# include("case3.jl")
-# include("test_scratch.jl")
-
-# @run_all_tests
