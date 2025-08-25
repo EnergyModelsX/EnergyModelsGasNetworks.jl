@@ -146,8 +146,29 @@ function EMB.constraints_opex_var(m, n::BlendingSink, 𝒯ᴵⁿᵛ, modeltype::
         m[:opex_var][n, t_inv] ==
         sum(
             (
-            m[:cap_use][n, t] * surplus_penalty(n, t) 
+            m[:cap_use][n, t] * cap_price(n, t) 
             ) * EMB.scale_op_sp(t_inv, t) for t ∈ t_inv
         )
+    )
+end
+
+"""
+    check_node_default(n::BlendingSink, 𝒯, modeltype::EnergyModel, check_timeprofiles::Bool)
+
+Subroutine that can be utilized in other packages for incorporating the standard tests for
+a [`Sink`](@ref) node.
+
+## Checks
+- The field `cap` is required to be non-negative.
+- The values of the dictionary `input` are required to be non-negative.
+"""
+function EMB.check_node_default(n::BlendingSink, 𝒯, modeltype::EnergyModel, check_timeprofiles::Bool)
+    @assert_or_log(
+        all(capacity(n, t) ≥ 0 for t ∈ 𝒯),
+        "The capacity must be non-negative."
+    )
+    @assert_or_log(
+        all(inputs(n, p) ≥ 0 for p ∈ inputs(n)),
+        "The values for the Dictionary `input` must be non-negative."
     )
 end
