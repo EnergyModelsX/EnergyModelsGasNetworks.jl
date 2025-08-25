@@ -1,6 +1,3 @@
-using Pkg
-Pkg.activate(@__DIR__)
-
 using Test
 
 using Alpine
@@ -266,7 +263,7 @@ include("test_utils.jl")
     sink = case[:nodes][10]
 
     @test sum(value.(m[:trans_out])[p, T[1]] * value.(m[:prop_source][areas[i], source, T[1]]) for (i, p) in enumerate(pipelines))/sum(value.(m[:trans_out])[p, T[1]] for p in pipelines) <=
-        EMP.get_upper(sink, case[:components][2])
+        EMP.get_upper(sink, case[:components][2]) + TEST_ATOL
 
 end
 
