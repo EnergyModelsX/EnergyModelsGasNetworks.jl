@@ -1,7 +1,6 @@
 module EnergyModelsPooling
 
 using EnergyModelsBase; const EMB = EnergyModelsBase
-using EnergyModelsGeography; const EMG = EnergyModelsGeography
 using TimeStruct
 using JuMP
 
@@ -11,22 +10,19 @@ using LinearAlgebra
 using Scratch
 using JSON3
 
-include("utils.jl")
+# include("utils.jl")
 include("scratch.jl")
 include("structures/resource.jl")
 include("structures/node.jl")
 include("structures/data.jl")
-include("structures/area.jl")
-include("constraint_blend.jl")
+include("structures/link.jl")
+# include("structures/area.jl")
+# include("constraint_blend.jl")
 include("constraint_pressure.jl")
 include("model.jl")
 
-export calculate_flow
-export ComponentBlend, AbstractComponent, ComponentTrack
-export SourceComponent, BlendingSink
-export SourceArea, TerminalArea, PoolingArea, Pressure, Blending, PressBlend
-export PressurePipe, PressBlendPipe
-export create_model, pwa
-
+export create_model
+export Compressor, CapDirect, ResourcePotential, ResourceComponentPotential # export nodes, links and resources
+export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData # export extension data
 
 end

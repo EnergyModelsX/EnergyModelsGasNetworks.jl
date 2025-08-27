@@ -55,34 +55,34 @@ function getsource(a::Area, links)
 end
 
 
-"""
-    weymouth_constant(FLOW, PIN, POUT)
+# """
+#     weymouth_constant(FLOW, PIN, POUT)
 
-Calculate the normalised flow constant with respect to the specific gravity using specific operating points.
-Assumed to use operational points from flows from CH4.
-"""
-function weymouth_constant(FLOW, PIN, POUT)
+# Calculate the normalised flow constant with respect to the specific gravity using specific operating points.
+# Assumed to use operational points from flows from CH4.
+# # """
+# function weymouth_constant(FLOW, PIN, POUT)
 
-    W = FLOW^2/(PIN^2 - POUT^2)
+#     W = FLOW^2/(PIN^2 - POUT^2)
 
-    Mᶜʰ⁴ = 16.042 # g/mol
-    Mᵃⁱʳ = 28.96 # g/mol
-    g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
+#     Mᶜʰ⁴ = 16.042 # g/mol
+#     Mᵃⁱʳ = 28.96 # g/mol
+#     g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
 
-    weymouth_ct = W * g
+#     weymouth_ct = W * g
 
-    return weymouth_ct
-end
-function weymouth_constant(W)
+#     return weymouth_ct
+# end
+# function weymouth_constant(W)
 
-    Mᶜʰ⁴ = 16.042 # g/mol
-    Mᵃⁱʳ = 28.96 # g/mol
-    g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
+#     Mᶜʰ⁴ = 16.042 # g/mol
+#     Mᵃⁱʳ = 28.96 # g/mol
+#     g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
 
-    weymouth_ct = W * g
+#     weymouth_ct = W * g
 
-    return weymouth_ct
-end
+#     return weymouth_ct
+# end
 
 """
     calculate_flow(constant, x1, x2, x3)
