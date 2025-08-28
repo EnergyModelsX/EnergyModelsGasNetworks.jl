@@ -1,44 +1,26 @@
+"""
+    track_associated_nodes(n::Node, ℒ::Vector{<:Link})
 
-function track_source(a::Area, links, 𝒜, ℒᵗʳᵃⁿˢ)
-    all_sources = Vector{}()
-
-    𝒜ᵃ = getadjareas(a, ℒᵗʳᵃⁿˢ)                             # it includes a
-    for area in 𝒜ᵃ
-        sources = getsource(area, links)                       # get sources of adjacent Areas whose outputs in products
-        append!(all_sources, sources)
-    end
-
-    return unique!(all_sources)
-end
-function getarea(A::Vector{<:Area}, n::Availability)
-    for area in A
-        if n == EMG.availability_node(area)
-            return area
-        end
-    end
-end
-function gettransmission(L::Vector{Transmission}, n::Area)
-    transto_n = []
-    transfrom_n = []
-    for trans in L
-        if n == trans.from
-            push!(transfrom_n, trans)
-        elseif n == trans.to
-            push!(transto_n, trans)
-        end
-    end
-    return transto_n, transfrom_n
-end
-function getadjareas(a::Area, ℒᵗʳᵃⁿˢ)
-    visited = Vector()
-    stack = Vector{Area}()
-    append!(stack, [a])
+Tracks all nodes associated with a given node `n` through the links in `ℒ`. We refer to associated
+to all the nodes that lead to `n` following the direction of the links.
+"""
+function track_associated_nodes(n::EMB.Node, ℒ::Vector{<:EMB.Link})
+    visited = Vector{EMB.Node}()
+    stack = Vector{EMB.Node}()
+    append!(stack, [n])
 
     while !isempty(stack)
+        # Get current area from stack
         current_area = pop!(stack)
+
+        # Add it as visited
         push!(visited, current_area)
-        transto_area, _ = gettransmission(ℒᵗʳᵃⁿˢ, current_area)                     # transmissions to area of n
-        for l in transto_area
+
+        # Extract links into `n`
+        _, ℒᵗᵒ = EMB.link_sub(ℒ, current_area)
+        
+        for l in ℒᵗᵒ
+            # Get node at the other end of the link
             n1 = l.from
             if ~(n1 in visited)
                 push!(stack, n1)
@@ -49,11 +31,16 @@ function getadjareas(a::Area, ℒᵗʳᵃⁿˢ)
     return visited
 end
 
-function getsource(a::Area, links)
-    source_nodes   = [i for i in EMG.getnodesinarea(a, links) if EMB.is_source(i)]
-    return source_nodes
-end
+"""
+    track_source(n::Node, ℒ::Vector{<:Link})
 
+Tracks all nodes associated to `n` and filter by source nodes.
+"""
+function track_source(n::EMB.Node, ℒ::Vector{<:EMB.Link})
+    𝒩ᵃ = track_associated_nodes(n, ℒ)                            
+    𝒩ˢ = filter(EMB.is_source, 𝒩ᵃ)
+    return unique!(𝒩ˢ)
+end
 
 # """
 #     weymouth_constant(FLOW, PIN, POUT)

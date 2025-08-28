@@ -20,7 +20,7 @@ struct CapDirect <: Link
     data::Vector{<:EMB.ExtensionData}
 end
 CapDirect(id, from, to, formulation, cap) = 
-    CapDirect{Float64}(id, from, to, formulation, cap, EMB.ExtensionData[])
+    CapDirect(id, from, to, formulation, cap, EMB.ExtensionData[])
 
 EMB.capacity(l::EMB.Link, t) = 1e6 # Default large capacity
 EMB.capacity(l::CapDirect, t) = l.cap[t]

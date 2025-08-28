@@ -5,6 +5,8 @@
 """
 abstract type PressureData <: EMB.ExtensionData end
 
+abstract type BlendData <: EMB.ExtensionData end
+
 """
     Reference PressureData that can be applied to Nodes and Links
 """
@@ -58,6 +60,18 @@ struct PressureLinkData <: LinkPressureData
     min_potential::Real
 end
 
+"""
+    RefBlendData{T<:CompoundResource} <: BlendData
+
+Blending data for controlling the quality of Nodes.
+#TODO: Create a check that guarantees that the resources in max_proportion and min_proportion are either ResourceComponent or ResourceComponentPotential.
+"""
+struct RefBlendData{T<:CompoundResource} <: BlendData
+    blend::ResourceBlend
+    max_proportion::Dict{T, Real}
+    min_proportion::Dict{T, Real}
+end
+
 function pressure(n::EMB.Node)
     data = first(filter(data -> data isa RefPressureData, n.data))
     return data.pressure
@@ -71,6 +85,18 @@ potential_data(data::PressureLinkData) = (data.min_potential, data.max_potential
 get_pressuredata(n::EMB.Node) = filter(data -> data isa PressureData, n.data)
 get_pressuredata(n::EMB.Availability) = ExtensionData[]
 get_pressuredata(l::Link) = filter(data -> data isa PressureData, l.data)
+
+get_blenddata(n::EMB.Node) = filter(data -> data isa BlendData, n.data)
+get_blenddata(n::EMB.Availability) = ExtensionData[]
+
+get_max_proportion(blend_data::BlendData, p::CompoundResource) = blend_data.max_proportion[p]
+get_min_proportion(blend_data::BlendData, p::CompoundResource) = blend_data.min_proportion[p]
+
+function res_blendata(blend_data::BlendData)
+    max_res = blend_data.max_proportion
+    min_res = blend_data.min_proportion
+    return (max_res, min_res)
+end
 
 # struct PressurePipe <: PressureData
 #     id::Any

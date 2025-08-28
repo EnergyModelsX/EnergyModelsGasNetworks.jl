@@ -10,7 +10,7 @@ using LinearAlgebra
 using Scratch
 using JSON3
 
-# include("utils.jl")
+include("utils.jl")
 include("scratch.jl")
 include("structures/resource.jl")
 include("structures/node.jl")
@@ -18,11 +18,13 @@ include("structures/data.jl")
 include("structures/link.jl")
 # include("structures/area.jl")
 # include("constraint_blend.jl")
+include("constraint_blend.jl")
 include("constraint_pressure.jl")
 include("model.jl")
 
 export create_model
-export Compressor, CapDirect, ResourcePotential, ResourceComponentPotential # export nodes, links and resources
-export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData # export extension data
+export Compressor, RefBlend, CapDirect
+export ResourcePotential, ResourceComponentPotential, ResourceComponent, ResourceBlend
+export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData, RefBlendData
 
 end

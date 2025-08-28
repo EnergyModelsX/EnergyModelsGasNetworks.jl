@@ -19,8 +19,6 @@ function run_model(case::Dict, model, optimizer; check_timeprofiles = true)
         set_optimizer(m, optimizer)
         set_optimizer_attribute(m, MOI.Silent(), true)
         optimize!(m)
-        # TODO: print_solution(m) optionally show results summary (perhaps using upcoming JuMP function)
-        # TODO: save_solution(m) save results
     else
         @warn "No optimizer given"
     end

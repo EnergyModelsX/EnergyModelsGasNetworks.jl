@@ -32,8 +32,25 @@ Resources that can be transported and converted, have energy potential and is th
 struct ResourceComponentPotential{T<:Real} <: CompoundResource #TODO: Improve when developing Blending, added for including PWA.
 	id::Any
 	co2_int::T
-	components::Vector{}
 end
+
+struct ResourceComponent{T<:Real} <: CompoundResource
+    id::Any
+    co2_int::T
+end
+
+"""
+    ResourceBlend{T<:Real} <: EMB.Resource
+
+Resources that can be composed of other subresources of type ResourceComponent and ResourceComponentPotential.
+"""
+struct ResourceBlend <: EMB.Resource
+    id::Any
+    subresources::Vector{Union{ResourceComponent, ResourceComponentPotential}}
+end
+
+subresources(𝒫::Array{<:ResourceBlend}) = Dict(blend => blend.subresources for blend in 𝒫)
+subresources(r::ResourceBlend) = r.subresources
 
 """
     res_types(𝒫::Array{<:Resource})
@@ -48,6 +65,14 @@ res_types(𝒫::Array{<:Resource}) = unique(map(x -> typeof(x), 𝒫)) # FROM ES
 Return a Vector-of-Vectors of resources segmented by the sub-types.
 """
 res_types_seg(𝒫::Array{<:Resource}) = [Vector{rt}(filter(x -> isa(x, rt), 𝒫)) for rt in res_types(𝒫)] # FROM ESPEN
+
+function get_source_prop(s::Source, p::CompoundResource) 
+    if p ∈ EMB.outputs(s)
+        return 1
+    else
+        return 0
+    end
+end
 
 # ##############
 # abstract type Component <: EMB.Resource end
