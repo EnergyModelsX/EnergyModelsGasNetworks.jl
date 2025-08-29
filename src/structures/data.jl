@@ -84,7 +84,8 @@ potential_data(data::PressureLinkData) = (data.min_potential, data.max_potential
 
 get_pressuredata(n::EMB.Node) = filter(data -> data isa PressureData, n.data)
 get_pressuredata(n::EMB.Availability) = ExtensionData[]
-get_pressuredata(l::Link) = filter(data -> data isa PressureData, l.data)
+get_pressuredata(l::EMB.Link) = ExtensionData[]
+get_pressuredata(l::CapDirect) = filter(data -> data isa PressureData, l.data)
 
 get_blenddata(n::EMB.Node) = filter(data -> data isa BlendData, n.data)
 get_blenddata(n::EMB.Availability) = ExtensionData[]
