@@ -112,6 +112,14 @@ function constraints_pressure_limit(m, l::EMB.Link, data::FixPressureData, 𝒯,
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
         m[:link_potential_in][l, t, p] == pressure(data, t))
 end
+function constraints_pressure_limit(m, l::CapDirect, data::RefPressureData, 𝒯, 𝒫::Vector{<:CompoundResource}) 
+    # Filter resources CompoundResource that are inputs of `l`
+    𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
+
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+        m[:link_potential_in][l, t, p] <= 1e4 * m[:has_flow][l, t]
+    )
+end
 function constraints_pressure_limit(m, l::EMB.Link, data::RefPressureData, 𝒯, 𝒫::Vector{}) end
 
 """
@@ -223,12 +231,7 @@ function constraints_flow_limit(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundRes
 
     @constraint(
         m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-        m[:link_in][l, t, p] <= capacity(l, t) * m[:has_flow][l, t]
-    )
-
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-        m[:link_potential_in][l, t, p] <= 1e4 * m[:has_flow][l, t]
-    )
+        m[:link_in][l, t, p] <= capacity(l, t) * m[:has_flow][l, t])
 end
 
 """ 
