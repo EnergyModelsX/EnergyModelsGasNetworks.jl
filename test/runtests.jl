@@ -279,7 +279,7 @@ include("test_utils.jl")
 
 end
 
-@testitem "Pressure + 1 Resource" setup=[MyTests] begin
+@testset "Pressure + 1 Resource" begin
     
     function generate_case()
 
@@ -299,7 +299,7 @@ end
 
         # Initialise EMB model
         model = OperationalModel(
-            Dict( CO2 => StrategicProfile([160.0])),
+            Dict( CO2 => StrategicProfile([0])),
             Dict( CO2 => FixedProfile(0)),
             CO2)
 
@@ -423,7 +423,7 @@ end
             SourceArea("1", "Supply 1", 10, 10, areas["1"], behaviour_max),
             SourceArea("2", "Supply 2", 10, 10, areas["2"], behaviour_max),
             SourceArea("3", "Supply 3", 10, 10, areas["3"], behaviour_max),
-            PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max), # TODO: Fix as PoolingAreas do not hae any pressure behaviour for the moment
+            PoolingArea("4", "Blend 4", 10, 10, areas["4"], behaviour_max),
             PoolingArea("5", "Blend 5", 10, 10, areas["5"], behaviour_max),
             TerminalArea("6", "Terminal 6", 10, 10, areas["6"], behaviour_min),
             TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min), 
@@ -434,7 +434,7 @@ end
         # and the different flows are tracked by prop_source variable
         fixed_O = FixedProfile(0.0)
         pressure_data = PressurePipe(
-            "Weymouth",
+            "taylor_approx",
             1e6; # max_pressure
             FLOW = 67.5, #MSm3/d
             PIN = 189.3, #barg
@@ -484,7 +484,6 @@ end
     m = optimize(m, nlp_constraints = false)
     
     #_______TEST: Optimal solution_______#
-    println(termination_status(m))
     @test termination_status(m) == OPTIMAL
 
     #_______PRINT: Results_______#
@@ -499,9 +498,7 @@ end
     @info "Lower_pressure_into_node"
     @info df_variable(m, :lower_pressure_into_node)
 end
-
-
-@testitem "Pressure + Blend + 2 Resource" setup=[MyTests] begin
+@testset "Pressure + Blend + 2 Resource" begin
    
     function generate_case()
         # Define resources
@@ -614,7 +611,7 @@ end
             BlendingSink(
                 602,
                 FixedProfile(100), # Capacity
-                Dict(:price => FixedProfile(-190)), # Penalty
+                Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 1, NG => 1), # upperbound
                 Dict(H2 => 0) # lowerbound
@@ -633,7 +630,7 @@ end
             BlendingSink(
                 702,
                 FixedProfile(50), # Capacity
-                Dict(:price => FixedProfile(-190)), # Penalty
+                Dict(:cap_price => FixedProfile(-190)), # Penalty
                 Dict(Gas => 1), # Input
                 Dict(H2 => 1, NG => 1), # upperbound
                 Dict(H2 => 0) # lowerbound
@@ -659,11 +656,6 @@ end
             TerminalArea("6", "Terminal 6", 10, 10, areas["6"], behaviour_min),
             TerminalArea("7", "Terminal 7", 10, 10, areas["7"], behaviour_min), #inlet pressure
         ]
-
-        # Create transmission modes
-        # Note: The inlet and outlets do not affect as the trans_out are not associated to Resources
-        # and the different flows are tracked by prop_source variable
-        fixed_O = FixedProfile(0.0)
         
         # Dispatch with PWA
         presblend_data = PressBlendPipe(
@@ -730,7 +722,6 @@ end
     m = optimize(m, nlp_constraints = true)
 
     #_______TEST: Optimal solution_______#
-    println(termination_status(m))
     @test termination_status(m) == MOI.OPTIMAL
     
     #_______PRINT: Results_______#
@@ -748,7 +739,7 @@ end
     @info df_variable(m, :lower_pressure_into_node)
 end
 
-@testitem "Generation of PressBlendPipe" setup=[MyTests] begin
+@testset "Generation of PressBlendPipe" begin
 	
 	# 3 points is not enough to generate a PWA
 	@test_throws Exception PressBlendPipe(
@@ -782,7 +773,7 @@ end
 	EMP.delete_cache()
 end
 
-@testitem "Testing Get and Read" setup=[MyTests] begin
+@testset "Testing Get and Read" begin
 
     FLOW = 67.5 #MSm3/d
     PIN = 189.3 #barg
@@ -814,7 +805,7 @@ end
 	@test EMP.read_from_json(fn1) !== nothing
 end
 
-@testitem "Testing No Saving and Get" setup=[MyTests] begin
+@testset "Testing No Saving and Get" begin
 	M_ch4 = 16.042 # molecular weight
 	M_h2 = 2.016
 
@@ -844,14 +835,3 @@ end
 
 	EMP.delete_cache()
 end
-
-
-
-
-
-# include("case1.jl")
-# include("case2.jl")
-# include("case3.jl")
-# include("test_scratch.jl")
-
-# @run_all_tests
