@@ -1,12 +1,29 @@
-function EMB.constraints_opex_var(m, n::Compressor, 𝒯ᴵⁿᵛ, modeltype::EnergyModel) end 
+function EMB.constraints_opex_var(m, n::Compressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel) end 
 
-function EMB.constraints_flow_in(m, n::RefBlend, 𝒯::TimeStructure, modeltype::EnergyModel)
+function EMB.constraints_flow_in(m, n::RefBlend, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
     # Declaration of the required subsets
-    𝒫ⁱⁿ = inputs(n)
+    𝒫ⁱⁿ = EMB.inputs(n)
 
     # Constraint for the individual input stream connections
     @constraint(m, [t ∈ 𝒯],
         sum(m[:flow_in][n, t, p] for p ∈ 𝒫ⁱⁿ) == m[:cap_use][n, t]
+    )
+end
+
+"""
+    create_link(m, l::CapDirect, 𝒯, 𝒫::Vector{<:CompoundResource}) 
+
+New create_link function for `CapDirect` to ensure capacity limits
+"""
+function EMB.create_link(m, 𝒯, 𝒫, l::CapDirect, modeltype::EMB.EnergyModel, formulation::EMB.Formulation)
+    # Generic link in which each output corresponds to the input
+    @constraint(m, [t ∈ 𝒯, p ∈ EMB.link_res(l)],
+        m[:link_out][l, t, p] == m[:link_in][l, t, p]
+    )
+
+    @constraint(
+        m, [t ∈ 𝒯, p ∈ EMB.link_res(l)],
+        m[:link_in][l, t, p] <= capacity(l, t)
     )
 end
 
