@@ -34,6 +34,7 @@ function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model;
     # Data structure
     𝒯 = get_time_struct(case)
     𝒫 = get_products(case)
+    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)] # TODO: Eliminate when the Compressor use of Power is defined
     𝒳ᵛᵉᶜ = get_elements_vec(case) # nodes and links
     𝒳_𝒳 = get_couplings(case)
     
@@ -45,7 +46,9 @@ function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model;
         constraints_pressure(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
         constraints_blending(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
 
-        set_opex_var(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, modeltype) # TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
+        if !isempty(𝒫ᶜʳ)
+            set_opex_var(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, modeltype) # TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
+        end
     end
 
     for couple ∈ 𝒳_𝒳
@@ -54,10 +57,13 @@ function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model;
         constraints_blending(m, elements_vec..., 𝒯, 𝒫)
     end
 
-    # Define new objective_function that includes pressure related costs
-    𝒩 = get_nodes(case)
-    #TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
-    set_objective_function(m, 𝒩, 𝒯) 
+    if !isempty(𝒫ᶜʳ)
+        # Define new objective_function that includes pressure related costs
+        𝒩 = get_nodes(case)
+
+        #TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
+        set_objective_function(m, 𝒩, 𝒯) 
+    end
     return m
 
 end
@@ -88,25 +94,29 @@ function variables_blending(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
 function variables_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)]
 
-    # Create the node potential variables
-    @variable(m, potential_in[n ∈ 𝒩, 𝒯, 𝒫ᶜʳ] >= 0)
-    @variable(m, potential_out[n ∈ 𝒩, 𝒯, 𝒫ᶜʳ] >= 0)
+    if !isempty(𝒫ᶜʳ)
+        # Create the node potential variables
+        @variable(m, potential_in[n ∈ 𝒩, 𝒯, 𝒫ᶜʳ] >= 0)
+        @variable(m, potential_out[n ∈ 𝒩, 𝒯, 𝒫ᶜʳ] >= 0)
 
-    𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
-    @variable(m, potential_Δ[n ∈ 𝒩ᶜ, 𝒯] >= 0)
+        𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
+        @variable(m, potential_Δ[n ∈ 𝒩ᶜ, 𝒯] >= 0)
+    end
 
 end
 function variables_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)]
 
-    # Create the link potential variables
-    @variable(m, link_potential_in[l ∈ ℒ, 𝒯, 𝒫ᶜʳ] >= 0)
-    @variable(m, link_potential_out[l ∈ ℒ, 𝒯, 𝒫ᶜʳ] >= 0)
-
-    # Add link binary variables
     if !isempty(𝒫ᶜʳ)
-        @variable(m, has_flow[l ∈ ℒ, 𝒯], Bin) # auxiliary binary that ensures that all links with flow take value 1, it can take value 1 without flow as well. Careful with this detail, it cannot be used to check actual flows.
-        @variable(m, lower_pressure_into_node[l ∈ ℒ, 𝒯], Bin) # binary for tracking lowest pressure going into a node
+        # Create the link potential variables
+        @variable(m, link_potential_in[l ∈ ℒ, 𝒯, 𝒫ᶜʳ] >= 0)
+        @variable(m, link_potential_out[l ∈ ℒ, 𝒯, 𝒫ᶜʳ] >= 0)
+
+        # Add link binary variables
+        if !isempty(𝒫ᶜʳ)
+            @variable(m, has_flow[l ∈ ℒ, 𝒯], Bin) # auxiliary binary that ensures that all links with flow take value 1, it can take value 1 without flow as well. Careful with this detail, it cannot be used to check actual flows.
+            @variable(m, lower_pressure_into_node[l ∈ ℒ, 𝒯], Bin) # binary for tracking lowest pressure going into a node
+        end
     end
 end
 
@@ -177,7 +187,7 @@ function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Nod
     constraints_blending(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
 
-function set_opex_var(m, 𝒳::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)
+function set_opex_var(m, 𝒳::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)    
     𝒩ᶜ = filter(n -> n isa Compressor, 𝒳)
 
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
