@@ -38,25 +38,26 @@ function generate_case(; max_h2 = 0.05, min_h2 = 0.0)
 
     # Nodes
     nodes = [
-        RefSource(1, FixedProfile(20), FixedProfile(10), FixedProfile(0), Dict(H2 => 1), [MaxPressureData(FixedProfile(500))]),
-        RefSource(2, FixedProfile(10), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1), [MaxPressureData(FixedProfile(500))]),
-        RefSource(3, FixedProfile(10), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1), [MaxPressureData(FixedProfile(500))]),
-        RefBlend(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Blend => 1), [MaxPressureData(FixedProfile(200))]),
+        RefSource(1, FixedProfile(2000), FixedProfile(10), FixedProfile(0), Dict(H2 => 1), [MaxPressureData(FixedProfile(200))]),
+        RefSource(2, FixedProfile(5000), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1), [MaxPressureData(FixedProfile(200))]),
+        RefSource(3, FixedProfile(2000), FixedProfile(5), FixedProfile(0), Dict(CH4 => 1), [MaxPressureData(FixedProfile(200))]),
+        RefBlend(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Blend => 1), [MaxPressureData(FixedProfile(180))]),
         RefSink(
             5,
             FixedProfile(0),
             Dict(:surplus => FixedProfile(-120), :deficit=> FixedProfile(1e6)), 
             Dict(Blend => 1),
             [RefBlendData{ResourcePotential{Float64}}(Blend, Dict(H2=>max_h2, CH4=>1.0), Dict(H2=>min_h2, CH4=>0.0)),
-            MinPressureData(FixedProfile(10))])
+            MinPressureData(FixedProfile(130))])
     ]
 
     links = [
-        CapDirect(14, nodes[1], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130)]),
-        CapDirect(24, nodes[2], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130)]),
-        CapDirect(34, nodes[3], nodes[4], Linear(), FixedProfile(600), [PressureLinkData(0.24, 200, 130)]),
+        CapDirect(14, nodes[1], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(130))]),
+        CapDirect(24, nodes[2], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(130))]),
+        CapDirect(34, nodes[3], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(130))]),
         CapDirect(45, nodes[4], nodes[5], Linear(), FixedProfile(1200), 
-            [PressureLinkData(0.24, 200, 10), 
+            [PressureLinkData(0.24, 180, 130),
+            MinPressureData(FixedProfile(130)),
             BlendLinkData(Blend, Dict{ResourcePotential{Float64}, Float64}(H2=>2.016), 0.1, 0.0, Dict{ResourcePotential{Float64}, Float64}(CH4=>16.04))]),
     ]
 
@@ -87,7 +88,7 @@ function generate_case(; max_h2 = 0.05, min_h2 = 0.0)
     return case, model, m
 end
 
-case, model, m = generate_case(;max_h2=0.1, min_h2=0.00)
+case, model, m = generate_case(;max_h2=0.0, min_h2=0.00)
 
 
 

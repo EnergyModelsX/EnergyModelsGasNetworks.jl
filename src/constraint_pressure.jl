@@ -92,21 +92,21 @@ function constraints_pressure_limit(m, l::EMB.Link, data::MaxPressureData, 𝒯,
     𝒫ⁿ = filter(p -> p ∈ inputs(l), 𝒫)
 
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
-        m[:link_potential_in][l, t, p] <= pressure(data, t) * m[:has_flow][l, t])
+        m[:link_potential_out][l, t, p] <= pressure(data, t) * m[:has_flow][l, t])
 end
 function constraints_pressure_limit(m, l::EMB.Link, data::MinPressureData, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are inputs of `l`
     𝒫ⁿ = filter(p -> p ∈ inputs(l), 𝒫)
 
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
-        m[:link_potential_in][l, t, p] >= pressure(data, t) * m[:has_flow][l, t])
+        m[:link_potential_out][l, t, p] >= pressure(data, t) * m[:has_flow][l, t])
 end
 function constraints_pressure_limit(m, l::EMB.Link, data::FixPressureData, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are inputs of `l`
     𝒫ⁿ = filter(p -> p ∈ inputs(l), 𝒫)
 
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
-        m[:link_potential_in][l, t, p] == pressure(data, t))
+        m[:link_potential_out][l, t, p] == pressure(data, t))
 end
 # function constraints_pressure_limit(m, l::CapDirect, data::RefPressureData, 𝒯, 𝒫::Vector{<:CompoundResource}) 
 #     # Filter resources CompoundResource that are inputs of `l`
@@ -150,10 +150,10 @@ function constraints_pressure_couple(m, n::EMB.Availability, ℒ::Vector{<:EMB.L
     sum(m[:lower_pressure_into_node][l_to, t] for l_to in ℒᵗᵒ) == 1)
 
     # Outlet potential of `l` and Inlet Potential of `n`
-    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ EMB.link_res(l_to)],
         m[:potential_in][n, t, p] <= m[:link_potential_out][l_to, t, p] + 1e4 * (1 - m[:has_flow][l_to, t]))
 
-    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ EMB.link_res(l_to)],
         m[:potential_in][n, t, p] >= m[:link_potential_out][l_to, t, p] - 1e4 * (1 - m[:lower_pressure_into_node][l_to, t]))
 
     # Outlet potential of `n` and Inlet Potential of `l`
@@ -212,8 +212,8 @@ function constraints_pressure_couple(m, n::RefBlend, ℒ::Vector{<:EMB.Link}, �
     @constraint(m, [t ∈ 𝒯],
         sum(m[:lower_pressure_into_node][l_to, t] for l_to in ℒᵗᵒ) == 1)
 
-    # @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
-    #     m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
+    @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
+        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
     
     # Outlet potential of `l` and Inlet Potential of `n`
     @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp in 𝒫ⁿ_in if pp in inputs(l_to)]],

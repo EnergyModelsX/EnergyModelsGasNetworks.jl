@@ -91,14 +91,15 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
             ℒᵗᵒ = filter(l -> (blend ∈ EMB.link_res(l)) || any(res -> res ∈ EMB.link_res(l), sub_res), ℒᵗᵒ)
 
             # Get associated sources to `n` whose outputs are sub_resources of blend
-            𝒮 = track_source(n, ℒ)
-            𝒮 = filter(s -> any(res -> res ∈ sub_res, EMB.outputs(s)), 𝒮)
+            𝒮 = Dict(n_to => filter(s -> any(res -> res ∈ sub_res, EMB.outputs(s)), track_source(n_to, ℒ)) for l_to in ℒᵗᵒ for n_to in [l_to.from])
 
             # Set constraints for maximum quality of resources
             for p ∈ keys(𝒫ᵐᵃˣ)
+                @show "Applying max quality constraint for resource $(p) at node $(n.id)"
+                @show get_max_proportion(data, p)
                 @constraint(m, [t ∈ 𝒯],
                     sum((get_source_prop(s, p) - get_max_proportion(data, p)) * m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
-                    for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮) <= 0
+                    for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮[nn]) <= 0
                 )
             end
 
@@ -106,7 +107,7 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
             for p ∈ keys(𝒫ᵐⁱⁿ)
                 @constraint(m, [t ∈ 𝒯],
                     sum((get_source_prop(s, p) - get_min_proportion(data, p)) * m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
-                    for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮) >= 0
+                    for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮[nn]) >= 0
                 )
             end
         end
