@@ -21,25 +21,6 @@ struct ResourcePotential{T<:Real} <: CompoundResource
 end
 
 """
-    ResourcePotential{T<:Real} <: CompoundResource
-
-Resources that can be transported and converted, have energy potential and is the result of blending different `Resources`
-
-# Fields
-- **`id`** is the name/identifyer of the resource.
-- **`co2_int::T`** is the CO₂ intensity, *e.g.*, t/MWh.
-"""
-struct ResourceComponentPotential{T<:Real} <: CompoundResource #TODO: Improve when developing Blending, added for including PWA.
-	id::Any
-	co2_int::T
-end
-
-struct ResourceComponent{T<:Real} <: CompoundResource
-    id::Any
-    co2_int::T
-end
-
-"""
     ResourceBlend{T<:Real} <: EMB.Resource
 
 Resources that can be composed of other subresources of subtypes `Resources`. 
@@ -67,7 +48,7 @@ Return a Vector-of-Vectors of resources segmented by the sub-types.
 """
 res_types_seg(𝒫::Array{<:Resource}) = [Vector{rt}(filter(x -> isa(x, rt), 𝒫)) for rt in res_types(𝒫)] # FROM ESPEN
 
-function get_source_prop(s::Source, p::CompoundResource) 
+function get_source_prop(s::Source, p::EMB.Resource) 
     if p ∈ EMB.outputs(s)
         return 1
     else
