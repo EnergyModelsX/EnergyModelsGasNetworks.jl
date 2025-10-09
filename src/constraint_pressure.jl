@@ -2,17 +2,11 @@
     constraint_pressure(m, n::Source, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraint_pressure(m, n::Availability, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraint_pressure(m, n::Sink, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
 
-Set internal balance pressures between `potential_in` and `potential_out` in Nodes `n`.
+Set internal balance pressures between `potential_in` and `potential_out` in Nodes `n` and Links `l``.
 Source nodes have always inlet potential 0, Sink nodes have always outlet potential 0, Availability nodes have equal inlet and outlet potential.
 """
-function constraints_pressure(m, n::EMB.Source, 𝒯, 𝒫::Vector{<:CompoundResource})
-    # Filter resources CompoundResource that are output of `n``
-    𝒫ⁿ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
-
-    # Inlet Potential for Source is always 0
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], m[:potential_in][n, t, p] == 0)
-end
 function constraints_pressure(m, n::EMB.Availability, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are output of `n`
     𝒫ⁿ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
@@ -114,15 +108,14 @@ function constraints_pressure_limit(m, l::EMB.Link, data::FixPressureData, 𝒯,
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
         m[:link_potential_in][l, t, p] == pressure(data, t))
 end
-function constraints_pressure_limit(m, l::CapDirect, data::RefPressureData, 𝒯, 𝒫::Vector{<:CompoundResource}) 
-    # Filter resources CompoundResource that are inputs of `l`
-    𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
+# function constraints_pressure_limit(m, l::CapDirect, data::RefPressureData, 𝒯, 𝒫::Vector{<:CompoundResource}) 
+#     # Filter resources CompoundResource that are inputs of `l`
+#     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
 
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-        m[:link_potential_in][l, t, p] <= 1e4 * m[:has_flow][l, t]
-    )
-end
-function constraints_pressure_limit(m, l::EMB.Link, data::RefPressureData, 𝒯, 𝒫::Vector{}) end
+#     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+#         m[:link_potential_in][l, t, p] <= 1e4 * m[:has_flow][l, t]
+#     )
+# end
 
 """
     constraints_pressure_couple(m, n::Source, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
@@ -274,15 +267,17 @@ Setting Weymouth constraints in link `l` to define the link_in according to its 
 The Weymouth equation will be approximated using the first-order Taylor expansion when the Resource is a `ResourcePotential`.
 For `ResourceComponentPotential`, a Piecewise Affine Approximation (PWA) will be used.`
 """
-function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePotential})
+function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePotential}, optimizer)
     # Filter resources CompoundResource that are inputs of `l`
     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
 
     if !isempty(𝒫ⁿ)
+        @info "Applying Taylor approximation for link $(l.id)"
+
         # Retrieve elements from PressureLinkData in `l`
         # TODO: Make a check that ensures that a `l` with CompoundResource as input has LinkPressureData
         pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
-        weymouth_ct = weymouth_constant(pressure_data)
+        weymouth_ct = get_weymouth(pressure_data)
         POut, PIn = potential_data(pressure_data)
 
         # Determine the (p_in, p_out) points for the Taylor approximation

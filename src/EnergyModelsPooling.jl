@@ -24,6 +24,7 @@ include("model.jl")
 export create_model
 export Compressor, RefBlend, CapDirect
 export ResourcePotential, ResourceComponentPotential, ResourceComponent, ResourceBlend
-export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData, RefBlendData
+export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData 
+export RefBlendData, BlendLinkData
 
 end

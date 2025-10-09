@@ -15,7 +15,7 @@ end
 
 New create_link function for `CapDirect` to ensure capacity limits
 """
-function EMB.create_link(m, 𝒯, 𝒫, l::CapDirect, modeltype::EMB.EnergyModel, formulation::EMB.Formulation)
+function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
     # Generic link in which each output corresponds to the input
     @constraint(m, [t ∈ 𝒯, p ∈ EMB.link_res(l)],
         m[:link_out][l, t, p] == m[:link_in][l, t, p]
@@ -27,14 +27,14 @@ function EMB.create_link(m, 𝒯, 𝒫, l::CapDirect, modeltype::EMB.EnergyModel
     )
 end
 
-function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model; check_timeprofiles::Bool=true)
+function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model, optimizer; check_timeprofiles::Bool=true)
 
     m = EMB.create_model(case, modeltype, m; check_timeprofiles)
 
     # Data structure
     𝒯 = get_time_struct(case)
     𝒫 = get_products(case)
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)] # TODO: Eliminate when the Compressor use of Power is defined
+    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential)] # TODO: Eliminate when the Compressor use of Power is defined
     𝒳ᵛᵉᶜ = get_elements_vec(case) # nodes and links
     𝒳_𝒳 = get_couplings(case)
     
@@ -43,7 +43,7 @@ function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model;
         variables_pressure(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
         variables_blending(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
 
-        constraints_pressure(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+        constraints_pressure(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer)
         constraints_blending(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
 
         if !isempty(𝒫ᶜʳ)
@@ -67,9 +67,9 @@ function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model;
     return m
 
 end
-function create_model(case, modeltype::EMB.EnergyModel; check_timeprofiles::Bool=true)
+function create_model(case, modeltype::EMB.EnergyModel, optimizer; check_timeprofiles::Bool=true)
     m = JuMP.Model()
-    create_model(case, modeltype, m; check_timeprofiles)
+    create_model(case, modeltype, m, optimizer; check_timeprofiles)
 end
 
 # function variables_energy_content(m, 𝒜, 𝒯)
@@ -77,27 +77,33 @@ end
 # end
 
 function variables_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+    # Get the blended resources from 𝒫
     𝒫ᶜʳ = ResourceBlend[x for x in 𝒫 if isa(x, ResourceBlend)]
 
     # If the system includes a blended resource, initialise the variables
     if !isempty(𝒫ᶜʳ)
-        𝒮 = filter(n -> EMB.is_source(n) && 
-                    all(res -> (isa(res, ResourceComponent) || isa(res, ResourceComponentPotential)), EMB.outputs(n)), 𝒩)
+        # Get the subresources included in the blends (ResourceCarrier or ResourcePotential)
+        𝒫ˢᵘᵇ = [r for res_blend in 𝒫ᶜʳ for r in subresources(res_blend)]
 
+        # Get the sources that can provide the subresources
+        𝒮 = filter(n -> EMB.is_source(n) && all(res -> res in 𝒫ˢᵘᵇ, EMB.outputs(n)), 𝒩)
+        
         # Create all combinations (node, source) for tracking the proportion of source in each node
         @variable(m, 0 <= proportion_source[𝒩, s ∈ 𝒮, 𝒯] <= 1.0)
-        @variable(m, 0 <= proportion_track[𝒩, 𝒯, 𝒫ᶜʳ] <= 1.0)
+
+        # Create a proportion_track variable for each node and subresource
+        @variable(m, 0 <= proportion_track[n ∈ 𝒩, 𝒯, p ∈ 𝒫ˢᵘᵇ] <= 1.0)
     end
 end
 function variables_blending(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
 
 function variables_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)]
+    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}]
 
     if !isempty(𝒫ᶜʳ)
         # Create the node potential variables
-        @variable(m, potential_in[n ∈ 𝒩, 𝒯, 𝒫ᶜʳ] >= 0)
-        @variable(m, potential_out[n ∈ 𝒩, 𝒯, 𝒫ᶜʳ] >= 0)
+        @variable(m, potential_in[n ∈ 𝒩, 𝒯, inputs(n)] >= 0)
+        @variable(m, potential_out[n ∈ 𝒩, 𝒯, outputs(n)] >= 0)
 
         𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
         @variable(m, potential_Δ[n ∈ 𝒩ᶜ, 𝒯] >= 0)
@@ -105,49 +111,48 @@ function variables_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, �
 
 end
 function variables_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)]
+    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}]
 
     if !isempty(𝒫ᶜʳ)
         # Create the link potential variables
-        @variable(m, link_potential_in[l ∈ ℒ, 𝒯, 𝒫ᶜʳ] >= 0)
-        @variable(m, link_potential_out[l ∈ ℒ, 𝒯, 𝒫ᶜʳ] >= 0)
+        @variable(m, link_potential_in[l ∈ ℒ, 𝒯, inputs(l)] >= 0)
+        @variable(m, link_potential_out[l ∈ ℒ, 𝒯, inputs(l)] >= 0)
 
         # Add link binary variables
-        if !isempty(𝒫ᶜʳ)
-            @variable(m, has_flow[l ∈ ℒ, 𝒯], Bin) # auxiliary binary that ensures that all links with flow take value 1, it can take value 1 without flow as well. Careful with this detail, it cannot be used to check actual flows.
-            @variable(m, lower_pressure_into_node[l ∈ ℒ, 𝒯], Bin) # binary for tracking lowest pressure going into a node
-        end
+        @variable(m, has_flow[l ∈ ℒ, 𝒯], Bin) # auxiliary binary that ensures that all links with flow take value 1, it can take value 1 without flow as well. Careful with this detail, it cannot be used to check actual flows.
+        @variable(m, lower_pressure_into_node[l ∈ ℒ, 𝒯], Bin) # binary for tracking lowest pressure going into a node
     end
 end
 
-function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) 
+function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer) 
     # Retrieve CompoundResources from 𝒫
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)]
-    𝒫_sub = res_types_seg(𝒫ᶜʳ)
+    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if x isa ResourcePotential || x isa ResourceBlend{<:ResourcePotential}]
 
-    for n ∈ 𝒩, comp_res ∈ 𝒫_sub
-        limit_data = filter(d -> d isa RefPressureData, get_pressuredata(n))
-
-        constraints_pressure(m, n, 𝒯, comp_res)
-        if !isempty(limit_data)
-            for d ∈ limit_data
-                constraints_pressure_limit(m, n, d, 𝒯, comp_res)
+    for n ∈ 𝒩
+        # Define internal pressure balance constraints
+        constraints_pressure(m, n, 𝒯, 𝒫ᶜʳ)
+        
+        # Get RefPressureData and generate limit constraints if any
+        pressure_data = filter(d -> d isa RefPressureData, get_pressuredata(n))
+        if !isempty(pressure_data)
+            for d ∈ pressure_data
+                constraints_pressure_limit(m, n, d, 𝒯, 𝒫ᶜʳ)
             end
         end
     end
 end
-function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer)
     # Retrieve CompoundResources from 𝒫
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)]
-    𝒫_sub = res_types_seg(𝒫ᶜʳ)
-
-    for l ∈ ℒ, comp_res ∈ 𝒫_sub
-        limit_data = filter(d -> d isa RefPressureData, get_pressuredata(l))
-
-        constraints_pressure(m, l, 𝒯, comp_res)
-        if !isempty(limit_data)
-            for d in limit_data
-                constraints_pressure_limit(m, l, d, 𝒯, comp_res)
+    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}]
+    for l ∈ ℒ
+        # Define internal pressure balance constraints
+        constraints_pressure(m, l, 𝒯, 𝒫ᶜʳ)
+        
+        # Get RefPressureData and generate limit constraints if any
+        pressure_data = filter(d -> d isa RefPressureData, get_pressuredata(l))
+        if !isempty(pressure_data)
+            for d in pressure_data
+                constraints_pressure_limit(m, l, d, 𝒯, 𝒫ᶜʳ)
             end
         end
         constraints_flow_limit(m, l, 𝒯, 𝒫ᶜʳ)
@@ -160,7 +165,7 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
     end
 end
 function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)    
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourcePotential)]
+    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential) || isa(x, ResourceBlend{<:ResourcePotential})]
 
     for n ∈ 𝒩
         if !isempty(𝒫ᶜʳ)

@@ -122,9 +122,11 @@ The proportion source of a node n from a source is set to 1 if source == n.
 The proportion source of a node n from a source not associated to it is set to 0.
 """
 function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourceBlend})
+    sub_res = [r for res_blend ∈ 𝒫 for r in subresources(res_blend)]
+    
     # Filter sources with resources for blends
     𝒮 = filter(n -> EMB.is_source(n) && 
-            all(res -> (isa(res, ResourceComponent) || isa(res, ResourceComponentPotential)), EMB.outputs(n)), 𝒩)
+            all(res -> res ∈ sub_res, EMB.outputs(n)), 𝒩)
 
     # Set proportion_source to 0 at nodes where the source is not associated
     # and set proportion_source to 1 at source nodes.
