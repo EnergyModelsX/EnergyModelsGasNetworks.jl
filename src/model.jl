@@ -150,8 +150,13 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
                 constraints_pressure_limit(m, l, d, 𝒯, comp_res)
             end
         end
-        constraints_flow_limit(m, l, 𝒯, comp_res)
-        constraints_flow_pressure(m, l, 𝒯, comp_res)
+        constraints_flow_limit(m, l, 𝒯, 𝒫ᶜʳ)
+
+        𝒫_sub = res_types_seg(𝒫ᶜʳ)
+        @show l
+        for p_sub ∈ 𝒫_sub
+            constraints_flow_pressure(m, l, 𝒯, p_sub, optimizer)
+        end
     end
 end
 function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)    
@@ -182,6 +187,10 @@ function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Lin
     𝒫ᶜʳ = ResourceBlend[x for x in 𝒫 if isa(x, ResourceBlend)]
 
     constraints_proportion_couple(m, 𝒩, ℒ, 𝒯, 𝒫ᶜʳ)
+    
+    for n ∈ 𝒩
+        constraints_tracking(m, n, ℒ, 𝒯, 𝒫ᶜʳ)
+    end
 end
 function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Node}, 𝒯, 𝒫)
     constraints_blending(m, 𝒩, ℒ, 𝒯, 𝒫)

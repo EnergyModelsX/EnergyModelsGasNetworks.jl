@@ -104,8 +104,6 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
 
             # Set constraints for minimum quality of resources
             for p ∈ keys(𝒫ᵐⁱⁿ)
-                # Filter links into `n` with resource `p`
-
                 @constraint(m, [t ∈ 𝒯],
                     sum((get_source_prop(s, p) - get_min_proportion(data, p)) * m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
                     for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮) >= 0
@@ -117,38 +115,7 @@ end
 function constraints_quality(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourceBlend}) end
 
 """
-    function constraints_tracking(m, n::Node, ℒ::Vector{<:Link}, 𝒯, 𝒫)
-
-These are constraints required for tracking the proportion of resources each node `n`. This is used for the pressure constraints.
-"""
-function constraints_tracking(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourceComponent)]
-    𝒫ⁿ = filter(p -> (p ∈ EMB.outputs(n)) || (p ∈ EMB.inputs(n)), 𝒫ᶜʳ)
-
-    𝒮 = track_source(n, ℒ)
-
-    for p ∈ 𝒫ⁿ
-        𝒮ᵖ = filter(s -> p ∈ outputs(s), 𝒮)
-        @constraint(m, [t ∈ 𝒯],
-            m[:proportion_track][n, t, p] == sum(m[:proportion_source][n, s, t] for s ∈ 𝒮ᵖ)
-        )
-    end
-end
-function constraints_tracking(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫) 
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourceComponentPotential) || isa(x, ResourceComponent)]
-
-    # Filter CompoundResources that is an output of `n``
-    𝒫ⁿ = filter(p -> (p ∈ EMB.outputs(n)), 𝒫ᶜʳ)
-
-    # Set the proportion_track for Source `n` as 1 if it p is an output, and 0 otherwise
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
-        m[:proportion_track][n, t, p] == 1)
-    @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ᶜʳ, 𝒫ⁿ)], 
-        m[:proportion_track][n, t, p] == 0)
-end
-
-"""
-    function constraints_quality(m, , 𝒩::Vector{<:Link}, ℒ::Vector{<:Link}, 𝒯)
+    function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourceBlend})
 
 Sets standard proportion_source values. 
 The proportion source of a node n from a source is set to 1 if source == n.
@@ -176,8 +143,40 @@ function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{
         end
     end
 end
-function constraints_proportion_couple(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Node}, 𝒯, 𝒫)
+function constraints_proportion_couple(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Node}, 𝒯, 𝒫::Vector{<:ResourceBlend})
     constraints_proportion_couple(m, 𝒩, ℒ, 𝒯, 𝒫)
+end
+
+
+"""
+    function constraints_tracking(m, n::Node, ℒ::Vector{<:Link}, 𝒯, 𝒫)
+
+These are constraints required for tracking the proportion of resources each node `n`. This is used for linking with the pressure constraints.
+"""
+function constraints_tracking(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourceBlend})
+    for p_blend ∈ 𝒫
+        𝒫ʳ = subresources(p_blend)
+        𝒮 = track_source(n, ℒ)
+
+        for p ∈ 𝒫ʳ
+            𝒮ᵖ = filter(s -> p ∈ outputs(s), 𝒮)
+            @constraint(m, [t ∈ 𝒯],
+                m[:proportion_track][n, t, p] == sum(m[:proportion_source][n, s, t] for s ∈ 𝒮ᵖ)
+            )
+        end
+    end
+end
+function constraints_tracking(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourceBlend}) 
+    for p_blend ∈ 𝒫
+        𝒫ʳ = subresources(p_blend)
+        𝒫ⁿ = filter(p -> (p ∈ EMB.outputs(n)), 𝒫ʳ)
+
+        # Set the proportion_track for Source `n` as 1 if it p is an output, and 0 otherwise
+        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
+            m[:proportion_track][n, t, p] == 1)
+        @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ʳ, 𝒫ⁿ)], 
+            m[:proportion_track][n, t, p] == 0)
+    end
 end
 
 # function constraints_quality(m, a::TerminalArea, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)

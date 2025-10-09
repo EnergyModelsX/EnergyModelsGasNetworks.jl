@@ -42,11 +42,12 @@ end
 """
     ResourceBlend{T<:Real} <: EMB.Resource
 
-Resources that can be composed of other subresources of type ResourceComponent and ResourceComponentPotential.
+Resources that can be composed of other subresources of subtypes `Resources`. 
+Using `ResourcePotential` activates the potential variables and constraints in the model.
 """
-struct ResourceBlend <: EMB.Resource
+struct ResourceBlend{R<:EMB.Resource} <: CompoundResource
     id::Any
-    subresources::Vector{Union{ResourceComponent, ResourceComponentPotential}}
+    subresources::AbstractVector{R}
 end
 
 subresources(𝒫::Array{<:ResourceBlend}) = Dict(blend => blend.subresources for blend in 𝒫)
