@@ -36,6 +36,11 @@ function constraints_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResou
 
     # Inlet Potential should be always higher or equal to Outlet Potential (direction)
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], m[:link_potential_in][l, t, p] >= m[:link_potential_out][l, t, p])
+
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+        m[:link_potential_in][l, t, p] <= 1e4 * m[:has_flow][l, t])
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+        m[:link_potential_out][l, t, p] <= 1e4 * m[:has_flow][l, t])
 end
 function constraints_pressure(m, n::EMB.AbstractElement, 𝒯, 𝒫::Vector{}) end
 
@@ -108,14 +113,6 @@ function constraints_pressure_limit(m, l::EMB.Link, data::FixPressureData, 𝒯,
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
         m[:link_potential_out][l, t, p] == pressure(data, t))
 end
-# function constraints_pressure_limit(m, l::CapDirect, data::RefPressureData, 𝒯, 𝒫::Vector{<:CompoundResource}) 
-#     # Filter resources CompoundResource that are inputs of `l`
-#     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
-
-#     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-#         m[:link_potential_in][l, t, p] <= 1e4 * m[:has_flow][l, t]
-#     )
-# end
 
 """
     constraints_pressure_couple(m, n::Source, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
@@ -239,10 +236,19 @@ function constraints_pressure_couple(m, n::EMB.Sink, ℒ::Vector{<:EMB.Link}, �
     # Get links from and to `n`
     _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
 
-    for l ∈ ℒᵗᵒ
-        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-            m[:potential_in][n, t, p] == m[:link_potential_out][l, t, p])
-    end
+    @constraint(m, [t ∈ 𝒯],
+    sum(m[:lower_pressure_into_node][l_to, t] for l_to in ℒᵗᵒ) == 1)
+
+    @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
+        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
+    
+    # Outlet potential of `l` and Inlet Potential of `n`
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp in 𝒫ⁿ if pp in inputs(l_to)]],
+        m[:potential_in][n, t, p] <= m[:link_potential_out][l_to, t, p] + 1e4 * (1 - m[:has_flow][l_to, t]))
+    
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp in 𝒫ⁿ if pp in inputs(l_to)]],
+        m[:potential_in][n, t, p] >= m[:link_potential_out][l_to, t, p] - 1e4 * (1 - m[:lower_pressure_into_node][l_to, t]))
+    
 end
 function constraints_pressure_couple(m, n::EMB.AbstractElement, ℒ, 𝒯, 𝒫) end
 
