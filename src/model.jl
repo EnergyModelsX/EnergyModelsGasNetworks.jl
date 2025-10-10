@@ -60,9 +60,10 @@ function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model,
     if !isempty(𝒫ᶜʳ)
         # Define new objective_function that includes pressure related costs
         𝒩 = get_nodes(case)
-
+        ℒ = get_links(case)
         #TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
-        set_objective_function(m, 𝒩, 𝒯) 
+        set_objective_function(m, 𝒩, ℒ, 𝒯) 
+
     end
     return m
 
@@ -202,21 +203,42 @@ function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Nod
 end
 
 function set_opex_var(m, 𝒳::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)    
+    # Add addiitonal potential_add_cost for nodes
     𝒩ᶜ = filter(n -> n isa Compressor, 𝒳)
-
+    
+    # Define variables
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
+    @variable(m, potential_add_cost[𝒩ᶜ, 𝒯ᴵⁿᵛ] >= 0)
+    
+    # Add potential_add_cost compressors
     for n ∈ 𝒩ᶜ
         @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
-            m[:opex_var][n, t_inv] ==
+            m[:potential_add_cost][n, t_inv] ==
             sum(m[:potential_Δ][n, t] * EMB.opex_var(n, t) * EMB.scale_op_sp(t_inv, t) for t ∈ t_inv)
         )
     end
 end
+function set_opex_var(m, 𝒳::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)  
+    # Define variables
+    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
+    @variable(m, potential_add_cost_link[𝒳, 𝒯ᴵⁿᵛ] >= 0)
+
+    # Add small potential_add_cost cost to other nodes to penalise for increasing potential 
+    for l ∈ 𝒳
+        @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
+            m[:potential_add_cost_link][l, t_inv] ==
+            sum((m[:link_potential_in][l, t, p] + m[:link_potential_out][l, t, p]) 
+            * 0.01 for p ∈ EMB.link_res(l) for t ∈ t_inv))
+    end
+end
 function set_opex_var(m, 𝒳::Vector{<:EMB.AbstractElement}, 𝒳ᵛᵉᶜ, 𝒯, modeltype) end
-function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, 𝒯)
+function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯)
     𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
 
-    @objective(m, Max,
-        objective_function(m) + sum(m[:opex_var][n, t_inv] for n ∈ 𝒩ᶜ, t_inv ∈ strategic_periods(𝒯))
+    new_objective = @expression(m,
+        objective_function(m) - sum(m[:potential_add_cost][n, t_inv] for n ∈ 𝒩ᶜ, t_inv ∈ strategic_periods(𝒯))
+        - sum(m[:potential_add_cost_link][l, t_inv] for l ∈ ℒ for t_inv ∈ strategic_periods(𝒯))
     )
+
+    JuMP.set_objective_function(m, new_objective)
 end
