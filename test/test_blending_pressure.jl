@@ -1,5 +1,6 @@
 using EnergyModelsBase, EnergyModelsPooling
 using TimeStruct
+using PiecewiseAffineApprox
 
 using JuMP
 
@@ -13,7 +14,7 @@ using Test
 const EMB = EnergyModelsBase
 const EMP = EnergyModelsPooling
 
-function generate_case(; max_h2 = 0.05, min_h2 = 0.0)
+function generate_case(; max_h2 = 0.05, min_h2 = 0.0, cost_s3 = 5, cost_h2 = 10)
     # Define reasources
     H2 = ResourcePotential("H2", 1.0)
     CH4 = ResourcePotential("CH4", 1.0)
@@ -38,9 +39,9 @@ function generate_case(; max_h2 = 0.05, min_h2 = 0.0)
 
     # Nodes
     nodes = [
-        RefSource(1, FixedProfile(2000), FixedProfile(10), FixedProfile(0), Dict(H2 => 1), [MaxPressureData(FixedProfile(200))]),
+        RefSource(1, FixedProfile(2000), FixedProfile(cost_h2), FixedProfile(0), Dict(H2 => 1), [MaxPressureData(FixedProfile(200))]),
         RefSource(2, FixedProfile(5000), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1), [MaxPressureData(FixedProfile(200))]),
-        RefSource(3, FixedProfile(2000), FixedProfile(5), FixedProfile(0), Dict(CH4 => 1), [MaxPressureData(FixedProfile(200))]),
+        RefSource(3, FixedProfile(2000), FixedProfile(cost_s3), FixedProfile(0), Dict(CH4 => 1), [MaxPressureData(FixedProfile(200))]),
         RefBlend(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Blend => 1), [MaxPressureData(FixedProfile(180))]),
         RefSink(
             5,
@@ -52,9 +53,9 @@ function generate_case(; max_h2 = 0.05, min_h2 = 0.0)
     ]
 
     links = [
-        CapDirect(14, nodes[1], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(130))]),
-        CapDirect(24, nodes[2], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(130))]),
-        CapDirect(34, nodes[3], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(130))]),
+        CapDirect(14, nodes[1], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(1e-6))]), # NOT SURE WHY I HAVE TO LIMIT THE outlet pressure in links to avoid weird behaviours
+        CapDirect(24, nodes[2], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(1e-6))]),
+        CapDirect(34, nodes[3], nodes[4], Linear(), FixedProfile(200), [PressureLinkData(0.24, 200, 130), MinPressureData(FixedProfile(1e-6))]),
         CapDirect(45, nodes[4], nodes[5], Linear(), FixedProfile(1200), 
             [PressureLinkData(0.24, 180, 130),
             MinPressureData(FixedProfile(130)),
@@ -88,30 +89,109 @@ function generate_case(; max_h2 = 0.05, min_h2 = 0.0)
     return case, model, m
 end
 
+# Run case
 case, model, m = generate_case(;max_h2=0.0, min_h2=0.00)
 
+# # Extract data from the case
+𝒩 = get_nodes(case)
+ℒ = get_links(case)
+𝒫 = get_products(case)
+𝒯 = get_time_struct(case)
 
+H2 = first(filter(p -> p.id == "H2", 𝒫))
+CH4 = first(filter(p -> p.id == "CH4", 𝒫))
+Blend = first(filter(p -> p.id == "Blend", 𝒫))
+@testset "Basic case - results" begin
 
-# @testset "Basic case - results" begin
-#     # # Extract data from the case
-#     𝒩 = get_nodes(case)
-#     ℒ = get_links(case)
-#     𝒫 = get_products(case)
-#     𝒯 = get_time_struct(case)
-#     H2 = first(filter(p -> p.id == "H2", 𝒫))
-#     CH4 = first(filter(p -> p.id == "CH4", 𝒫))
-#     Blend = first(filter(p -> p.id == "Blend", 𝒫))
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
+    
+    @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) == 0
+    @test isapprox(value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]),20.108; atol=1e-1)
+    @test isapprox(value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]), 42.71; atol=1e-1)
+    @test isapprox(value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]), 62.82; atol=1e-1)
+    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) == 0.00
+    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) == 1.00
+end
+
+@testset "Basic case - approximation" begin
+    
+    pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[end].data))
+    blend_data = first(filter(data -> data isa BlendLinkData, ℒ[end].data))
+    pwa = EMP.get_pwa(pressure_data, blend_data, Xpress.Optimizer)
+
+    pin = value(m[:link_potential_in][ℒ[end], first(collect(𝒯)), Blend])
+    pout = value(m[:link_potential_out][ℒ[end], first(collect(𝒯)), Blend])
+    prop = 0
+    
+    # Test that the PWA bounds the flow in link_n_4-n_5
+    @test isapprox(PiecewiseAffineApprox.evaluate(pwa, (pin, pout, prop)), 
+            value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]); atol=1e-1)
+
+    # Test that Taylor approximation bounds flow in link_n_3-n_4
+    rhs = EMP.test_approx(0.24, [(200, pout) for pout in range(200, 130, length=150)[2:end]], 
+                value(m[:link_potential_in][ℒ[3], first(collect(𝒯)), CH4]),
+                value(m[:link_potential_out][ℒ[3], first(collect(𝒯)), CH4]))
+    @test isapprox(rhs, value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]); atol=1e-1)
+
+    #  Test that Taylor approximation bounds flow in link_n_1-n_4
+    rhs = EMP.test_approx(0.24, [(200, pout) for pout in range(200, 0, length=150)[2:end]], 
+                value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]),
+                value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))
+    @test isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol=1e-1)
+end
+
+# case, model, m = generate_case(;max_h2=0.1, min_h2=0.00, cost_s3 = 5)
+
+# # # Extract data from the case
+# 𝒩 = get_nodes(case)
+# ℒ = get_links(case)
+# 𝒫 = get_products(case)
+# 𝒯 = get_time_struct(case)
+
+# H2 = first(filter(p -> p.id == "H2", 𝒫))
+# CH4 = first(filter(p -> p.id == "CH4", 𝒫))
+# Blend = first(filter(p -> p.id == "Blend", 𝒫))
+# @testset "0.1% H2 case - results" begin
 
 #     @test JuMP.termination_status(m) == MOI.OPTIMAL
-#     @test isapprox(objective_value(m), - 42.1 * 10 - 200 * 10 - 600 * 10 + (842.1 - 500) * 120; atol=1)
+#     @test isapprox(objective_value(m), - 51.2 * 5 - 5.69 * 10 + 56.89 * 120; atol=1)
     
-#     @test isapprox(value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]), 42.1; atol=1e-1)
-#     @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) == 200
-#     @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) == 600
-#     @test isapprox(value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]), 842.1; atol=1e-1)
-
-#     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) == 0.05
+#     @test isapprox(value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]), 5.69; atol=1e-1)
+#     @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) == 0
+#     @test isapprox(value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]), 51.2; atol=1e-1)
+#     @test isapprox(value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]), 56.89; atol=1e-1)
+#     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) == 0.1
+#     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) == 0.90
 # end
+
+# @testset "0.1% H2 case - approximation" begin
+    
+#     pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[end].data))
+#     blend_data = first(filter(data -> data isa BlendLinkData, ℒ[end].data))
+#     pwa = EMP.get_pwa(pressure_data, blend_data, Xpress.Optimizer)
+
+#     pin = value(m[:link_potential_in][ℒ[end], first(collect(𝒯)), Blend])
+#     pout = value(m[:link_potential_out][ℒ[end], first(collect(𝒯)), Blend])
+#     prop = 0.1
+    
+#     # Test that the PWA bounds the flow in link_n_4-n_5
+#     @test isapprox(PiecewiseAffineApprox.evaluate(pwa, (pin, pout, prop)), 
+#             value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]); atol=1e-1)
+
+#     # Test that Taylor approximation bounds flow in link_n_3-n_4
+#     rhs = EMP.test_approx(0.24, [(200, pout) for pout in range(200, 130, length=150)[2:end]], 
+#                 value(m[:link_potential_in][ℒ[3], first(collect(𝒯)), CH4]),
+#                 value(m[:link_potential_out][ℒ[3], first(collect(𝒯)), CH4]))
+#     @test isapprox(rhs, value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]); atol=1e-1)
+
+#     #  Test that Taylor approximation bounds flow in link_n_1-n_4
+#     rhs = EMP.test_approx(0.24, [(200, pout) for pout in range(200, 130, length=150)[2:end]], 
+#                 value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]),
+#                 value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))
+#     @test isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol=1e-1)
+    
+# end
+
 
 # @testset "Weymouth equation - pwa" begin
     
