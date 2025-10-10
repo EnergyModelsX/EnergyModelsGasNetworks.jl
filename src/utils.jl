@@ -110,3 +110,12 @@ function test_approx(pwa, constant, pin, pout, prop, molmass_other, molmass_trac
                 PiecewiseAffineApprox.evaluate(pwa, (pin, p_out, prop))>=calculate_flow(constant, pin, p_out, prop, molmass_other, molmass_track))
     end
 end
+function test_approx(weymouth, pressure_points::Vector, link_potential_in, link_potential_out)
+    rhs = Float64[]
+    for (p_in, p_out) ∈ pressure_points
+        value = sqrt(weymouth) * 
+        ((p_in/(sqrt(p_in^2 - p_out^2))) * link_potential_in - (p_out/(sqrt(p_in^2 - p_out^2))) * link_potential_out)
+        push!(rhs, value)
+    end 
+    return minimum(rhs)
+end
