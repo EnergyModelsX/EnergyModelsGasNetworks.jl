@@ -140,62 +140,57 @@ end
     @test isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol=1e-1)
 end
 
-# case, model, m = generate_case(;max_h2=0.1, min_h2=0.00, cost_s3 = 5)
+case, model, m = generate_case(;max_h2=0.1, min_h2=0.00, cost_s3 = 5)
 
-# # # Extract data from the case
-# 𝒩 = get_nodes(case)
-# ℒ = get_links(case)
-# 𝒫 = get_products(case)
-# 𝒯 = get_time_struct(case)
+# # Extract data from the case
+𝒩 = get_nodes(case)
+ℒ = get_links(case)
+𝒫 = get_products(case)
+𝒯 = get_time_struct(case)
 
-# H2 = first(filter(p -> p.id == "H2", 𝒫))
-# CH4 = first(filter(p -> p.id == "CH4", 𝒫))
-# Blend = first(filter(p -> p.id == "Blend", 𝒫))
-# @testset "0.1% H2 case - results" begin
+H2 = first(filter(p -> p.id == "H2", 𝒫))
+CH4 = first(filter(p -> p.id == "CH4", 𝒫))
+Blend = first(filter(p -> p.id == "Blend", 𝒫))
+@testset "0.1% H2 case - results" begin
 
-#     @test JuMP.termination_status(m) == MOI.OPTIMAL
-#     @test isapprox(objective_value(m), - 51.2 * 5 - 5.69 * 10 + 56.89 * 120; atol=1)
+    @test JuMP.termination_status(m) == MOI.OPTIMAL
     
-#     @test isapprox(value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]), 5.69; atol=1e-1)
-#     @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) == 0
-#     @test isapprox(value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]), 51.2; atol=1e-1)
-#     @test isapprox(value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]), 56.89; atol=1e-1)
-#     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) == 0.1
-#     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) == 0.90
-# end
+    @test isapprox(value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]), 6.50; atol=1e-1)
+    @test isapprox(value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]), 15.841; atol=1e-1)
+    @test isapprox(value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]), 42.67; atol=1e-1)
+    @test isapprox(value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]), 65.0; atol=1e-1)
+    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) == 0.1
+    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) == 0.90
+end
 
-# @testset "0.1% H2 case - approximation" begin
+@testset "0.1% H2 case - approximation" begin
     
-#     pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[end].data))
-#     blend_data = first(filter(data -> data isa BlendLinkData, ℒ[end].data))
-#     pwa = EMP.get_pwa(pressure_data, blend_data, Xpress.Optimizer)
+    pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[end].data))
+    blend_data = first(filter(data -> data isa BlendLinkData, ℒ[end].data))
+    pwa = EMP.get_pwa(pressure_data, blend_data, Xpress.Optimizer)
 
-#     pin = value(m[:link_potential_in][ℒ[end], first(collect(𝒯)), Blend])
-#     pout = value(m[:link_potential_out][ℒ[end], first(collect(𝒯)), Blend])
-#     prop = 0.1
+    pin = value(m[:link_potential_in][ℒ[end], first(collect(𝒯)), Blend])
+    pout = value(m[:link_potential_out][ℒ[end], first(collect(𝒯)), Blend])
+    prop = 0.1
     
-#     # Test that the PWA bounds the flow in link_n_4-n_5
-#     @test isapprox(PiecewiseAffineApprox.evaluate(pwa, (pin, pout, prop)), 
-#             value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]); atol=1e-1)
+    # Test that the PWA bounds the flow in link_n_4-n_5
+    @test isapprox(PiecewiseAffineApprox.evaluate(pwa, (pin, pout, prop)), 
+            value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]); atol=1e-1)
 
-#     # Test that Taylor approximation bounds flow in link_n_3-n_4
-#     rhs = EMP.test_approx(0.24, [(200, pout) for pout in range(200, 130, length=150)[2:end]], 
-#                 value(m[:link_potential_in][ℒ[3], first(collect(𝒯)), CH4]),
-#                 value(m[:link_potential_out][ℒ[3], first(collect(𝒯)), CH4]))
-#     @test isapprox(rhs, value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]); atol=1e-1)
+    # Test that Taylor approximation bounds flow in link_n_3-n_4
+    rhs = EMP.test_approx(0.24, [(200, pout) for pout in range(200, 130, length=150)[2:end]], 
+                value(m[:link_potential_in][ℒ[3], first(collect(𝒯)), CH4]),
+                value(m[:link_potential_out][ℒ[3], first(collect(𝒯)), CH4]))
+    @test isapprox(rhs, value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]); atol=1e-1)
 
-#     #  Test that Taylor approximation bounds flow in link_n_1-n_4
-#     rhs = EMP.test_approx(0.24, [(200, pout) for pout in range(200, 130, length=150)[2:end]], 
-#                 value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]),
-#                 value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))
-#     @test isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol=1e-1)
+    #  Test that Taylor approximation bounds flow in link_n_1-n_4
+    rhs = EMP.test_approx(0.24, [(200, pout) for pout in range(200, 130, length=150)[2:end]], 
+                value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]),
+                value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))
+    @test isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol=1e-1)
     
-# end
+end
 
-
-# @testset "Weymouth equation - pwa" begin
-    
-# end
 
 # @testset "Quality constraints" begin
 
