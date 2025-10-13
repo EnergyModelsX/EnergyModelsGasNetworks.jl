@@ -298,6 +298,7 @@ function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Resource
         pressures_points = [(PIn, p) for p in range(PIn, POut, length=150)[2:end]]
 
         # Create Taylor constraint for each point
+        # TODO: Doubt, if link_potential_in and link_potenntial_out are equal, there is still a flow
         for (p_in, p_out) ∈ pressures_points
             @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
             m[:link_in][l, t, p] <= sqrt(weymouth_ct) * (

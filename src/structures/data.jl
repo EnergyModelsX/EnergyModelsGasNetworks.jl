@@ -71,6 +71,11 @@ struct RefBlendData{T<:EMB.Resource} <: BlendData
     max_proportion::Dict{T, Real}
     min_proportion::Dict{T, Real}
 end
+RefBlendData(
+    blend::ResourceBlend{T},
+    max_proportion::Dict{T, <:Real},
+    min_proportion::Dict{T, <:Real}) where {T<:EMB.Resource} = 
+    RefBlendData{T}(blend, max_proportion, min_proportion)
 
 """
     BlendLinkData{T<:CompoundResource} <: BlendData
