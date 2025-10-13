@@ -138,64 +138,72 @@ function constraints_pressure_couple(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 
 end
 function constraints_pressure_couple(m, n::EMB.Availability, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are inputs of `n`
-    𝒫ⁿ = filter(p -> p ∈ inputs(n), 𝒫)
-
-    # Get links from and to `n`
-    ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
-
-    @constraint(m, [t ∈ 𝒯],
-    sum(m[:lower_pressure_into_node][l_to, t] for l_to in ℒᵗᵒ) == 1)
-
-    # Outlet potential of `l` and Inlet Potential of `n`
-    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ EMB.link_res(l_to)],
-        m[:potential_in][n, t, p] <= m[:link_potential_out][l_to, t, p] + 1e4 * (1 - m[:has_flow][l_to, t]))
-
-    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ EMB.link_res(l_to)],
-        m[:potential_in][n, t, p] >= m[:link_potential_out][l_to, t, p] - 1e4 * (1 - m[:lower_pressure_into_node][l_to, t]))
-
-    # Outlet potential of `n` and Inlet Potential of `l`
-    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ 𝒫ⁿ],
-        m[:link_potential_in][l_from, t, p] <=
-        m[:potential_out][n, t, p] + 1e4 * (1 - m[:has_flow][l_from, t]))
-    
-    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ 𝒫ⁿ],
-        m[:link_potential_in][l_from, t, p] >=
-        m[:potential_out][n, t, p] - 1e4 * (1 - m[:has_flow][l_from, t]))
-
-end
-function constraints_pressure_couple(m, n::Compressor, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:CompoundResource})
-    # Filter resources CompoundResource that are inputs of `n`
-    𝒫ⁿ = filter(p -> p ∈ EMB.inputs(n), 𝒫)
+    𝒫ⁿ_in = filter(p -> p ∈ EMB.inputs(n), 𝒫)
+    𝒫ⁿ_out = filter(p -> p ∈ EMB.outputs(n), 𝒫)
 
     # Get links from and to `n`
     ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
 
     @constraint(m, [t ∈ 𝒯],
         sum(m[:lower_pressure_into_node][l_to, t] for l_to in ℒᵗᵒ) == 1)
+
+    @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
+        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
     
     # Outlet potential of `l` and Inlet Potential of `n`
-    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp in 𝒫ⁿ_in if pp in inputs(l_to)]],
         m[:potential_in][n, t, p] <= m[:link_potential_out][l_to, t, p] + 1e4 * (1 - m[:has_flow][l_to, t]))
     
-    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp in 𝒫ⁿ_in if pp in inputs(l_to)]],
+        m[:potential_in][n, t, p] >= m[:link_potential_out][l_to, t, p] - 1e4 * (1 - m[:lower_pressure_into_node][l_to, t]))
+
+    # Outlet potential of `n` and Inlet Potential of `l`
+    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ inputs(l_from)],
+        m[:link_potential_in][l_from, t, p] <=
+        m[:potential_out][n, t, p] + 1e4 * (1 - m[:has_flow][l_from, t]))
+    
+    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ inputs(l_from)],
+        m[:link_potential_in][l_from, t, p] >=
+        m[:potential_out][n, t, p] - 1e4 * (1 - m[:has_flow][l_from, t]))
+
+end
+function constraints_pressure_couple(m, n::Compressor, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:CompoundResource})
+    # Filter resources CompoundResource that are inputs of `n`
+    𝒫ⁿ_in = filter(p -> p ∈ EMB.inputs(n), 𝒫)
+    𝒫ⁿ_out = filter(p -> p ∈ EMB.outputs(n), 𝒫)
+
+    # Get links from and to `n`
+    ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
+
+    @constraint(m, [t ∈ 𝒯],
+        sum(m[:lower_pressure_into_node][l_to, t] for l_to in ℒᵗᵒ) == 1)
+
+    @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
+        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
+    
+    # Outlet potential of `l` and Inlet Potential of `n`
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp in 𝒫ⁿ_in if pp in inputs(l_to)]],
+        m[:potential_in][n, t, p] <= m[:link_potential_out][l_to, t, p] + 1e4 * (1 - m[:has_flow][l_to, t]))
+    
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp in 𝒫ⁿ_in if pp in inputs(l_to)]],
         m[:potential_in][n, t, p] >= m[:link_potential_out][l_to, t, p] - 1e4 * (1 - m[:lower_pressure_into_node][l_to, t]))
     
     # The Outlet Potential in Compressor `n` is equal to the inlet potential + the required increased pressure
     # Note: The potential_Δ will be priced at opex_var in the objective function # TODO: Delete comment when Compressor Power consumption is defined
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ_in],
         m[:potential_out][n, t, p] == m[:potential_in][n, t, p] + m[:potential_Δ][n, t])
 
     @constraint(m, [t ∈ 𝒯],
         m[:potential_Δ][n, t] <= get_potential(n, t))
 
     # Outlet potential of `n` and Inlet Potential of `l`
-    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ inputs(l_from), pp ∈ 𝒫ⁿ_out],
         m[:link_potential_in][l_from, t, p] <=
-        m[:potential_out][n, t, p] + 1e4 * (1 - m[:has_flow][l_from, t]))
+        m[:potential_out][n, t, pp] + 1e4 * (1 - m[:has_flow][l_from, t]))
     
-    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ inputs(l_from), pp ∈ 𝒫ⁿ_out],
         m[:link_potential_in][l_from, t, p] >=
-        m[:potential_out][n, t, p] - 1e4 * (1 - m[:has_flow][l_from, t]))
+        m[:potential_out][n, t, pp] - 1e4 * (1 - m[:has_flow][l_from, t]))
 
 end
 function constraints_pressure_couple(m, n::RefBlend, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:CompoundResource})

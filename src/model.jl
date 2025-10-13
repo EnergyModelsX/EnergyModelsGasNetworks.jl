@@ -1,4 +1,7 @@
-function EMB.constraints_opex_var(m, n::Compressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel) end 
+function EMB.constraints_opex_var(m, n::Compressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel) 
+    @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
+        m[:opex_var][n, t_inv] == 0)
+end 
 
 function EMB.constraints_flow_in(m, n::RefBlend, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
     # Declaration of the required subsets
