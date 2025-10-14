@@ -16,7 +16,6 @@ try
     ENV["XPRESS_JL_LIBRARY"] = Xpress_jll.libxprs
     ENV["XPAUTH_PATH"] = realpath(joinpath("xpauth.xpr"))
     ENV["XPRESS_JL_SKIP_LIB_CHECK"] = true
-    ENV["XPRESS_JL_NO_AUTO_INIT"] = 1
     import Pkg
     Pkg.add("Xpress")
     using Xpress
