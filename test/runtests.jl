@@ -32,7 +32,7 @@ optimizer = optimizer_with_attributes(
     "nlp_solver" => nl_solver,
     "mip_solver" => mip_optimizer,
     "minlp_solver" => minlp_optimizer,
-    "rel_gap" => 1,
+    "rel_gap" => 0.01,
     "presolve_bt" => false,
 )
 

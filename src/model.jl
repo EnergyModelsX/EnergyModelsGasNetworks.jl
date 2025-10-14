@@ -1,9 +1,14 @@
-function EMB.constraints_opex_var(m, n::Compressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel) 
+function EMB.constraints_opex_var(m, n::Compressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel)
     @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
         m[:opex_var][n, t_inv] == 0)
-end 
+end
 
-function EMB.constraints_flow_in(m, n::RefBlend, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
+function EMB.constraints_flow_in(
+    m,
+    n::RefBlend,
+    𝒯::TimeStructure,
+    modeltype::EMB.EnergyModel,
+)
     # Declaration of the required subsets
     𝒫ⁱⁿ = EMB.inputs(n)
 
@@ -30,17 +35,22 @@ function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel
     )
 end
 
-function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model, optimizer; check_timeprofiles::Bool=true)
-
+function create_model(
+    case::EMB.Case,
+    modeltype::EMB.EnergyModel,
+    m::JuMP.Model,
+    optimizer;
+    check_timeprofiles::Bool = true,
+)
     m = EMB.create_model(case, modeltype, m; check_timeprofiles)
 
     # Data structure
     𝒯 = get_time_struct(case)
     𝒫 = get_products(case)
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential)] # TODO: Eliminate when the Compressor use of Power is defined
+    𝒫ᶜʳ = CompoundResource[x for x ∈ 𝒫 if isa(x, ResourcePotential)] # TODO: Eliminate when the Compressor use of Power is defined
     𝒳ᵛᵉᶜ = get_elements_vec(case) # nodes and links
     𝒳_𝒳 = get_couplings(case)
-    
+
     # Declaration of element variables and constraints of the problem
     for 𝒳 ∈ 𝒳ᵛᵉᶜ
         variables_pressure(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
@@ -65,13 +75,16 @@ function create_model(case::EMB.Case, modeltype::EMB.EnergyModel, m::JuMP.Model,
         𝒩 = get_nodes(case)
         ℒ = get_links(case)
         #TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
-        set_objective_function(m, 𝒩, ℒ, 𝒯) 
-
+        set_objective_function(m, 𝒩, ℒ, 𝒯)
     end
     return m
-
 end
-function create_model(case, modeltype::EMB.EnergyModel, optimizer; check_timeprofiles::Bool=true)
+function create_model(
+    case,
+    modeltype::EMB.EnergyModel,
+    optimizer;
+    check_timeprofiles::Bool = true,
+)
     m = JuMP.Model()
     create_model(case, modeltype, m, optimizer; check_timeprofiles)
 end
@@ -82,16 +95,16 @@ end
 
 function variables_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     # Get the blended resources from 𝒫
-    𝒫ᶜʳ = ResourceBlend[x for x in 𝒫 if isa(x, ResourceBlend)]
+    𝒫ᶜʳ = ResourceBlend[x for x ∈ 𝒫 if isa(x, ResourceBlend)]
 
     # If the system includes a blended resource, initialise the variables
     if !isempty(𝒫ᶜʳ)
         # Get the subresources included in the blends (ResourceCarrier or ResourcePotential)
-        𝒫ˢᵘᵇ = [r for res_blend in 𝒫ᶜʳ for r in subresources(res_blend)]
+        𝒫ˢᵘᵇ = [r for res_blend ∈ 𝒫ᶜʳ for r ∈ subresources(res_blend)]
 
         # Get the sources that can provide the subresources
         𝒮 = filter(n -> EMB.is_source(n) && all(res -> res in 𝒫ˢᵘᵇ, EMB.outputs(n)), 𝒩)
-        
+
         # Create all combinations (node, source) for tracking the proportion of source in each node
         @variable(m, 0 <= proportion_source[𝒩, s ∈ 𝒮, 𝒯] <= 1.0)
 
@@ -102,7 +115,10 @@ end
 function variables_blending(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
 
 function variables_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}]
+    𝒫ᶜʳ = CompoundResource[
+        x for
+        x ∈ 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}
+    ]
 
     if !isempty(𝒫ᶜʳ)
         # Create the node potential variables
@@ -112,10 +128,12 @@ function variables_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, �
         𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
         @variable(m, potential_Δ[n ∈ 𝒩ᶜ, 𝒯] >= 0)
     end
-
 end
 function variables_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}]
+    𝒫ᶜʳ = CompoundResource[
+        x for
+        x ∈ 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}
+    ]
 
     if !isempty(𝒫ᶜʳ)
         # Create the link potential variables
@@ -128,14 +146,16 @@ function variables_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
     end
 end
 
-function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer) 
+function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer)
     # Retrieve CompoundResources from 𝒫
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if x isa ResourcePotential || x isa ResourceBlend{<:ResourcePotential}]
+    𝒫ᶜʳ = CompoundResource[
+        x for x ∈ 𝒫 if x isa ResourcePotential || x isa ResourceBlend{<:ResourcePotential}
+    ]
 
     for n ∈ 𝒩
         # Define internal pressure balance constraints
         constraints_pressure(m, n, 𝒯, 𝒫ᶜʳ)
-        
+
         # Get RefPressureData and generate limit constraints if any
         pressure_data = filter(d -> d isa RefPressureData, get_pressuredata(n))
         if !isempty(pressure_data)
@@ -147,15 +167,18 @@ function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 
 end
 function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer)
     # Retrieve CompoundResources from 𝒫
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}]
+    𝒫ᶜʳ = CompoundResource[
+        x for
+        x ∈ 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}
+    ]
     for l ∈ ℒ
         # Define internal pressure balance constraints
         constraints_pressure(m, l, 𝒯, 𝒫ᶜʳ)
-        
+
         # Get RefPressureData and generate limit constraints if any
         pressure_data = filter(d -> d isa RefPressureData, get_pressuredata(l))
         if !isempty(pressure_data)
-            for d in pressure_data
+            for d ∈ pressure_data
                 constraints_pressure_limit(m, l, d, 𝒯, 𝒫ᶜʳ)
             end
         end
@@ -168,8 +191,11 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
         end
     end
 end
-function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)    
-    𝒫ᶜʳ = CompoundResource[x for x in 𝒫 if isa(x, ResourcePotential) || isa(x, ResourceBlend{<:ResourcePotential})]
+function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)
+    𝒫ᶜʳ = CompoundResource[
+        x for
+        x ∈ 𝒫 if isa(x, ResourcePotential) || isa(x, ResourceBlend{<:ResourcePotential})
+    ]
 
     for n ∈ 𝒩
         if !isempty(𝒫ᶜʳ)
@@ -181,9 +207,9 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Nod
     constraints_pressure(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
 
-function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) 
+function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     # Retrieve CompoundResources from 𝒫
-    𝒫ᶜʳ = ResourceBlend[x for x in 𝒫 if isa(x, ResourceBlend)]
+    𝒫ᶜʳ = ResourceBlend[x for x ∈ 𝒫 if isa(x, ResourceBlend)]
 
     for n ∈ 𝒩
         constraints_proportion(m, n, 𝒳ᵛᵉᶜ, 𝒯, 𝒫ᶜʳ)
@@ -191,12 +217,12 @@ function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 
     end
 end
 function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
-function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫) 
+function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)
     # Retrieve CompoundResources from 𝒫
-    𝒫ᶜʳ = ResourceBlend[x for x in 𝒫 if isa(x, ResourceBlend)]
+    𝒫ᶜʳ = ResourceBlend[x for x ∈ 𝒫 if isa(x, ResourceBlend)]
 
     constraints_proportion_couple(m, 𝒩, ℒ, 𝒯, 𝒫ᶜʳ)
-    
+
     for n ∈ 𝒩
         constraints_tracking(m, n, ℒ, 𝒯, 𝒫ᶜʳ)
     end
@@ -205,23 +231,26 @@ function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Nod
     constraints_blending(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
 
-function set_opex_var(m, 𝒳::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)    
+function set_opex_var(m, 𝒳::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)
     # Add addiitonal potential_add_cost for nodes
     𝒩ᶜ = filter(n -> n isa Compressor, 𝒳)
-    
+
     # Define variables
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
     @variable(m, potential_add_cost[𝒩ᶜ, 𝒯ᴵⁿᵛ] >= 0)
-    
+
     # Add potential_add_cost compressors
     for n ∈ 𝒩ᶜ
         @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
             m[:potential_add_cost][n, t_inv] ==
-            sum(m[:potential_Δ][n, t] * EMB.opex_var(n, t) * EMB.scale_op_sp(t_inv, t) for t ∈ t_inv)
+            sum(
+                m[:potential_Δ][n, t] * EMB.opex_var(n, t) * EMB.scale_op_sp(t_inv, t) for
+                t ∈ t_inv
+            )
         )
     end
 end
-function set_opex_var(m, 𝒳::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)  
+function set_opex_var(m, 𝒳::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)
     # Define variables
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
     @variable(m, potential_add_cost_link[𝒳, 𝒯ᴵⁿᵛ] >= 0)
@@ -230,8 +259,11 @@ function set_opex_var(m, 𝒳::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, modeltyp
     for l ∈ 𝒳
         @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
             m[:potential_add_cost_link][l, t_inv] ==
-            sum((m[:link_potential_in][l, t, p] + m[:link_potential_out][l, t, p]) 
-            * 0.01 for p ∈ EMB.link_res(l) for t ∈ t_inv))
+            sum(
+                (m[:link_potential_in][l, t, p] + m[:link_potential_out][l, t, p])
+                *
+                0.01 for p ∈ EMB.link_res(l) for t ∈ t_inv
+            ))
     end
 end
 function set_opex_var(m, 𝒳::Vector{<:EMB.AbstractElement}, 𝒳ᵛᵉᶜ, 𝒯, modeltype) end
@@ -239,8 +271,13 @@ function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.L
     𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
 
     new_objective = @expression(m,
-        objective_function(m) - sum(m[:potential_add_cost][n, t_inv] for n ∈ 𝒩ᶜ, t_inv ∈ strategic_periods(𝒯))
-        - sum(m[:potential_add_cost_link][l, t_inv] for l ∈ ℒ for t_inv ∈ strategic_periods(𝒯))
+        objective_function(m) -
+        sum(m[:potential_add_cost][n, t_inv] for n ∈ 𝒩ᶜ, t_inv ∈ strategic_periods(𝒯))
+        -
+        sum(
+            m[:potential_add_cost_link][l, t_inv] for l ∈ ℒ for
+            t_inv ∈ strategic_periods(𝒯)
+        )
     )
 
     JuMP.set_objective_function(m, new_objective)

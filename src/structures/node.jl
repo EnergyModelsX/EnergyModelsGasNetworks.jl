@@ -16,9 +16,9 @@ NetworkNode that increases its potential_out.
 !NOTE: In Compressors, the operational cost is determined by the potential increase and not the :cap_use (flow within compressor).
 """
 struct Compressor <: EMB.NetworkNode
-	id::Any
-	cap::TimeProfile
-	opex_var::TimeProfile
+    id::Any
+    cap::TimeProfile
+    opex_var::TimeProfile
     opex_fixed::TimeProfile
     input::Dict{<:Resource,<:Real}
     output::Dict{<:Resource,<:Real}
@@ -34,9 +34,19 @@ function Compressor(
     input::Dict{<:Resource,<:Real},
     output::Dict{<:Resource,<:Real},
     potential_increase::TimeProfile,
-    potential_opex_var::TimeProfile
+    potential_opex_var::TimeProfile,
 )
-    return Compressor(id, cap, opex_var, opex_fixed, input, output, potential_increase, potential_opex_var, ExtensionData[])
+    return Compressor(
+        id,
+        cap,
+        opex_var,
+        opex_fixed,
+        input,
+        output,
+        potential_increase,
+        potential_opex_var,
+        ExtensionData[],
+    )
 end
 
 get_potential(n::Compressor, t) = n.potential_increase[t]
@@ -65,7 +75,6 @@ function RefBlend(
 )
     return RefBlend(id, cap, opex_var, opex_fixed, input, output, Data[])
 end
-
 
 # """
 # 	RefSourceComponent <: EMB.Source
@@ -161,8 +170,6 @@ end
 # 		return 0
 # 	end
 # end
-
-
 
 # """
 # 	is_geoavailability(n::Node)

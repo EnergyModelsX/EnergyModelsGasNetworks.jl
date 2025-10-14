@@ -68,13 +68,13 @@ Blending data for controlling the quality of Nodes.
 """
 struct RefBlendData{T<:EMB.Resource} <: BlendData
     blend::ResourceBlend{T}
-    max_proportion::Dict{T, Real}
-    min_proportion::Dict{T, Real}
+    max_proportion::Dict{T,Real}
+    min_proportion::Dict{T,Real}
 end
 RefBlendData(
     blend::ResourceBlend{T},
-    max_proportion::Dict{T, <:Real},
-    min_proportion::Dict{T, <:Real}) where {T<:EMB.Resource} = 
+    max_proportion::Dict{T,<:Real},
+    min_proportion::Dict{T,<:Real}) where {T<:EMB.Resource} =
     RefBlendData{T}(blend, max_proportion, min_proportion)
 
 """
@@ -85,10 +85,10 @@ Blending data for Links.
 """
 struct BlendLinkData{T<:EMB.Resource} <: BlendData
     blend::ResourceBlend{T}
-    tracking_res::Dict{T, <:Real} # Tracking resource for the PWA + molar mass
+    tracking_res::Dict{T,<:Real} # Tracking resource for the PWA + molar mass
     max_proportion::Real # max.proportion of tracking resource
     min_proportion::Real # min.proportion of tracking resource
-    other_res::Dict{T, <:Real} # Other resources in the blend + molar mass
+    other_res::Dict{T,<:Real} # Other resources in the blend + molar mass
 end
 
 function pressure(n::EMB.Node)
@@ -128,7 +128,12 @@ end
 Generates/retrieves the PWA functions for a link with blending and pressure data to calculate the Weymouth equation with blending.
 # TODO: Improve calling the optimizer. For the moment, it is a parameter included when 
 """
-function get_pwa(data_pressure::PressureLinkData, data_blend::BlendData, optimizer; resolution_prop=0.01)
+function get_pwa(
+    data_pressure::PressureLinkData,
+    data_blend::BlendData,
+    optimizer;
+    resolution_prop = 0.01,
+)
     POut, PIn = potential_data(data_pressure)
     PropMax, PropMin = res_blendata(data_blend)
     track_res = first(collect(keys(data_blend.tracking_res)))
@@ -146,13 +151,21 @@ function get_pwa(data_pressure::PressureLinkData, data_blend::BlendData, optimiz
     weymouth = get_weymouth(data_pressure)
 
     # Normalise the weymouth constant
-    weymouth_ct = round(normalised_weymouth(weymouth, molmass_other), digits=4)
-    
+    weymouth_ct = round(normalised_weymouth(weymouth, molmass_other), digits = 4)
+
     # Calculate exact flow values for approximation
-    z = calculate_flow.(weymouth_ct, X[:,1], X[:,2], X[:,3], molmass_other, molmass_track)
+    z =
+        calculate_flow.(
+            weymouth_ct,
+            X[:, 1],
+            X[:, 2],
+            X[:, 3],
+            molmass_other,
+            molmass_track,
+        )
 
     # Generate/read the pwa
-    fn = get_input_fn([weymouth_ct,  X[:,1], X[:,2], X[:,3]], z)
+    fn = get_input_fn([weymouth_ct, X[:, 1], X[:, 2], X[:, 3]], z)
 
     if isfile(fn)
         pwa = read_from_json(fn)
@@ -164,16 +177,16 @@ function get_pwa(data_pressure::PressureLinkData, data_blend::BlendData, optimiz
             Concave(),
             Cluster(; optimizer, planes = 10, strict = :outer, metric = :l1))
         test_approx(pwa, weymouth_ct, PIn, POut, PropMax, molmass_other, molmass_track)
-        
+
         write_to_json(fn, pwa)
     end
 
     return pwa
 end
-function get_pwa(l::EMB.Link, optimizer; resolution_prop=0.01)
+function get_pwa(l::EMB.Link, optimizer; resolution_prop = 0.01)
     data_pressure = first(filter(data -> data isa PressureLinkData, l.data))
     data_blend = first(filter(data -> data isa BlendData, l.data))
-    return get_pwa(data_pressure, data_blend, optimizer; resolution_prop=resolution_prop)
+    return get_pwa(data_pressure, data_blend, optimizer; resolution_prop = resolution_prop)
 end
 
 # struct PressurePipe <: PressureData
@@ -194,7 +207,7 @@ end
 #     # Calculate linearised pressures
 #     pressures = range(PIN, POUT, length=150)
 #     lin_pressures = [(PIN, p) for p in pressures[2:end]]
-    
+
 #     return PressurePipe(
 #         id,
 #         maxpressure,
@@ -210,7 +223,7 @@ end
 #      # Calculate linearised pressures
 #      pressures = range(PIN, POUT, length=150)
 #      lin_pressures = [(float(PIN), p) for p in pressures[2:end]]
-    
+
 #      return PressurePipe(
 #         id,
 #         max_pressure,
@@ -233,11 +246,11 @@ end
 #         pin = 70, 
 #         pout = 50,
 #         prop = 0.2)
-    
+
 #     x1 = [i for i ∈ pout:1:pin]
 #     x2 = [i for i ∈ pout:1:pin]
 #     x3 = [j for j ∈ 0:0.01:prop]
-    
+
 #     X = calculate_X(x1, x2, x3)
 #     weymouth_ct = round(weymouth_constant(FLOW, PIN, POUT), digits=4) # normalised the weymouth constant
 #     z = calculate_flow.(weymouth_ct, X[:,1], X[:,2], X[:,3])
@@ -289,7 +302,7 @@ end
 #             Concave(),
 #             Cluster(; optimizer, planes = 10, strict = :outer, metric = :l1))
 #         test_approx(pwa, constant, pin, pout, prop)
-        
+
 #         write_to_json(fn, pwa)
 #     end
 
@@ -350,4 +363,3 @@ end
 #         throw(ArgumentError("Pipeline $tm does not have data type PressureData"))
 #     end
 # end
-

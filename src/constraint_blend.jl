@@ -10,8 +10,7 @@ If 𝒫 is not a Vector{ResourceBlend}, no constraints are applied.
 function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
 function constraints_proportion(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourceBlend}) end
 function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourceBlend})
-
-    for blend in 𝒫
+    for blend ∈ 𝒫
         # Get the subresources for the blend
         sub_res = subresources(blend)
 
@@ -21,7 +20,10 @@ function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vecto
             # Get links into `n` which transport any sub_resource
             ℒ = 𝒳ᵛᵉᶜ[2]
             _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
-            ℒᵗᵒ = filter(l -> any(res -> (res ∈ sub_res) || (res == blend), EMB.link_res(l)), ℒᵗᵒ)
+            ℒᵗᵒ = filter(
+                l -> any(res -> (res ∈ sub_res) || (res == blend), EMB.link_res(l)),
+                ℒᵗᵒ,
+            )
 
             # Get sources associated to `n` whose outputs are any subresource
             𝒮 = track_source(n, ℒ)
@@ -29,8 +31,17 @@ function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vecto
 
             # The flow proportion of each source in `n` evolves as it moves through the network.
             @constraint(m, [t ∈ 𝒯, s ∈ 𝒮],
-                sum(m[:proportion_source][n_adj, s, t] * sum(m[:link_in][l, t, p] for p ∈ EMB.link_res(l) if (p ∈ sub_res) || (p == blend)) for l ∈ ℒᵗᵒ for n_adj ∈ [l.from])
-                - m[:proportion_source][n, s, t] * sum(m[:link_in][l, t, p] for l ∈ ℒᵗᵒ for p ∈ EMB.link_res(l) if (p ∈ sub_res) || (p == blend)) == 0
+                sum(
+                    m[:proportion_source][n_adj, s, t] * sum(
+                        m[:link_in][l, t, p] for
+                        p ∈ EMB.link_res(l) if (p ∈ sub_res) || (p == blend)
+                    ) for l ∈ ℒᵗᵒ for n_adj ∈ [l.from]
+                )
+                -
+                m[:proportion_source][n, s, t] * sum(
+                    m[:link_in][l, t, p] for l ∈ ℒᵗᵒ for
+                    p ∈ EMB.link_res(l) if (p ∈ sub_res) || (p == blend)
+                ) == 0
             )
 
             # @constraint(m, [t ∈ 𝒯, s ∈ 𝒮],
@@ -64,18 +75,18 @@ end
 
 Defines the maximum and minimum quality constraints for a node n based on the blending data.
 """
-function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end 
+function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
 function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourceBlend})
     # Get blend data for node `n`
     blend_data = get_blenddata(n)
 
-    for blend in 𝒫
+    for blend ∈ 𝒫
         # Get the subresources for the blend
-        sub_res = subresources(blend) 
+        sub_res = subresources(blend)
 
         # Check if blend data is available for the current blend
         data_vect = filter(b -> b.blend == blend, blend_data)
-        
+
         if !isempty(data_vect)
             # Get the specific data for blend
             data = first(data_vect)
@@ -88,26 +99,42 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
             # Get links into `n` that deliver any sub_resource of blend
             ℒ = 𝒳ᵛᵉᶜ[2]
             _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
-            ℒᵗᵒ = filter(l -> (blend ∈ EMB.link_res(l)) || any(res -> res ∈ EMB.link_res(l), sub_res), ℒᵗᵒ)
+            ℒᵗᵒ = filter(
+                l ->
+                    (blend ∈ EMB.link_res(l)) ||
+                        any(res -> res ∈ EMB.link_res(l), sub_res),
+                ℒᵗᵒ,
+            )
 
             # Get associated sources to `n` whose outputs are sub_resources of blend
-            𝒮 = Dict(n_to => filter(s -> any(res -> res ∈ sub_res, EMB.outputs(s)), track_source(n_to, ℒ)) for l_to in ℒᵗᵒ for n_to in [l_to.from])
+            𝒮 = Dict(
+                n_to => filter(
+                    s -> any(res -> res ∈ sub_res, EMB.outputs(s)),
+                    track_source(n_to, ℒ),
+                ) for l_to ∈ ℒᵗᵒ for n_to ∈ [l_to.from]
+            )
 
             # Set constraints for maximum quality of resources
             for p ∈ keys(𝒫ᵐᵃˣ)
                 @show "Applying max quality constraint for resource $(p) at node $(n.id)"
                 @show get_max_proportion(data, p)
                 @constraint(m, [t ∈ 𝒯],
-                    sum((get_source_prop(s, p) - get_max_proportion(data, p)) * m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
-                    for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮[nn]) <= 0
+                    sum(
+                        (get_source_prop(s, p) - get_max_proportion(data, p)) *
+                        m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
+                        for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮[nn]
+                    ) <= 0
                 )
             end
 
             # Set constraints for minimum quality of resources
             for p ∈ keys(𝒫ᵐⁱⁿ)
                 @constraint(m, [t ∈ 𝒯],
-                    sum((get_source_prop(s, p) - get_min_proportion(data, p)) * m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
-                    for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮[nn]) >= 0
+                    sum(
+                        (get_source_prop(s, p) - get_min_proportion(data, p)) *
+                        m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
+                        for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮[nn]
+                    ) >= 0
                 )
             end
         end
@@ -122,11 +149,17 @@ Sets standard proportion_source values.
 The proportion source of a node n from a source is set to 1 if source == n.
 The proportion source of a node n from a source not associated to it is set to 0.
 """
-function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourceBlend})
-    sub_res = [r for res_blend ∈ 𝒫 for r in subresources(res_blend)]
-    
+function constraints_proportion_couple(
+    m,
+    𝒩::Vector{<:EMB.Node},
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourceBlend},
+)
+    sub_res = [r for res_blend ∈ 𝒫 for r ∈ subresources(res_blend)]
+
     # Filter sources with resources for blends
-    𝒮 = filter(n -> EMB.is_source(n) && 
+    𝒮 = filter(n -> EMB.is_source(n) &&
             all(res -> res ∈ sub_res, EMB.outputs(n)), 𝒩)
 
     # Set proportion_source to 0 at nodes where the source is not associated
@@ -140,23 +173,34 @@ function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{
                 )
             elseif ~(source in 𝒮ⁿ) # if `source` is not associated to `n`
                 @constraint(m, [t ∈ 𝒯],
-                m[:proportion_source][n, source, t] == 0.0
+                    m[:proportion_source][n, source, t] == 0.0
                 )
             end
         end
     end
 end
-function constraints_proportion_couple(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Node}, 𝒯, 𝒫::Vector{<:ResourceBlend})
+function constraints_proportion_couple(
+    m,
+    ℒ::Vector{<:EMB.Link},
+    𝒩::Vector{<:EMB.Node},
+    𝒯,
+    𝒫::Vector{<:ResourceBlend},
+)
     constraints_proportion_couple(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
-
 
 """
     function constraints_tracking(m, n::Node, ℒ::Vector{<:Link}, 𝒯, 𝒫)
 
 These are constraints required for tracking the proportion of resources each node `n`. This is used for linking with the pressure constraints.
 """
-function constraints_tracking(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourceBlend})
+function constraints_tracking(
+    m,
+    n::EMB.Node,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{ResourceBlend},
+)
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)
         𝒮 = track_source(n, ℒ)
@@ -164,20 +208,27 @@ function constraints_tracking(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, �
         for p ∈ 𝒫ʳ
             𝒮ᵖ = filter(s -> p ∈ outputs(s), 𝒮)
             @constraint(m, [t ∈ 𝒯],
-                m[:proportion_track][n, t, p] == sum(m[:proportion_source][n, s, t] for s ∈ 𝒮ᵖ)
+                m[:proportion_track][n, t, p] ==
+                sum(m[:proportion_source][n, s, t] for s ∈ 𝒮ᵖ)
             )
         end
     end
 end
-function constraints_tracking(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourceBlend}) 
+function constraints_tracking(
+    m,
+    n::EMB.Source,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{ResourceBlend},
+)
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)
         𝒫ⁿ = filter(p -> (p ∈ EMB.outputs(n)), 𝒫ʳ)
 
         # Set the proportion_track for Source `n` as 1 if it p is an output, and 0 otherwise
-        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], 
+        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
             m[:proportion_track][n, t, p] == 1)
-        @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ʳ, 𝒫ⁿ)], 
+        @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ʳ, 𝒫ⁿ)],
             m[:proportion_track][n, t, p] == 0)
     end
 end
@@ -188,12 +239,12 @@ end
 #     d = first(blending_sink)
 #     if !isempty(blending_sink)
 #         av = availability_node(a)
-        
+
 #         ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
 #         𝒜ᵃ = setdiff(getadjareas(a, ℒᵗᵒ), [a])
 #         𝒮ᵃ = Dict(ad => track_source(ad, links, 𝒜, ℒᵗʳᵃⁿˢ) for ad ∈ 𝒜ᵃ)
 #         TM = Dict(ad => modes(EMG.corr_from_to(ad.name, a.name, ℒᵗᵒ)) for ad ∈ 𝒜ᵃ)
-        
+
 #         𝒫ᵘ = res_upper(d)
 #         @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ᵘ],
 #             sum((get_quality(s, p) - get_upper(d, p)) * m[:prop_source][ad, s, t] * m[:trans_out][tm, t] for ad ∈ 𝒜ᵃ for s ∈ 𝒮ᵃ[ad] for tm ∈ TM[ad]) <= 0)
@@ -224,7 +275,6 @@ end
 #     end
 # end
 
-
 # function create_blending_node(m, a::TerminalArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
 #     𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
@@ -242,7 +292,7 @@ end
 #     constraints_quality(m, a, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
 #     constraints_tracking(m, a, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 #     constraints_energy_content(m, a, 𝒞, ℒᵗʳᵃⁿˢ, 𝒯)
-    
+
 # end
 # function create_blending_node(m, a::PoolingArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 
@@ -260,7 +310,7 @@ end
 
 #     @constraint(m, [t ∈ 𝒯, tm ∈ ℒᶠ],
 #         sum(m[:prop_source][a, s, t] * m[:trans_in][tm, t] for s ∈ 𝒮ᵗᵐ) - m[:trans_in][tm, t] == 0)
-    
+
 #     constraints_tracking(m, a, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 # end
 # function create_blending_node(m, a::SourceArea, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
@@ -269,7 +319,6 @@ end
 # function create_blending_node(m, a::Area, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 #     return nothing
 # end
-
 
 # function add_blend_limit(m, a::PoolingArea, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
 #     p = first(filter(is_component_track, 𝒞))
@@ -288,7 +337,7 @@ end
 #     ℒᵗᵒ = EMG.corr_to(a, ℒᵗʳᵃⁿˢ)
 #     c = first(filter(is_component_track, 𝒞))
 #     d = first(setdiff(𝒞, [c]))
-    
+
 #     if !isnothing(energy_delivery(a))
 #         for (idx, t) in enumerate(𝒯)
 #             @constraint(m,

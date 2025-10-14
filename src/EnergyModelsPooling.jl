@@ -1,6 +1,7 @@
 module EnergyModelsPooling
 
-using EnergyModelsBase; const EMB = EnergyModelsBase
+using EnergyModelsBase
+const EMB = EnergyModelsBase
 using TimeStruct
 using JuMP
 
@@ -24,7 +25,7 @@ include("model.jl")
 export create_model
 export Compressor, RefBlend, CapDirect
 export ResourcePotential, ResourceComponentPotential, ResourceComponent, ResourceBlend
-export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData 
+export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData
 export RefBlendData, BlendLinkData
 
 end
