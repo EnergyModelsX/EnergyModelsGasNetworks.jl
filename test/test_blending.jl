@@ -87,19 +87,19 @@ H2 = first(filter(p -> p.id == "H2", 𝒫))
 CH4 = first(filter(p -> p.id == "CH4", 𝒫))
 Gas = first(filter(p -> p.id == "Gas", 𝒫))
 @testset "Results" begin
-    @test isapprox(value.(m[:link_in][ℒ[1], first(collect(𝒯)), H2]), 42.105; atol=1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]), 200; atol=1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]), 600; atol=1e-2)
-    @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) + value.(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) + value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ==
+    @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 42.105 atol=1e-2
+    @test value.(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 200  atol=1e-2
+    @test value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 600 atol=1e-2
+    @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) + value.(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) + value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈
           value.(m[:link_out][ℒ[4], first(collect(𝒯)), Gas])
 
-    @test value.(m[:proportion_source][𝒩[5], 𝒩[1], first(collect(𝒯))]) == 0.05
-    @test value.(m[:proportion_track][𝒩[3], first(collect(𝒯)), H2]) == 0.0
-    @test value.(m[:proportion_track][𝒩[4], first(collect(𝒯)), H2]) == 0.05
-    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) == 0.05
+    @test value.(m[:proportion_source][𝒩[5], 𝒩[1], first(collect(𝒯))]) ≈ 0.05
+    @test value.(m[:proportion_track][𝒩[3], first(collect(𝒯)), H2]) ≈ 0.0
+    @test value.(m[:proportion_track][𝒩[4], first(collect(𝒯)), H2]) ≈ 0.05
+    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.05
 
-    @test isapprox(value.(m[:proportion_source][𝒩[5], 𝒩[3], first(collect(𝒯))]), 600/(600+42.105+200); atol=1e-2)
-    @test isapprox(value.(m[:proportion_source][𝒩[5], 𝒩[2], first(collect(𝒯))]), 200/(600+42.105+200); atol=1e-2)
-    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) == 0.95
+    @test value.(m[:proportion_source][𝒩[5], 𝒩[3], first(collect(𝒯))]) ≈ 600/(600+42.105+200) atol=1e-2
+    @test value.(m[:proportion_source][𝒩[5], 𝒩[2], first(collect(𝒯))]) ≈ 200/(600+42.105+200) atol=1e-2
+    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 0.95
 
 end

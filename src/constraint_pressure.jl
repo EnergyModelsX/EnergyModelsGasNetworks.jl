@@ -388,7 +388,7 @@ function constraints_flow_pressure(
     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
 
     if !isempty(𝒫ⁿ)
-        @info "Applying Taylor approximation for link $(l.id)"
+        # @info "Applying Taylor approximation for link $(l.id)"
 
         # Retrieve elements from PressureLinkData in `l`
         # TODO: Make a check that ensures that a `l` with CompoundResource as input has LinkPressureData
@@ -423,7 +423,7 @@ function constraints_flow_pressure(
     𝒫ⁿ = [p for p ∈ EMB.inputs(l) if p ∈ 𝒫]
 
     if !isempty(𝒫ⁿ)
-        @info "Applying PWA constraints for link $(l.id)"
+        # @info "Applying PWA constraints for link $(l.id)"
         pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
         blend_data = first(filter(data -> data isa BlendData, l.data))
 
