@@ -55,7 +55,7 @@ function generate_case_blending_pressure(; max_h2 = 0.05, min_h2 = 0.0, cost_s3 
         CO2,
     )
     
-    m = EMP.create_model(case, model, mip_optimizer; check_timeprofiles=true) # TODO: Change management of optimizer in the model. Discuss best approach.
+    m = EMP.create_model(case, model, optimizer; check_timeprofiles=true) 
     set_optimizer(m, optimizer)
     optimize!(m)
 
