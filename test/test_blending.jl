@@ -1,19 +1,6 @@
-using EnergyModelsBase, EnergyModelsPooling
-using TimeStruct
+ 
 
-using JuMP
-
-using Alpine
-using Ipopt
-using Juniper 
-using Xpress
-
-using Test
-
-const EMB = EnergyModelsBase
-const EMP = EnergyModelsPooling
-
-function generate_case(;links=nothing)
+function generate_case_blending(;links=nothing)
     # Define reasources
     H2 = ResourceCarrier("H2", 1.0)
     CH4 = ResourceCarrier("CH4", 1.0)
@@ -69,7 +56,7 @@ function generate_case(;links=nothing)
     return case, model
 end
 
-case, model = generate_case()
+case, model = generate_case_blending()
 m = EMP.create_model(case, model, nothing; check_timeprofiles=true)
 
 for l ∈ get_links(case)
@@ -87,19 +74,7 @@ for n in 𝒩_out
     @constraint(m, [t ∈ get_time_struct(case), p ∈ EMB.outputs(n)], m[:flow_out][n, t, p] <= 1200)
 end
 
-nl_solver = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
-mip_optimizer = optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => true)
-minlp_optimizer = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => mip_optimizer, "nl_solver" => nl_solver)
-optimizer = optimizer_with_attributes(
-    Alpine.Optimizer,
-    "nlp_solver" => nl_solver,
-    "mip_solver" => mip_optimizer,
-    "minlp_solver" => minlp_optimizer,
-    "rel_gap" => 1.00
-)
-
 set_optimizer(m, optimizer)
-# set_optimizer(m, Xpress.Optimizer)
 optimize!(m)
 
 # Extract data from the case

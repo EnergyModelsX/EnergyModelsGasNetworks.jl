@@ -1,13 +1,3 @@
-using EnergyModelsBase, EnergyModelsPooling
-using TimeStruct
-
-using JuMP
-using Xpress
-
-using Test
-
-const EMB = EnergyModelsBase
-const EMP = EnergyModelsPooling
 
 function calculate_rhs_taylor(link_p_in, link_p_out, l)
     pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
@@ -31,7 +21,7 @@ function calculate_rhs_taylor(link_p_in, link_p_out, l)
     return RHS_values
 end
 
-function generate_case()
+function generate_case_pressure()
     # Define reasources
     NG = ResourcePotential("NG", 1.0)
     CO2 = ResourceEmit("CO2", 1.0)
@@ -76,9 +66,9 @@ function generate_case()
     return case, model
 end
 
-case, model = generate_case()
+case, model = generate_case_pressure()
 m = EMP.create_model(case, model, nothing; check_timeprofiles=true)
-set_optimizer(m, Xpress.Optimizer)
+set_optimizer(m, mip_optimizer)
 optimize!(m)
 
 # Extract data from the case
@@ -224,7 +214,7 @@ end
 
 case, model = generate_case2()
 m = EMP.create_model(case, model, nothing; check_timeprofiles=true)
-set_optimizer(m, Xpress.Optimizer)
+set_optimizer(m, mip_optimizer)
 optimize!(m)
 
 # Extract data from the case
