@@ -13,7 +13,6 @@ PiecewiseAffineApprox = "029c5f1c-0dc4-4551-8b87-a10b73fe3713"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Scratch = "6c6a2e73-6563-6170-7368-637461726353"
 TimeStruct = "f9ed5ce0-9f41-4eaa-96da-f38ab8df101c"
-Xpress = "9e70acf3-d6c9-5be6-b5bd-4e2c73e3e054"
 
 [compat]
 Alpine = "0.5.7"
