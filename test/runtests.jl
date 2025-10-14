@@ -10,14 +10,16 @@ using Juniper
 using PiecewiseAffineApprox
 using Test
 using TimeStruct
-mip_optimizer = optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => false)
+mip_optimizer = optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => true)
 try
     import Xpress_jll
     ENV["XPRESS_JL_LIBRARY"] = Xpress_jll.libxprs
     ENV["XPAUTH_PATH"] = realpath(joinpath("xpauth.xpr"))
     ENV["XPRESS_JL_SKIP_LIB_CHECK"] = true
+    import Pkg
+    Pkg.add("Xpress")
     using Xpress
-    global mip_optimizer = optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => false)
+    global mip_optimizer = optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => true)
 catch err
     nothing
 end
