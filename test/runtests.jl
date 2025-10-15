@@ -36,6 +36,7 @@ optimizer = optimizer_with_attributes(
     "minlp_solver" => minlp_optimizer,
     "rel_gap" => 0.01,
     "presolve_bt" => false,
+    "time_limit" => 180,
 )
 
 include("test_utils.jl")
