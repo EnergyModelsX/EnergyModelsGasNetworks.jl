@@ -102,7 +102,7 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
             ℒᵗᵒ = filter(
                 l ->
                     (blend ∈ EMB.link_res(l)) ||
-                        any(res -> res ∈ EMB.link_res(l), sub_res),
+                    any(res -> res ∈ EMB.link_res(l), sub_res),
                 ℒᵗᵒ,
             )
 
@@ -158,7 +158,7 @@ function constraints_proportion_couple(
 
     # Filter sources with resources for blends
     𝒮 = filter(n -> EMB.is_source(n) &&
-            all(res -> res ∈ sub_res, EMB.outputs(n)), 𝒩)
+                    all(res -> res ∈ sub_res, EMB.outputs(n)), 𝒩)
 
     # Set proportion_source to 0 at nodes where the source is not associated
     # and set proportion_source to 1 at source nodes.

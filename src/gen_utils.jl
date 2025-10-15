@@ -57,7 +57,7 @@ function create_locatedsink(file_path, locations, resource)
             col_val = col[2:end]
             if !haskey(cap, head)
                 # If flight was not added in previous periods, generate empty demands of those missing periods
-                zero_vectors = [zeros(length(col_val)) for _ ∈ 1:i-1]
+                zero_vectors = [zeros(length(col_val)) for _ ∈ 1:(i-1)]
                 cap[head] = zero_vectors
 
                 # Add current demand
