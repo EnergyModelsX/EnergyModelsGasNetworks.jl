@@ -170,8 +170,6 @@ function get_pwa(
     if isfile(fn)
         pwa = read_from_json(fn)
     else
-        # @info "Generating new PWA for weymouth constant $weymouth_ct, max pressure $PIn, min pressure $POut and max proportion $PropMax"
-        # @show collect(zip(X[:, 1], X[:, 2], X[:, 3]))
         pwa = approx(
             FunctionEvaluations(collect(zip(X[:, 1], X[:, 2], X[:, 3])), z),
             Concave(),

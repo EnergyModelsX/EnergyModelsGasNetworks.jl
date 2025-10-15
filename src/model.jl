@@ -185,7 +185,6 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
         constraints_flow_limit(m, l, 𝒯, 𝒫ᶜʳ)
 
         𝒫_sub = res_types_seg(𝒫ᶜʳ)
-        @show l
         for p_sub ∈ 𝒫_sub
             constraints_flow_pressure(m, l, 𝒯, p_sub, optimizer)
         end
