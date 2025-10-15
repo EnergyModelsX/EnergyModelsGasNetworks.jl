@@ -116,8 +116,6 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
 
             # Set constraints for maximum quality of resources
             for p ∈ keys(𝒫ᵐᵃˣ)
-                @show "Applying max quality constraint for resource $(p) at node $(n.id)"
-                @show get_max_proportion(data, p)
                 @constraint(m, [t ∈ 𝒯],
                     sum(
                         (get_source_prop(s, p) - get_max_proportion(data, p)) *
