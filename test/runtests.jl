@@ -6,7 +6,7 @@ using EnergyModelsPooling
 using HiGHS
 using Ipopt
 using JuMP
-using Juniper 
+using Juniper
 using PiecewiseAffineApprox
 using Test
 using TimeStruct
@@ -28,7 +28,12 @@ const EMB = EnergyModelsBase
 const EMP = EnergyModelsPooling
 
 nl_solver = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
-minlp_optimizer = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => mip_optimizer, "nl_solver" => nl_solver)
+minlp_optimizer = optimizer_with_attributes(
+    Juniper.Optimizer,
+    MOI.Silent() => true,
+    "mip_solver" => mip_optimizer,
+    "nl_solver" => nl_solver,
+)
 optimizer = optimizer_with_attributes(
     Alpine.Optimizer,
     "nlp_solver" => nl_solver,
@@ -42,9 +47,7 @@ optimizer = optimizer_with_attributes(
 include("test_utils.jl")
 
 @testset "EnergyModelsPooling" begin
-
     include("test_pressure.jl")
     include("test_blending.jl")
     include("test_blending_pressure.jl")
-
 end
