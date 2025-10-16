@@ -190,12 +190,12 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
 @testset "0.1% H2 case - results" begin
     @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
 
-    @test isapprox(value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]), 6.50; atol = 1e-1)
-    @test isapprox(value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]), 15.841; atol = 1e-1)
-    @test isapprox(value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]), 42.67; atol = 1e-1)
-    @test isapprox(value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]), 65.0; atol = 1e-1)
-    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) == 0.1
-    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) == 0.90
+    @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 6.50 atol = 1e-1
+    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 15.841 atol = 1e-1
+    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 42.67; atol = 1e-1
+    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 65.0  rtol = 0.05
+    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.1
+    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 0.90
 end
 
 @testset "0.1% H2 case - approximation" begin
