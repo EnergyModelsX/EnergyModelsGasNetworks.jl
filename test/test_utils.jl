@@ -1,10 +1,3 @@
-
-function df_variable(m, element::Symbol)
-    val = Containers.rowtable(value, m[element])
-
-    return DataFrame(val)
-end
-
 function calculate_linearise_pressures()
     P_min = 30.0  # example minimum pressure
     P_max = 70.0  # example maximum pressure
