@@ -1,19 +1,5 @@
-using EnergyModelsBase, EnergyModelsPooling
-using TimeStruct
 
-using JuMP
-
-using Alpine
-using Ipopt
-using Juniper 
-using Xpress
-
-using Test
-
-const EMB = EnergyModelsBase
-const EMP = EnergyModelsPooling
-
-function generate_case(;links=nothing)
+function generate_case_blending(; links = nothing)
     # Define reasources
     H2 = ResourceCarrier("H2", 1.0)
     CH4 = ResourceCarrier("CH4", 1.0)
@@ -31,8 +17,8 @@ function generate_case(;links=nothing)
 
     # Initialise EMB model
     model = OperationalModel(
-        Dict( CO2 => StrategicProfile([0])),
-        Dict( CO2 => FixedProfile(0)),
+        Dict(CO2 => StrategicProfile([0])),
+        Dict(CO2 => FixedProfile(0)),
         CO2)
 
     # Nodes
@@ -40,15 +26,22 @@ function generate_case(;links=nothing)
         RefSource(1, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(H2 => 1)),
         RefSource(2, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
         RefSource(3, FixedProfile(600), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
-        RefBlend(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1)),
+        RefBlend(
+            4,
+            FixedProfile(1e6),
+            FixedProfile(0),
+            FixedProfile(0),
+            Dict(CH4 => 1, H2 => 1),
+            Dict(Gas => 1),
+        ),
         RefSink(
             5,
             FixedProfile(500),
-            Dict(:surplus => FixedProfile(-120), :deficit=> FixedProfile(1e6)), 
+            Dict(:surplus => FixedProfile(-120), :deficit => FixedProfile(1e6)),
             Dict(Gas => 1),
-            [RefBlendData(Gas, Dict(H2=>0.05, CH4=>1.0), 
-                               Dict(H2=>0.0, CH4=>0.0))
-                               ])
+            [RefBlendData(Gas, Dict(H2=>0.05, CH4=>1.0),
+                Dict(H2=>0.0, CH4=>0.0))
+            ]),
     ]
 
     if isnothing(links)
@@ -69,37 +62,41 @@ function generate_case(;links=nothing)
     return case, model
 end
 
-case, model = generate_case()
-m = EMP.create_model(case, model, nothing; check_timeprofiles=true)
+case, model = generate_case_blending()
+m = EMP.create_model(case, model, nothing; check_timeprofiles = true)
 
 for l ∈ get_links(case)
-    @constraint(m, [t ∈ get_time_struct(case), p ∈ EMB.link_res(l)], m[:link_in][l, t, p] <= 1200)
-    @constraint(m, [t ∈ get_time_struct(case), p ∈ EMB.link_res(l)], m[:link_out][l, t, p] <= 1200)
+    @constraint(
+        m,
+        [t ∈ get_time_struct(case), p ∈ EMB.link_res(l)],
+        m[:link_in][l, t, p] <= 1200
+    )
+    @constraint(
+        m,
+        [t ∈ get_time_struct(case), p ∈ EMB.link_res(l)],
+        m[:link_out][l, t, p] <= 1200
+    )
 end
 
 𝒩 = get_nodes(case)
 𝒩_in = filter(EMB.has_input, 𝒩)
 𝒩_out = filter(EMB.has_output, 𝒩)
-for n in 𝒩_in
-    @constraint(m, [t ∈ get_time_struct(case), p ∈ EMB.inputs(n)], m[:flow_in][n, t, p] <= 1200)
+for n ∈ 𝒩_in
+    @constraint(
+        m,
+        [t ∈ get_time_struct(case), p ∈ EMB.inputs(n)],
+        m[:flow_in][n, t, p] <= 1200
+    )
 end
-for n in 𝒩_out
-    @constraint(m, [t ∈ get_time_struct(case), p ∈ EMB.outputs(n)], m[:flow_out][n, t, p] <= 1200)
+for n ∈ 𝒩_out
+    @constraint(
+        m,
+        [t ∈ get_time_struct(case), p ∈ EMB.outputs(n)],
+        m[:flow_out][n, t, p] <= 1200
+    )
 end
-
-nl_solver = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
-mip_optimizer = optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => true)
-minlp_optimizer = optimizer_with_attributes(Juniper.Optimizer, MOI.Silent() => true, "mip_solver" => mip_optimizer, "nl_solver" => nl_solver)
-optimizer = optimizer_with_attributes(
-    Alpine.Optimizer,
-    "nlp_solver" => nl_solver,
-    "mip_solver" => mip_optimizer,
-    "minlp_solver" => minlp_optimizer,
-    "rel_gap" => 1.00
-)
 
 set_optimizer(m, optimizer)
-# set_optimizer(m, Xpress.Optimizer)
 optimize!(m)
 
 # Extract data from the case
@@ -112,19 +109,22 @@ H2 = first(filter(p -> p.id == "H2", 𝒫))
 CH4 = first(filter(p -> p.id == "CH4", 𝒫))
 Gas = first(filter(p -> p.id == "Gas", 𝒫))
 @testset "Results" begin
-    @test isapprox(value.(m[:link_in][ℒ[1], first(collect(𝒯)), H2]), 42.105; atol=1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]), 200; atol=1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]), 600; atol=1e-2)
-    @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) + value.(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) + value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ==
+    @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 42.105 atol=1e-2
+    @test value.(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 200 atol=1e-2
+    @test value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 600 atol=1e-2
+    @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) +
+          value.(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) +
+          value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈
           value.(m[:link_out][ℒ[4], first(collect(𝒯)), Gas])
 
-    @test value.(m[:proportion_source][𝒩[5], 𝒩[1], first(collect(𝒯))]) == 0.05
-    @test value.(m[:proportion_track][𝒩[3], first(collect(𝒯)), H2]) == 0.0
-    @test value.(m[:proportion_track][𝒩[4], first(collect(𝒯)), H2]) == 0.05
-    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) == 0.05
+    @test value.(m[:proportion_source][𝒩[5], 𝒩[1], first(collect(𝒯))]) ≈ 0.05
+    @test value.(m[:proportion_track][𝒩[3], first(collect(𝒯)), H2]) ≈ 0.0
+    @test value.(m[:proportion_track][𝒩[4], first(collect(𝒯)), H2]) ≈ 0.05
+    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.05
 
-    @test isapprox(value.(m[:proportion_source][𝒩[5], 𝒩[3], first(collect(𝒯))]), 600/(600+42.105+200); atol=1e-2)
-    @test isapprox(value.(m[:proportion_source][𝒩[5], 𝒩[2], first(collect(𝒯))]), 200/(600+42.105+200); atol=1e-2)
-    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) == 0.95
-
+    @test value.(m[:proportion_source][𝒩[5], 𝒩[3], first(collect(𝒯))]) ≈
+          600/(600+42.105+200) atol=1e-2
+    @test value.(m[:proportion_source][𝒩[5], 𝒩[2], first(collect(𝒯))]) ≈
+          200/(600+42.105+200) atol=1e-2
+    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 0.95
 end

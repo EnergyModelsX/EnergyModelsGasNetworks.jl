@@ -19,7 +19,7 @@ struct CapDirect <: Link
     cap::TimeProfile
     data::Vector{<:EMB.ExtensionData}
 end
-CapDirect(id, from, to, formulation, cap) = 
+CapDirect(id, from, to, formulation, cap) =
     CapDirect(id, from, to, formulation, cap, EMB.ExtensionData[])
 
 EMB.capacity(l::EMB.Link, t) = 1e6 # Default large capacity

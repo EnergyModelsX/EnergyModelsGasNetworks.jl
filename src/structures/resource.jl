@@ -31,7 +31,7 @@ struct ResourceBlend{R<:EMB.Resource} <: CompoundResource
     subresources::AbstractVector{R}
 end
 
-subresources(𝒫::Array{<:ResourceBlend}) = Dict(blend => blend.subresources for blend in 𝒫)
+subresources(𝒫::Array{<:ResourceBlend}) = Dict(blend => blend.subresources for blend ∈ 𝒫)
 subresources(r::ResourceBlend) = r.subresources
 
 """
@@ -46,9 +46,10 @@ res_types(𝒫::Array{<:Resource}) = unique(map(x -> typeof(x), 𝒫)) # FROM ES
 
 Return a Vector-of-Vectors of resources segmented by the sub-types.
 """
-res_types_seg(𝒫::Array{<:Resource}) = [Vector{rt}(filter(x -> isa(x, rt), 𝒫)) for rt in res_types(𝒫)] # FROM ESPEN
+res_types_seg(𝒫::Array{<:Resource}) =
+    [Vector{rt}(filter(x -> isa(x, rt), 𝒫)) for rt ∈ res_types(𝒫)] # FROM ESPEN
 
-function get_source_prop(s::Source, p::EMB.Resource) 
+function get_source_prop(s::Source, p::EMB.Resource)
     if p ∈ EMB.outputs(s)
         return 1
     else
