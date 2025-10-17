@@ -174,6 +174,15 @@ end
             value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]),
             value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))
     @test_broken isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol = 1e-1)
+
+    # Test the propagation of quality constraints towards link_in of hydrogen
+    n = 𝒩[5]
+    blend_data = EnergyModelsPooling.get_blenddata(n)
+    data = first(blend_data)
+    t = first(collect(𝒯))
+    source_h2 = 𝒩[1]
+    @test (EnergyModelsPooling.get_source_prop(source_h2, H2) - EnergyModelsPooling.get_max_proportion(data, H2)) * value.(m[:proportion_source][𝒩[4], source_h2, t]) * m[:link_in][ℒ[4], t, Blend] == 0 # the quality of H2 reaching node_5 should be 0
+    @test value(m[:link_in][ℒ[1], t, H2]) == value.(m[:proportion_source][𝒩[4], source_h2, t]) * value.(m[:link_in][ℒ[4], t, Blend]) # the flow of hydrogen should be equal to the proportion reaching node_4 times the total flow into/out node_4
 end
 
 case, model, m = generate_case_blending_pressure(; max_h2 = 0.1, min_h2 = 0.00, cost_s3 = 5)
