@@ -27,10 +27,10 @@ function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vecto
             # The flow proportion of each source in `n` evolves as it moves through the network.
             @constraint(m, [t ∈ 𝒯, s ∈ 𝒮],
                 sum(
-                    m[:proportion_source][n_adj, s, t] * sum(
+                    m[:proportion_source][l.from, s, t] * sum(
                         m[:link_in][l, t, p] for
                         p ∈ EMB.link_res(l) if (p ∈ sub_res) || (p == blend)
-                    ) for l ∈ ℒᵗᵒ for n_adj ∈ [l.from]
+                    ) for l ∈ ℒᵗᵒ
                 )
                 -
                 m[:proportion_source][n, s, t] * sum(
@@ -103,10 +103,10 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
 
             # Get associated sources to `n` whose outputs are sub_resources of blend
             𝒮 = Dict(
-                n_to => filter(
+                l_to.from => filter(
                     s -> any(res -> res ∈ sub_res, EMB.outputs(s)),
-                    track_source(n_to, ℒ),
-                ) for l_to ∈ ℒᵗᵒ for n_to ∈ [l_to.from]
+                    track_source(l_to.from, ℒ),
+                ) for l_to ∈ ℒᵗᵒ
             )
 
             # Set constraints for maximum quality of resources
@@ -114,8 +114,8 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
                 @constraint(m, [t ∈ 𝒯],
                     sum(
                         (get_source_prop(s, p) - get_max_proportion(data, p)) *
-                        m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
-                        for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮[nn]
+                        m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
+                        for l ∈ ℒᵗᵒ for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
                     ) <= 0
                 )
             end
@@ -125,8 +125,8 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
                 @constraint(m, [t ∈ 𝒯],
                     sum(
                         (get_source_prop(s, p) - get_min_proportion(data, p)) *
-                        m[:proportion_source][nn, s, t] * m[:link_in][l, t, pp]
-                        for l ∈ ℒᵗᵒ for nn ∈ [l.from] for pp ∈ EMB.link_res(l) for s ∈ 𝒮[nn]
+                        m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
+                        for l ∈ ℒᵗᵒ for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
                     ) >= 0
                 )
             end
@@ -161,9 +161,13 @@ function constraints_proportion_couple(
         𝒮ⁿ = track_source(n, ℒ)
         for source ∈ 𝒮
             if source == n # if `source` is the same as `n`
-                fix(m[:proportion_source][n, source, :], 1; force = true)
+                for t ∈ 𝒯
+                    fix(m[:proportion_source][n, source, t], 1; force = true)
+                end
             elseif ~(source in 𝒮ⁿ) # if `source` is not associated to `n`
-                fix(m[:proportion_source][n, source, :], 0; force = true)
+                for t ∈ 𝒯
+                    fix(m[:proportion_source][n, source, t], 0; force = true)
+                end
             end
         end
     end

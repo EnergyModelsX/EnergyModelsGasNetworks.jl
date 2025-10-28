@@ -43,7 +43,7 @@ function track_source(n::EMB.Node, ℒ::Vector{<:EMB.Link})
     𝒩ˢ = filter(EMB.is_source, 𝒩ᵃ)
     return unique!(𝒩ˢ)
 end
-function track_source(n::EMB.Node, ℒ::Vector{<:EMB.Link}, resources::Vector{EMB.Resources})
+function track_source(n::EMB.Node, ℒ::Vector{<:EMB.Link}, resources::Vector{<:EMB.Resource})
     𝒮 = track_source(n, ℒ)
     𝒮 = filter(s -> any(res -> res ∈ resources, EMB.outputs(s)), 𝒮)
     return 𝒮
