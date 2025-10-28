@@ -161,13 +161,9 @@ function constraints_proportion_couple(
         𝒮ⁿ = track_source(n, ℒ)
         for source ∈ 𝒮
             if source == n # if `source` is the same as `n`
-                @constraint(m, [t ∈ 𝒯],
-                    m[:proportion_source][n, source, t] == 1.0
-                )
+                fix(m[:proportion_source][n, source, :], 1; force = true)
             elseif ~(source in 𝒮ⁿ) # if `source` is not associated to `n`
-                @constraint(m, [t ∈ 𝒯],
-                    m[:proportion_source][n, source, t] == 0.0
-                )
+                fix(m[:proportion_source][n, source, :], 0; force = true)
             end
         end
     end
