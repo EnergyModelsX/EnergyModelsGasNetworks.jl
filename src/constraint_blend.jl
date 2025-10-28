@@ -215,10 +215,12 @@ function constraints_tracking(
         𝒫ⁿ = filter(p -> (p ∈ EMB.outputs(n)), 𝒫ʳ)
 
         # Set the proportion_track for Source `n` as 1 if it p is an output, and 0 otherwise
-        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-            m[:proportion_track][n, t, p] == 1)
-        @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ʳ, 𝒫ⁿ)],
-            m[:proportion_track][n, t, p] == 0)
+        for t ∈ 𝒯, p ∈ 𝒫ⁿ
+            fix(m[:proportion_track][n, t, p], 1; force = true)
+        end
+        for t ∈ 𝒯, p ∈ setdiff(𝒫ʳ, 𝒫ⁿ)
+            fix(m[:proportion_track][n, t, p], 0; force = true)
+        end
     end
 end
 
