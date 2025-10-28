@@ -47,7 +47,7 @@ function create_model(
     # Data structure
     𝒯 = get_time_struct(case)
     𝒫 = get_products(case)
-    𝒫ᶜʳ = CompoundResource[x for x ∈ 𝒫 if isa(x, ResourcePotential)] # TODO: Eliminate when the Compressor use of Power is defined
+    𝒫ᶜʳ = CompoundResource[x for x ∈ 𝒫 if isa(x, ResourcePressure)] # TODO: Eliminate when the Compressor use of Power is defined
     𝒳ᵛᵉᶜ = get_elements_vec(case) # nodes and links
     𝒳_𝒳 = get_couplings(case)
 
@@ -95,7 +95,7 @@ end
 
 function variables_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     # Get the blended resources from 𝒫
-    𝒫ᶜʳ = ResourceBlend[x for x ∈ 𝒫 if isa(x, ResourceBlend)]
+    𝒫ᶜʳ = ResourcePooling[x for x ∈ 𝒫 if isa(x, ResourcePooling)]
 
     # If the system includes a blended resource, initialise the variables
     if !isempty(𝒫ᶜʳ)
@@ -117,7 +117,7 @@ function variables_blending(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
 function variables_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     𝒫ᶜʳ = CompoundResource[
         x for
-        x ∈ 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}
+        x ∈ 𝒫 if isa(x, ResourcePressure) || x isa ResourcePooling{<:ResourcePressure}
     ]
 
     if !isempty(𝒫ᶜʳ)
@@ -132,7 +132,7 @@ end
 function variables_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     𝒫ᶜʳ = CompoundResource[
         x for
-        x ∈ 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}
+        x ∈ 𝒫 if isa(x, ResourcePressure) || x isa ResourcePooling{<:ResourcePressure}
     ]
 
     if !isempty(𝒫ᶜʳ)
@@ -149,7 +149,7 @@ end
 function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer)
     # Retrieve CompoundResources from 𝒫
     𝒫ᶜʳ = CompoundResource[
-        x for x ∈ 𝒫 if x isa ResourcePotential || x isa ResourceBlend{<:ResourcePotential}
+        x for x ∈ 𝒫 if x isa ResourcePressure || x isa ResourcePooling{<:ResourcePressure}
     ]
 
     for n ∈ 𝒩
@@ -169,7 +169,7 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
     # Retrieve CompoundResources from 𝒫
     𝒫ᶜʳ = CompoundResource[
         x for
-        x ∈ 𝒫 if isa(x, ResourcePotential) || x isa ResourceBlend{<:ResourcePotential}
+        x ∈ 𝒫 if isa(x, ResourcePressure) || x isa ResourcePooling{<:ResourcePressure}
     ]
     for l ∈ ℒ
         # Define internal pressure balance constraints
@@ -193,7 +193,7 @@ end
 function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)
     𝒫ᶜʳ = CompoundResource[
         x for
-        x ∈ 𝒫 if isa(x, ResourcePotential) || isa(x, ResourceBlend{<:ResourcePotential})
+        x ∈ 𝒫 if isa(x, ResourcePressure) || isa(x, ResourcePooling{<:ResourcePressure})
     ]
 
     for n ∈ 𝒩
@@ -208,7 +208,7 @@ end
 
 function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     # Retrieve CompoundResources from 𝒫
-    𝒫ᶜʳ = ResourceBlend[x for x ∈ 𝒫 if isa(x, ResourceBlend)]
+    𝒫ᶜʳ = ResourcePooling[x for x ∈ 𝒫 if isa(x, ResourcePooling)]
 
     for n ∈ 𝒩
         constraints_proportion(m, n, 𝒳ᵛᵉᶜ, 𝒯, 𝒫ᶜʳ)
@@ -218,7 +218,7 @@ end
 function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
 function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)
     # Retrieve CompoundResources from 𝒫
-    𝒫ᶜʳ = ResourceBlend[x for x ∈ 𝒫 if isa(x, ResourceBlend)]
+    𝒫ᶜʳ = ResourcePooling[x for x ∈ 𝒫 if isa(x, ResourcePooling)]
 
     constraints_proportion_couple(m, 𝒩, ℒ, 𝒯, 𝒫ᶜʳ)
 

@@ -381,7 +381,7 @@ function constraints_flow_pressure(
     m,
     l::EMB.Link,
     𝒯,
-    𝒫::Vector{<:ResourcePotential},
+    𝒫::Vector{<:ResourcePressure},
     optimizer,
 )
     # Filter resources CompoundResource that are inputs of `l`
@@ -413,7 +413,7 @@ function constraints_flow_pressure(
     m,
     l::EMB.Link,
     𝒯,
-    𝒫::Vector{<:ResourceBlend{<:ResourcePotential}},
+    𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
     optimizer,
 )
 
@@ -441,8 +441,8 @@ function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Resource
 function constraints_pwa(
     m,
     l::EMB.Link,
-    p_blend::ResourceBlend,
-    p_track::ResourcePotential,
+    p_blend::ResourcePooling,
+    p_track::ResourcePressure,
     𝒯,
     plane,
     pwa::PWAFunc{C1,D1},

@@ -15,7 +15,7 @@ Resources that can be transported and converted, but also have energy potential.
 - **`id`** is the name/identifyer of the resource.
 - **`co2_int::T`** is the CO₂ intensity, *e.g.*, t/MWh.
 """
-struct ResourcePotential{T<:Real} <: CompoundResource
+struct ResourcePressure{T<:Real} <: CompoundResource
     id::Any
     co2_int::T
 end
@@ -26,13 +26,13 @@ end
 Resources that can be composed of other subresources of subtypes `Resources`. 
 Using `ResourcePotential` activates the potential variables and constraints in the model.
 """
-struct ResourceBlend{R<:EMB.Resource} <: CompoundResource
+struct ResourcePooling{R<:EMB.Resource} <: CompoundResource
     id::Any
     subresources::AbstractVector{R}
 end
 
-subresources(𝒫::Array{<:ResourceBlend}) = Dict(blend => blend.subresources for blend ∈ 𝒫)
-subresources(r::ResourceBlend) = r.subresources
+subresources(𝒫::Array{<:ResourcePooling}) = Dict(blend => blend.subresources for blend ∈ 𝒫)
+subresources(r::ResourcePooling) = r.subresources
 
 """
     res_types(𝒫::Array{<:Resource})

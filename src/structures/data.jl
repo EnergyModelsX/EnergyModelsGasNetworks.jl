@@ -67,12 +67,12 @@ Blending data for controlling the quality of Nodes.
 #TODO: Create a check that guarantees that the resources in max_proportion and min_proportion are either ResourceComponent or ResourceComponentPotential.
 """
 struct RefBlendData{T<:EMB.Resource} <: BlendData
-    blend::ResourceBlend{T}
+    blend::ResourcePooling{T}
     max_proportion::Dict{T,Real}
     min_proportion::Dict{T,Real}
 end
 RefBlendData(
-    blend::ResourceBlend{T},
+    blend::ResourcePooling{T},
     max_proportion::Dict{T,<:Real},
     min_proportion::Dict{T,<:Real}) where {T<:EMB.Resource} =
     RefBlendData{T}(blend, max_proportion, min_proportion)
@@ -84,7 +84,7 @@ Blending data for Links.
 #TODO: Create a check that guarantees that the resources in max_proportion and min_proportion are either ResourceComponent or ResourceComponentPotential.
 """
 struct BlendLinkData{T<:EMB.Resource} <: BlendData
-    blend::ResourceBlend{T}
+    blend::ResourcePooling{T}
     tracking_res::Dict{T,<:Real} # Tracking resource for the PWA + molar mass
     max_proportion::Real # max.proportion of tracking resource
     min_proportion::Real # min.proportion of tracking resource

@@ -24,7 +24,7 @@ include("model.jl")
 
 export create_model
 export SimpleCompressor, PoolingNode, CapDirect
-export ResourcePotential, ResourceComponentPotential, ResourceComponent, ResourceBlend
+export ResourcePressure, ResourceComponentPotential, ResourceComponent, ResourcePooling
 export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData
 export RefBlendData, BlendLinkData
 

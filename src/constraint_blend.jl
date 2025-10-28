@@ -8,8 +8,8 @@ If 𝒫 is not a Vector{ResourceBlend}, no constraints are applied.
 """
 # Fallback method for any type of 𝒫 that is not Vector{ResourceBlend}
 function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
-function constraints_proportion(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourceBlend}) end
-function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourceBlend})
+function constraints_proportion(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourcePooling}) end
+function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourcePooling})
     for blend ∈ 𝒫
         # Get the subresources for the blend
         sub_res = subresources(blend)
@@ -76,7 +76,7 @@ end
 Defines the maximum and minimum quality constraints for a node n based on the blending data.
 """
 function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
-function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourceBlend})
+function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourcePooling})
     # Get blend data for node `n`
     blend_data = get_blenddata(n)
 
@@ -138,7 +138,7 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
         end
     end
 end
-function constraints_quality(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourceBlend}) end
+function constraints_quality(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourcePooling}) end
 
 """
     function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourceBlend})
@@ -152,7 +152,7 @@ function constraints_proportion_couple(
     𝒩::Vector{<:EMB.Node},
     ℒ::Vector{<:EMB.Link},
     𝒯,
-    𝒫::Vector{<:ResourceBlend},
+    𝒫::Vector{<:ResourcePooling},
 )
     sub_res = [r for res_blend ∈ 𝒫 for r ∈ subresources(res_blend)]
 
@@ -182,7 +182,7 @@ function constraints_proportion_couple(
     ℒ::Vector{<:EMB.Link},
     𝒩::Vector{<:EMB.Node},
     𝒯,
-    𝒫::Vector{<:ResourceBlend},
+    𝒫::Vector{<:ResourcePooling},
 )
     constraints_proportion_couple(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
@@ -197,7 +197,7 @@ function constraints_tracking(
     n::EMB.Node,
     ℒ::Vector{<:EMB.Link},
     𝒯,
-    𝒫::Vector{ResourceBlend},
+    𝒫::Vector{ResourcePooling},
 )
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)
@@ -217,7 +217,7 @@ function constraints_tracking(
     n::EMB.Source,
     ℒ::Vector{<:EMB.Link},
     𝒯,
-    𝒫::Vector{ResourceBlend},
+    𝒫::Vector{ResourcePooling},
 )
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)
