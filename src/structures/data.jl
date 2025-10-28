@@ -1,6 +1,6 @@
 """
     PressureData to apply to Nodes and Links in a gas network.
-    For Source, Availability and Compressor nodes, the pressure chosen applies to the outlet potential.
+    For Source, Availability and SimpleCompressor nodes, the pressure chosen applies to the outlet potential.
     For Sink nodes, the pressure chosen applies to the inlet potential.
 """
 abstract type PressureData <: EMB.ExtensionData end
@@ -45,7 +45,7 @@ struct MinPressureData <: AbstractPressureData
 end
 
 """
-    PressureLinkData <: LinkPressureData
+    PressureLinkData <: AbstractLinkPressureData
 
 Data for Links necessary to model the flow-pressure behaviour.
 

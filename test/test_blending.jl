@@ -3,7 +3,7 @@ function generate_case_blending(; links = nothing)
     # Define reasources
     H2 = ResourceCarrier("H2", 1.0)
     CH4 = ResourceCarrier("CH4", 1.0)
-    Gas = ResourceBlend("Gas", [H2, CH4])
+    Gas = ResourcePooling("Gas", [H2, CH4])
     CO2 = ResourceEmit("CO2", 1.0)
     products = [CO2, Gas, H2, CH4]
 
@@ -26,7 +26,7 @@ function generate_case_blending(; links = nothing)
         RefSource(1, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(H2 => 1)),
         RefSource(2, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
         RefSource(3, FixedProfile(600), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
-        RefBlend(
+        PoolingNode(
             4,
             FixedProfile(1e6),
             FixedProfile(0),

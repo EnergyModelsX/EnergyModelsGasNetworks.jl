@@ -5,9 +5,9 @@ function generate_case_blending_pressure(;
     cost_h2 = 10,
 )
     # Define reasources
-    H2 = ResourcePotential("H2", 1.0)
-    CH4 = ResourcePotential("CH4", 1.0)
-    Blend = ResourceBlend("Blend", [H2, CH4])
+    H2 = ResourcePressure("H2", 1.0)
+    CH4 = ResourcePressure("CH4", 1.0)
+    Blend = ResourcePooling("Blend", [H2, CH4])
     CO2 = ResourceEmit("CO2", 1.0)
     products = [CO2, Blend, H2, CH4]
 
@@ -51,7 +51,7 @@ function generate_case_blending_pressure(;
             Dict(CH4 => 1),
             [MaxPressureData(FixedProfile(200))],
         ),
-        RefBlend(
+        PoolingNode(
             4,
             FixedProfile(1e6),
             FixedProfile(0),
@@ -66,7 +66,7 @@ function generate_case_blending_pressure(;
             Dict(:surplus => FixedProfile(-120), :deficit => FixedProfile(1e6)),
             Dict(Blend => 1),
             [
-                RefBlendData{ResourcePotential{Float64}}(
+                RefBlendData{ResourcePressure{Float64}}(
                     Blend,
                     Dict(H2=>max_h2, CH4=>1.0),
                     Dict(H2=>min_h2, CH4=>0.0),
@@ -104,10 +104,10 @@ function generate_case_blending_pressure(;
                 MinPressureData(FixedProfile(130)),
                 BlendLinkData(
                     Blend,
-                    Dict{ResourcePotential{Float64},Float64}(H2=>2.016),
+                    Dict{ResourcePressure{Float64},Float64}(H2=>2.016),
                     0.1,
                     0.0,
-                    Dict{ResourcePotential{Float64},Float64}(CH4=>16.04),
+                    Dict{ResourcePressure{Float64},Float64}(CH4=>16.04),
                 )]),
     ]
 
@@ -243,7 +243,7 @@ end
 #         RefSource(1, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(H2 => 1)),
 #         RefSource(2, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
 #         RefSource(3, FixedProfile(600), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
-#         RefBlend(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1)),
+#         PoolingNode(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1)),
 #         RefSink(
 #             5,
 #             FixedProfile(500),
@@ -270,7 +270,7 @@ end
 #     RefSource(1, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(H2 => 1)),
 #     RefSource(2, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
 #     RefSource(3, FixedProfile(600), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
-#     RefBlend(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1),
+#     PoolingNode(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1),
 #         [RefBlendData{ResourceComponent{Float64}}(Gas, Dict(H2=>0.05, CH4=>1.0), Dict(H2=>0.0, CH4=>0.0))]),
 #     RefSink(
 #         5,
@@ -298,7 +298,7 @@ end
 #     RefSource(1, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(H2 => 1)),
 #     RefSource(2, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
 #     RefSource(3, FixedProfile(600), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
-#     RefBlend(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1),
+#     PoolingNode(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1),
 #         [RefBlendData{ResourceComponent{Float64}}(Gas, Dict(H2=>0.1, CH4=>1.0), Dict(H2=>0.0, CH4=>0.0))]),
 #     RefSink(
 #         5,
@@ -329,7 +329,7 @@ end
 #         RefSource(1, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(H2 => 1)),
 #         RefSource(2, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
 #         RefSource(3, FixedProfile(600), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
-#         RefBlend(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1)),
+#         PoolingNode(4, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1)),
 #         RefSink(
 #             5,
 #             FixedProfile(500),
@@ -351,14 +351,14 @@ end
 
 # end
 
-# @testset "RefBlend + Component" begin
+# @testset "PoolingNode + Component" begin
 #     nodes = [
 #         RefSource(1, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(H2 => 1)),
 #         RefSource(2, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
 #         RefSource(3, FixedProfile(600), FixedProfile(10), FixedProfile(0), Dict(CH4 => 1)),
 #         RefSource(4, FixedProfile(200), FixedProfile(10), FixedProfile(0), Dict(H2 => 1)),
-#         RefBlend(5, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1)),
-#         RefBlend(6, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(Gas => 1, H2 => 1), Dict(Gas => 1)),
+#         PoolingNode(5, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(CH4 => 1, H2 => 1), Dict(Gas => 1)),
+#         PoolingNode(6, FixedProfile(1e6), FixedProfile(0), FixedProfile(0), Dict(Gas => 1, H2 => 1), Dict(Gas => 1)),
 #         RefSink(
 #             7,
 #             FixedProfile(500),

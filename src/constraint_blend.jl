@@ -4,9 +4,9 @@
 Ensures keeping track of the proportions of resources from sources at each node `n`. 
 
 Note! It is assumed that all the ResourceComponentPotential and ResourceComponent that meet in a node are blended.
-If 𝒫 is not a Vector{ResourceBlend}, no constraints are applied.
+If 𝒫 is not a Vector{ResourcePooling}, no constraints are applied.
 """
-# Fallback method for any type of 𝒫 that is not Vector{ResourceBlend}
+# Fallback method for any type of 𝒫 that is not Vector{ResourcePooling}
 function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
 function constraints_proportion(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourcePooling}) end
 function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourcePooling})
@@ -141,7 +141,7 @@ end
 function constraints_quality(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourcePooling}) end
 
 """
-    function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourceBlend})
+    function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
 
 Sets standard proportion_source values. 
 The proportion source of a node n from a source is set to 1 if source == n.

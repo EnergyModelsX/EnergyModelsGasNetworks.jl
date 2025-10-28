@@ -175,12 +175,12 @@ end
 """
     constraints_pressure_couple(m, n::Source, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_pressure_couple(m, n::Availability, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
-    constraints_pressure_couple(m, n::Compressor, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_pressure_couple(m, n::SimpleCompressor, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_pressure_couple(m, n::Sink, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
 
 Constraints setting the pressure balance between nodes and links.
 
-Availability nodes do not allow increase in potential, while Compressor nodes allow it.
+Availability nodes do not allow increase in potential, while SimpleCompressor nodes allow it.
 """
 function constraints_pressure_couple(
     m,
@@ -269,8 +269,8 @@ function constraints_pressure_couple(
         m[:link_potential_out][l_to, t, p] -
         1e4 * (1 - m[:lower_pressure_into_node][l_to, t]))
 
-    # The Outlet Potential in Compressor `n` is equal to the inlet potential + the required increased pressure
-    # Note: The potential_Δ will be priced at opex_var in the objective function # TODO: Delete comment when Compressor Power consumption is defined
+    # The Outlet Potential in SimpleCompressor `n` is equal to the inlet potential + the required increased pressure
+    # Note: The potential_Δ will be priced at opex_var in the objective function # TODO: Delete comment when SimpleCompressor Power consumption is defined
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ_in],
         m[:potential_out][n, t, p] == m[:potential_in][n, t, p] + m[:potential_Δ][n, t])
 
@@ -374,7 +374,7 @@ end
     constraints_flow_pressure(m, l::Link, 𝒯, 𝒫::Vector{<:CompoundResource})
 
 Setting Weymouth constraints in link `l` to define the link_in according to its pressure drop.
-The Weymouth equation will be approximated using the first-order Taylor expansion when the Resource is a `ResourcePotential`.
+The Weymouth equation will be approximated using the first-order Taylor expansion when the Resource is a `ResourcePressure`.
 For `ResourceComponentPotential`, a Piecewise Affine Approximation (PWA) will be used.`
 """
 function constraints_flow_pressure(
@@ -389,7 +389,7 @@ function constraints_flow_pressure(
 
     if !isempty(𝒫ⁿ)
         # Retrieve elements from PressureLinkData in `l`
-        # TODO: Make a check that ensures that a `l` with CompoundResource as input has LinkPressureData
+        # TODO: Make a check that ensures that a `l` with CompoundResource as input has AbstractLinkPressureData
         pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
         weymouth_ct = get_weymouth(pressure_data)
         POut, PIn = potential_data(pressure_data)
@@ -417,7 +417,7 @@ function constraints_flow_pressure(
     optimizer,
 )
 
-    # Get inputs of `l` that are ResourceBlend
+    # Get inputs of `l` that are ResourcePooling
     𝒫ⁿ = [p for p ∈ EMB.inputs(l) if p ∈ 𝒫]
 
     if !isempty(𝒫ⁿ)
@@ -436,7 +436,7 @@ end
 function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Resource}, optimizer) end
 
 """
-    constraints_pwa(m, l::Link, p_blend::ResourceBlend, p_track::ResourcePotential, 𝒯, plane, pwa::PWAFunc)
+    constraints_pwa(m, l::Link, p_blend::ResourcePooling, p_track::ResourcePressure, 𝒯, plane, pwa::PWAFunc)
 """
 function constraints_pwa(
     m,

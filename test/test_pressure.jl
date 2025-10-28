@@ -22,7 +22,7 @@ end
 
 function generate_case_pressure()
     # Define reasources
-    NG = ResourcePotential("NG", 1.0)
+    NG = ResourcePressure("NG", 1.0)
     CO2 = ResourceEmit("CO2", 1.0)
     products = [CO2, NG]
 
@@ -66,7 +66,7 @@ function generate_case_pressure()
             Dict(NG => 1),
             [MaxPressureData(FixedProfile(200))],
         ),
-        Compressor(
+        SimpleCompressor(
             4,
             FixedProfile(1e6),
             FixedProfile(0),
@@ -204,7 +204,7 @@ end
         ]
         @test in_val == out_val
 
-        𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
+        𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
         in_val = [
             value(m[:potential_in][nt]) for
             nt ∈ eachindex(m[:potential_in]) if nt[1] in 𝒩ᶜ
@@ -229,9 +229,9 @@ end
     end
 end
 
-# Test that the Compressor cost is correctly calculated using :potential_Δ and not :cap_use
-@testset "Compressor Cost" begin
-    n = first(filter(n -> n isa Compressor, 𝒩))
+# Test that the SimpleCompressor cost is correctly calculated using :potential_Δ and not :cap_use
+@testset "SimpleCompressor Cost" begin
+    n = first(filter(n -> n isa SimpleCompressor, 𝒩))
     opex_cost = first(value.(m[:opex_var][n, :]))
 
     𝒯ⁱⁿᵛ = strategic_periods(𝒯)
@@ -263,7 +263,7 @@ end
 
 function generate_case2()
     # Define reasources
-    NG = ResourcePotential("NG", 1.0)
+    NG = ResourcePressure("NG", 1.0)
     CO2 = ResourceEmit("CO2", 1.0)
     products = [CO2, NG]
 
@@ -450,7 +450,7 @@ end
         ]
         @test in_val == out_val
 
-        𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
+        𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
         in_val = [
             value(m[:potential_in][nt]) for
             nt ∈ eachindex(m[:potential_in]) if nt[1] in 𝒩ᶜ

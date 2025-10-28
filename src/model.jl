@@ -47,7 +47,7 @@ function create_model(
     # Data structure
     𝒯 = get_time_struct(case)
     𝒫 = get_products(case)
-    𝒫ᶜʳ = CompoundResource[x for x ∈ 𝒫 if isa(x, ResourcePressure)] # TODO: Eliminate when the Compressor use of Power is defined
+    𝒫ᶜʳ = CompoundResource[x for x ∈ 𝒫 if isa(x, ResourcePressure)] # TODO: Eliminate when the SimpleCompressor use of Power is defined
     𝒳ᵛᵉᶜ = get_elements_vec(case) # nodes and links
     𝒳_𝒳 = get_couplings(case)
 
@@ -60,7 +60,7 @@ function create_model(
         constraints_blending(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
 
         if !isempty(𝒫ᶜʳ)
-            set_opex_var(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, modeltype) # TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
+            set_opex_var(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, modeltype) # TODO: Eliminate when the SimpleCompressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
         end
     end
 
@@ -99,7 +99,7 @@ function variables_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, �
 
     # If the system includes a blended resource, initialise the variables
     if !isempty(𝒫ᶜʳ)
-        # Get the subresources included in the blends (ResourceCarrier or ResourcePotential)
+        # Get the subresources included in the blends (ResourceCarrier or ResourcePressure)
         𝒫ˢᵘᵇ = [r for res_blend ∈ 𝒫ᶜʳ for r ∈ subresources(res_blend)]
 
         # Get the sources that can provide the subresources
@@ -156,7 +156,7 @@ function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 
         # Define internal pressure balance constraints
         constraints_pressure(m, n, 𝒯, 𝒫ᶜʳ)
 
-        # Get RefPressureData and generate limit constraints if any
+        # Get AbstractPressureData and generate limit constraints if any
         pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(n))
         if !isempty(pressure_data)
             for d ∈ pressure_data
@@ -175,7 +175,7 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
         # Define internal pressure balance constraints
         constraints_pressure(m, l, 𝒯, 𝒫ᶜʳ)
 
-        # Get RefPressureData and generate limit constraints if any
+        # Get AbstractPressureData and generate limit constraints if any
         pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(l))
         if !isempty(pressure_data)
             for d ∈ pressure_data

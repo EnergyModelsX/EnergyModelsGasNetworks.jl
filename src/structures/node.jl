@@ -1,19 +1,19 @@
 """
-    Compressor <: EMB.NetworkNode
+    SimpleCompressor <: EMB.NetworkNode
 
 NetworkNode that increases its potential_out.
 
 # Fields
 - **`id::Any`** is the name/identifier of the link.
-- **`cap::TimeProfile`** the maximum flow allowed through the compressor.
+- **`cap::TimeProfile`** the maximum flow allowed through the SimpleCompressor.
 - **`opex_var::TimeProfile`** is the variable operating expense per cap_use
 - **`opex_fixed::TimeProfile`** is the fixed operating expense per time unit.
-- **`input::Dict{<:Resource,<:Real}`** is the input flow into the compressor.
-- **`output::Dict{<:Resource,<:Real}`** is the output flow from the compressor.
-- **`potential_increase::TimeProfile`** maximum potential increase the compressor can provide.
+- **`input::Dict{<:Resource,<:Real}`** is the input flow into the SimpleCompressor.
+- **`output::Dict{<:Resource,<:Real}`** is the output flow from the SimpleCompressor.
+- **`potential_increase::TimeProfile`** maximum potential increase the SimpleCompressor can provide.
 - **`potential_opex_var::TimeProfile`** is the variable operating expense per potential unit increased.
 
-!NOTE: In Compressors, the operational cost is determined by the potential increase and not the :cap_use (flow within compressor).
+!NOTE: In SimpleCompressors, the operational cost is determined by the potential increase and not the :cap_use (flow within SimpleCompressor).
 """
 struct SimpleCompressor <: EMB.NetworkNode
     id::Any
@@ -53,7 +53,7 @@ get_potential(n::SimpleCompressor, t) = n.potential_increase[t]
 
 """
 New NetworkNode that overwrite the function constraints flow_in such that cap_use is the sum of the flow_in for blend resources.
-The constraint flow_out remain as standard NetworkNodes where cap_use = flow_out (only one resource is out of RefBlend)
+The constraint flow_out remain as standard NetworkNodes where cap_use = flow_out (only one resource is out of PoolingNode)
 # TODO: Define a check that guarantees that only one resource is in output.
 """
 struct PoolingNode <: EMB.NetworkNode

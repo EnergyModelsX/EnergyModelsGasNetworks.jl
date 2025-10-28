@@ -7,7 +7,7 @@ E.q. electric power which consist of voltage (potential) and power/current (flow
 abstract type CompoundResource <: EMB.Resource end
 
 """
-    ResourcePotential{T<:Real} <: CompoundResource
+    ResourcePressure{T<:Real} <: CompoundResource
 
 Resources that can be transported and converted, but also have energy potential.
 
@@ -21,10 +21,10 @@ struct ResourcePressure{T<:Real} <: CompoundResource
 end
 
 """
-    ResourceBlend{T<:Real} <: EMB.Resource
+    ResourcePooling{T<:Real} <: EMB.Resource
 
 Resources that can be composed of other subresources of subtypes `Resources`. 
-Using `ResourcePotential` activates the potential variables and constraints in the model.
+Using `ResourcePressure` activates the potential variables and constraints in the model.
 """
 struct ResourcePooling{R<:EMB.Resource} <: CompoundResource
     id::Any
