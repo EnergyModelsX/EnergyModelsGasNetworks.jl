@@ -1,4 +1,4 @@
-function EMB.constraints_opex_var(m, n::Compressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel)
+function EMB.constraints_opex_var(m, n::SimpleCompressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel)
     @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
         m[:opex_var][n, t_inv] == 0)
 end
@@ -125,7 +125,7 @@ function variables_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, �
         @variable(m, potential_in[n ∈ 𝒩, 𝒯, inputs(n)] >= 0)
         @variable(m, potential_out[n ∈ 𝒩, 𝒯, outputs(n)] >= 0)
 
-        𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
+        𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
         @variable(m, potential_Δ[n ∈ 𝒩ᶜ, 𝒯] >= 0)
     end
 end
@@ -232,7 +232,7 @@ end
 
 function set_opex_var(m, 𝒳::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)
     # Add addiitonal potential_add_cost for nodes
-    𝒩ᶜ = filter(n -> n isa Compressor, 𝒳)
+    𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒳)
 
     # Define variables
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
@@ -267,7 +267,7 @@ function set_opex_var(m, 𝒳::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, modeltyp
 end
 function set_opex_var(m, 𝒳::Vector{<:EMB.AbstractElement}, 𝒳ᵛᵉᶜ, 𝒯, modeltype) end
 function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯)
-    𝒩ᶜ = filter(n -> n isa Compressor, 𝒩)
+    𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
 
     new_objective = @expression(m,
         objective_function(m) -

@@ -23,7 +23,7 @@ include("constraint_pressure.jl")
 include("model.jl")
 
 export create_model
-export Compressor, RefBlend, CapDirect
+export SimpleCompressor, RefBlend, CapDirect
 export ResourcePotential, ResourceComponentPotential, ResourceComponent, ResourceBlend
 export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData
 export RefBlendData, BlendLinkData

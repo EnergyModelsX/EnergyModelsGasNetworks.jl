@@ -14,7 +14,7 @@ function constraints_pressure(m, n::EMB.Availability, 𝒯, 𝒫::Vector{<:Compo
     # Inlet and Outlet Potential should be equal
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], m[:potential_in][n, t, p] == m[:potential_out][n, t, p])
 end
-function constraints_pressure(m, n::Compressor, 𝒯, 𝒫::Vector{<:CompoundResource})
+function constraints_pressure(m, n::SimpleCompressor, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are output of `n`
     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(n), 𝒫)
 
@@ -241,7 +241,7 @@ function constraints_pressure_couple(
 end
 function constraints_pressure_couple(
     m,
-    n::Compressor,
+    n::SimpleCompressor,
     ℒ::Vector{<:EMB.Link},
     𝒯,
     𝒫::Vector{<:CompoundResource},

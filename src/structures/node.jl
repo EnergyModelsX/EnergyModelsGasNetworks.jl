@@ -15,7 +15,7 @@ NetworkNode that increases its potential_out.
 
 !NOTE: In Compressors, the operational cost is determined by the potential increase and not the :cap_use (flow within compressor).
 """
-struct Compressor <: EMB.NetworkNode
+struct SimpleCompressor <: EMB.NetworkNode
     id::Any
     cap::TimeProfile
     opex_var::TimeProfile
@@ -26,7 +26,7 @@ struct Compressor <: EMB.NetworkNode
     potential_opex_var::TimeProfile
     data::Vector{<:ExtensionData}
 end
-function Compressor(
+function SimpleCompressor(
     id,
     cap::TimeProfile,
     opex_var::TimeProfile,
@@ -36,7 +36,7 @@ function Compressor(
     potential_increase::TimeProfile,
     potential_opex_var::TimeProfile,
 )
-    return Compressor(
+    return SimpleCompressor(
         id,
         cap,
         opex_var,
@@ -49,7 +49,7 @@ function Compressor(
     )
 end
 
-get_potential(n::Compressor, t) = n.potential_increase[t]
+get_potential(n::SimpleCompressor, t) = n.potential_increase[t]
 
 """
 New NetworkNode that overwrite the function constraints flow_in such that cap_use is the sum of the flow_in for blend resources.
