@@ -80,7 +80,7 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
         sub_res = subresources(blend)
 
         # Check if blend data is available for the current blend
-        data_vect = filter(b -> b.blend == blend, blend_data)
+        data_vect = get_blenddata(n, blend)
 
         if !isempty(data_vect)
             # Get the specific data for blend

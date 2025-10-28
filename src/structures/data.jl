@@ -108,6 +108,11 @@ get_pressuredata(l::CapDirect) = filter(data -> data isa PressureData, l.data)
 
 get_blenddata(n::EMB.Node) = filter(data -> data isa BlendData, n.data)
 get_blenddata(n::EMB.Availability) = ExtensionData[]
+function get_blenddata(n::EMB.Node, blend::ResourcePooling)
+    blend_data = get_blenddata(n)
+    data_vect = filter(b -> b.blend == blend, blend_data)
+    return data_vect
+end
 
 get_trackres(data::BlendLinkData) = first(keys(data.tracking_res))
 get_blendres(data::BlendLinkData) = data.blend
