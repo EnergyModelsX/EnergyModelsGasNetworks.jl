@@ -84,12 +84,12 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
 
         if !isempty(data_vect)
             # Get the specific data for blend
-            data = first(data_vect)
+            data = only(data_vect)
 
             # Get maximum and minimum resource proportions for node `n`
             𝒫ᵐᵃˣ, 𝒫ᵐⁱⁿ = res_blendata(data)
-            𝒫ᵐᵃˣ = Dict(key => val for (key, val) ∈ 𝒫ᵐᵃˣ if key ∈ sub_res) # if statement is probably not needed
-            𝒫ᵐⁱⁿ = Dict(key => val for (key, val) ∈ 𝒫ᵐⁱⁿ if key ∈ sub_res)
+            𝒫ᵐᵃˣ = Dict(key => val for (key, val) ∈ 𝒫ᵐᵃˣ) 
+            𝒫ᵐⁱⁿ = Dict(key => val for (key, val) ∈ 𝒫ᵐⁱⁿ)
 
             # Get links into `n` that deliver any sub_resource of blend
             ℒ = 𝒳ᵛᵉᶜ[2]
