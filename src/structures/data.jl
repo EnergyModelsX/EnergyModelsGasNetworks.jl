@@ -10,19 +10,19 @@ abstract type BlendData <: EMB.ExtensionData end
 """
     Reference PressureData that can be applied to Nodes and Links
 """
-abstract type RefPressureData <: PressureData end
+abstract type AbstractPressureData <: PressureData end
 
 """
     PressureData specific for Links
 """
-abstract type LinkPressureData <: PressureData end
+abstract type AbstractLinkPressureData <: PressureData end
 
 """
     FixPressureData
 
     Used to define a fixed pressure in Nodes or Links
 """
-struct FixPressureData <: RefPressureData
+struct FixPressureData <: AbstractPressureData
     pressure::TimeProfile
 end
 
@@ -31,7 +31,7 @@ end
 
     Used to define a fixed maximum pressure in Nodes or Links
 """
-struct MaxPressureData <: RefPressureData
+struct MaxPressureData <: AbstractPressureData
     pressure::TimeProfile
 end
 
@@ -40,7 +40,7 @@ end
 
     Used to define a fixed minimum pressure in Nodes or Links
 """
-struct MinPressureData <: RefPressureData
+struct MinPressureData <: AbstractPressureData
     pressure::TimeProfile
 end
 
@@ -54,7 +54,7 @@ Data for Links necessary to model the flow-pressure behaviour.
 - **`max_potential::Real`** is the maximum inlet pressure of the link, used to calculate the approximations.
 - **`min_potential::Real`** is the minimum inlet pressure of the link, used to calculate the approximations.
 """
-struct PressureLinkData <: LinkPressureData
+struct PressureLinkData <: AbstractLinkPressureData
     weymouth::Real
     max_potential::Real
     min_potential::Real
@@ -92,7 +92,7 @@ struct BlendLinkData{T<:EMB.Resource} <: BlendData
 end
 
 function pressure(n::EMB.Node)
-    data = first(filter(data -> data isa RefPressureData, n.data))
+    data = first(filter(data -> data isa AbstractPressureData, n.data))
     return data.pressure
 end
 pressure(n::EMB.Node, t) = pressure(n)[t]

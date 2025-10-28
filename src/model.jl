@@ -157,7 +157,7 @@ function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 
         constraints_pressure(m, n, 𝒯, 𝒫ᶜʳ)
 
         # Get RefPressureData and generate limit constraints if any
-        pressure_data = filter(d -> d isa RefPressureData, get_pressuredata(n))
+        pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(n))
         if !isempty(pressure_data)
             for d ∈ pressure_data
                 constraints_pressure_limit(m, n, d, 𝒯, 𝒫ᶜʳ)
@@ -176,7 +176,7 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, �
         constraints_pressure(m, l, 𝒯, 𝒫ᶜʳ)
 
         # Get RefPressureData and generate limit constraints if any
-        pressure_data = filter(d -> d isa RefPressureData, get_pressuredata(l))
+        pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(l))
         if !isempty(pressure_data)
             for d ∈ pressure_data
                 constraints_pressure_limit(m, l, d, 𝒯, 𝒫ᶜʳ)
