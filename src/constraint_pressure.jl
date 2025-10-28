@@ -21,7 +21,7 @@ function constraints_pressure(m, n::SimpleCompressor, 𝒯, 𝒫::Vector{<:Compo
     # Inlet Potential lower than Outlet Potential
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], m[:potential_in][n, t, p] <= m[:potential_out][n, t, p])
 end
-function constraints_pressure(m, n::RefBlend, 𝒯, 𝒫::Vector{<:CompoundResource})
+function constraints_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter input and output resources
     𝒫ⁱⁿ = filter(p -> p ∈ EMB.inputs(n), 𝒫)
     𝒫ᵒᵘᵗ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
@@ -288,7 +288,7 @@ function constraints_pressure_couple(
 end
 function constraints_pressure_couple(
     m,
-    n::RefBlend,
+    n::PoolingNode,
     ℒ::Vector{<:EMB.Link},
     𝒯,
     𝒫::Vector{<:CompoundResource},

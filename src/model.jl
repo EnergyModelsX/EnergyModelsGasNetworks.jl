@@ -5,7 +5,7 @@ end
 
 function EMB.constraints_flow_in(
     m,
-    n::RefBlend,
+    n::PoolingNode,
     𝒯::TimeStructure,
     modeltype::EMB.EnergyModel,
 )

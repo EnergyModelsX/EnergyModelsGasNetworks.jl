@@ -56,7 +56,7 @@ New NetworkNode that overwrite the function constraints flow_in such that cap_us
 The constraint flow_out remain as standard NetworkNodes where cap_use = flow_out (only one resource is out of RefBlend)
 # TODO: Define a check that guarantees that only one resource is in output.
 """
-struct RefBlend <: EMB.NetworkNode
+struct PoolingNode <: EMB.NetworkNode
     id::Any
     cap::TimeProfile
     opex_var::TimeProfile
@@ -65,7 +65,7 @@ struct RefBlend <: EMB.NetworkNode
     output::Dict{<:Resource,<:Real}
     data::Vector{<:Data}
 end
-function RefBlend(
+function PoolingNode(
     id,
     cap::TimeProfile,
     opex_var::TimeProfile,
@@ -73,7 +73,7 @@ function RefBlend(
     input::Dict{<:Resource,<:Real},
     output::Dict{<:Resource,<:Real},
 )
-    return RefBlend(id, cap, opex_var, opex_fixed, input, output, Data[])
+    return PoolingNode(id, cap, opex_var, opex_fixed, input, output, Data[])
 end
 
 # """
