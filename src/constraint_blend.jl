@@ -17,17 +17,12 @@ function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vecto
         # Check if the constraints for that blend applies to `n`
         if any(res -> res ∈ EMB.inputs(n), sub_res) || blend ∈ EMB.inputs(n)
 
-            # Get links into `n` which transport any sub_resource
+            # Get links into `n` which transport any sub_resource or blend
             ℒ = 𝒳ᵛᵉᶜ[2]
-            _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
-            ℒᵗᵒ = filter(
-                l -> any(res -> (res ∈ sub_res) || (res == blend), EMB.link_res(l)),
-                ℒᵗᵒ,
-            )
+            ℒᵗᵒ = get_links_to_node_blend(n, 𝒳ᵛᵉᶜ, sub_res, blend)
 
             # Get sources associated to `n` whose outputs are any subresource
-            𝒮 = track_source(n, ℒ)
-            𝒮 = filter(s -> any(res -> res ∈ sub_res, EMB.outputs(s)), 𝒮)
+            𝒮 = track_source(n, ℒ, sub_res)
 
             # The flow proportion of each source in `n` evolves as it moves through the network.
             @constraint(m, [t ∈ 𝒯, s ∈ 𝒮],
