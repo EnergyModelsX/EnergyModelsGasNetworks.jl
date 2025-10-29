@@ -22,7 +22,7 @@ function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vecto
             ℒᵗᵒ = get_links_to_node_blend(n, 𝒳ᵛᵉᶜ, sub_res, blend)
 
             # Get sources associated to `n` whose outputs are any subresource
-            𝒮 = track_source(n, ℒ, sub_res)
+            𝒮 = sources_upstream_of(n, ℒ, sub_res)
 
             # The flow proportion of each source in `n` evolves as it moves through the network.
             @constraint(m, [t ∈ 𝒯, s ∈ 𝒮],
@@ -105,7 +105,7 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
             𝒮 = Dict(
                 l_to.from => filter(
                     s -> any(res -> res ∈ sub_res, EMB.outputs(s)),
-                    track_source(l_to.from, ℒ),
+                    sources_upstream_of(l_to.from, ℒ),
                 ) for l_to ∈ ℒᵗᵒ
             )
 
@@ -158,7 +158,7 @@ function constraints_proportion_couple(
     # Set proportion_source to 0 at nodes where the source is not associated
     # and set proportion_source to 1 at source nodes.
     for n ∈ 𝒩
-        𝒮ⁿ = track_source(n, ℒ)
+        𝒮ⁿ = sources_upstream_of(n, ℒ)
         for source ∈ 𝒮
             if source == n # if `source` is the same as `n`
                 for t ∈ 𝒯
@@ -196,7 +196,7 @@ function constraints_tracking(
 )
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)
-        𝒮 = track_source(n, ℒ)
+        𝒮 = sources_upstream_of(n, ℒ)
 
         for p ∈ 𝒫ʳ
             𝒮ᵖ = filter(s -> p ∈ outputs(s), 𝒮)

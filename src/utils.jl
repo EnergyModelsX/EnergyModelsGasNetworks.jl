@@ -1,10 +1,10 @@
 """
-    track_associated_nodes(n::Node, ℒ::Vector{<:Link})
+    nodes_upstream_of(n::Node, ℒ::Vector{<:Link})
 
 Tracks all nodes associated with a given node `n` through the links in `ℒ`. We refer to associated
 to all the nodes that lead to `n` following the direction of the links.
 """
-function track_associated_nodes(n::EMB.Node, ℒ::Vector{<:EMB.Link})
+function nodes_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link})
     visited = Vector{EMB.Node}()
     stack = Vector{EMB.Node}()
     append!(stack, [n])
@@ -32,19 +32,19 @@ function track_associated_nodes(n::EMB.Node, ℒ::Vector{<:EMB.Link})
 end
 
 """
-    track_source(n::Node, ℒ::Vector{<:Link})
-    track_source(n::EMB.Node, ℒ::Vector{<:EMB.Link}, resources::Vector{EMB.Resources})
+    sources_upstream_of(n::Node, ℒ::Vector{<:Link})
+    sources_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link}, resources::Vector{EMB.Resources})
 
 Tracks all nodes associated to `n` and filter by source nodes.
 If `resources` is provided, only sources which output any of the resources in `sub_res` are returned.
 """
-function track_source(n::EMB.Node, ℒ::Vector{<:EMB.Link})
-    𝒩ᵃ = track_associated_nodes(n, ℒ)
+function sources_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link})
+    𝒩ᵃ = nodes_upstream_of(n, ℒ)
     𝒩ˢ = filter(EMB.is_source, 𝒩ᵃ)
     return unique!(𝒩ˢ)
 end
-function track_source(n::EMB.Node, ℒ::Vector{<:EMB.Link}, resources::Vector{<:EMB.Resource})
-    𝒮 = track_source(n, ℒ)
+function sources_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link}, resources::Vector{<:EMB.Resource})
+    𝒮 = sources_upstream_of(n, ℒ)
     𝒮 = filter(s -> any(res -> res ∈ resources, EMB.outputs(s)), 𝒮)
     return 𝒮
 end
@@ -82,7 +82,7 @@ function normalised_weymouth(weymouth, molmass_other)
 end
 
 """
-    calculate_flow(constant, x1, x2, x3)
+    calculate_flow_to_approximate(constant, x1, x2, x3)
 
 Calculates the flow of gas with the Weymouth equation using the normalised weymouth constant. 
 
@@ -93,12 +93,12 @@ with respect to the specific gravity. This allows to calculate the flows conside
 - weymouth_ct::Float64 -> Normalised Weymouth constant
 - x1::Float64 -> Inlet pressures
 - x2::Float64 -> Outlet pressures
-- x3::Float64 -> Proportion of hydrogen
+- x3::Float64 -> Proportion of tracking component
 - molmass_other::Float64 -> Molar mass of the other component in the blend (e.g., for methane is 16.042 g/mol)
 - molmass_track::Float64 -> Molar mass of the tracking component (e.g., for hydrogen is 2.016 g/mol)
 
 """
-function calculate_flow(weymouth_ct, x1, x2, x3, molmass_other, molmass_track)
+function calculate_flow_to_approximate(weymouth_ct, x1, x2, x3, molmass_other, molmass_track)
     Mᵃⁱʳ = 28.96 # g/mol
     return sqrt(
         weymouth_ct * (x1^2 - x2^2) *

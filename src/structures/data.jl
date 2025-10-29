@@ -160,7 +160,7 @@ function get_pwa(
 
     # Calculate exact flow values for approximation
     z =
-        calculate_flow.(
+        calculate_flow_to_approximate.(
             weymouth_ct,
             X[:, 1],
             X[:, 2],
