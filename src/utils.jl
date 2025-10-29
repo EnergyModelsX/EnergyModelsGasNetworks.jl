@@ -121,35 +121,3 @@ function define_points_curve(x1, x2, x3)
     X = X[valid_indices, :]
     return X
 end
-
-"""
-    test_approx(pwa, constant, pin, pout, prop)
-
-Compares the approximation results with the value applying the Weymouth equation
-"""
-function test_approx(pwa, constant, pin, pout, prop, molmass_other, molmass_track)
-    for p_out ∈ pout:pin
-        println(PiecewiseAffineApprox.evaluate(pwa, (pin, p_out, prop)), "\t",
-            calculate_flow(constant, pin, p_out, prop, molmass_other, molmass_track), "\t",
-            PiecewiseAffineApprox.evaluate(pwa, (pin, p_out, prop)) >=
-            calculate_flow(constant, pin, p_out, prop, molmass_other, molmass_track))
-    end
-end
-function test_approx(
-    weymouth,
-    pressure_points::Vector,
-    link_potential_in,
-    link_potential_out,
-)
-    rhs = Float64[]
-    for (p_in, p_out) ∈ pressure_points
-        value =
-            sqrt(weymouth) *
-            (
-                (p_in / (sqrt(p_in^2 - p_out^2))) * link_potential_in -
-                (p_out / (sqrt(p_in^2 - p_out^2))) * link_potential_out
-            )
-        push!(rhs, value)
-    end
-    return minimum(rhs)
-end
