@@ -17,7 +17,7 @@ function nodes_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link})
         push!(visited, current_area)
 
         # Extract links into `n`
-        _, ℒᵗᵒ = EMB.link_sub(ℒ, current_area)
+        ℒᵗᵒ = filter(x -> x.to == current_area, ℒ)
 
         for l ∈ ℒᵗᵒ
             # Get node at the other end of the link

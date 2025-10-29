@@ -179,7 +179,6 @@ function get_pwa(
             FunctionEvaluations(collect(zip(X[:, 1], X[:, 2], X[:, 3])), z),
             Concave(),
             Cluster(; optimizer, planes = 10, strict = :outer, metric = :l1))
-        test_approx(pwa, weymouth_ct, PIn, POut, PropMax, molmass_other, molmass_track)
 
         write_to_json(fn, pwa)
     end
