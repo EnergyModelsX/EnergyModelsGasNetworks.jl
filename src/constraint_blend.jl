@@ -43,7 +43,6 @@ function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vecto
             @constraint(m, [t ∈ 𝒯],
                 sum(m[:proportion_source][n, s, t] for s ∈ 𝒮) == 1.0
             )
-
         end
     end
 end
@@ -71,7 +70,7 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
 
             # Get maximum and minimum resource proportions for node `n`
             𝒫ᵐᵃˣ, 𝒫ᵐⁱⁿ = res_blendata(data)
-            𝒫ᵐᵃˣ = Dict(key => val for (key, val) ∈ 𝒫ᵐᵃˣ) 
+            𝒫ᵐᵃˣ = Dict(key => val for (key, val) ∈ 𝒫ᵐᵃˣ)
             𝒫ᵐⁱⁿ = Dict(key => val for (key, val) ∈ 𝒫ᵐⁱⁿ)
 
             # Get links into `n` that deliver any sub_resource of blend

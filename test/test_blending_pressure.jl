@@ -141,7 +141,7 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
     @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
 
     @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 0
-    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 20.108  rtol = 0.06
+    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 20.108 rtol = 0.06
     @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 42.71 atol = 1e-1
     @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 62.82 rtol = 0.02
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.0
@@ -162,7 +162,7 @@ end
         value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]); atol = 1e-1)
 
     # Test that Taylor approximation bounds flow in link_n_3-n_4
-    rhs = EMP.test_approx(0.24,
+    rhs = test_approx(0.24,
         [(200, pout) for pout ∈ range(200, 130, length = 150)[2:end]],
         value(m[:link_potential_in][ℒ[3], first(collect(𝒯)), CH4]),
         value(m[:link_potential_out][ℒ[3], first(collect(𝒯)), CH4]))
@@ -170,7 +170,7 @@ end
 
     #  Test that Taylor approximation bounds flow in link_n_1-n_4
     rhs =
-        EMP.test_approx(0.24, [(200, pout) for pout ∈ range(200, 0, length = 150)[2:end]],
+        test_approx(0.24, [(200, pout) for pout ∈ range(200, 0, length = 150)[2:end]],
             value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]),
             value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))
     @test_broken isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol = 1e-1)
@@ -181,8 +181,14 @@ end
     data = first(blend_data)
     t = first(collect(𝒯))
     source_h2 = 𝒩[1]
-    @test (EnergyModelsPooling.get_source_prop(source_h2, H2) - EnergyModelsPooling.get_max_proportion(data, H2)) * value.(m[:proportion_source][𝒩[4], source_h2, t]) * m[:link_in][ℒ[4], t, Blend] == 0 # the quality of H2 reaching node_5 should be 0
-    @test value(m[:link_in][ℒ[1], t, H2]) == value.(m[:proportion_source][𝒩[4], source_h2, t]) * value.(m[:link_in][ℒ[4], t, Blend]) # the flow of hydrogen should be equal to the proportion reaching node_4 times the total flow into/out node_4
+    @test (
+              EnergyModelsPooling.get_source_prop(source_h2, H2) -
+              EnergyModelsPooling.get_max_proportion(data, H2)
+          ) * value.(m[:proportion_source][𝒩[4], source_h2, t]) *
+          m[:link_in][ℒ[4], t, Blend] == 0 # the quality of H2 reaching node_5 should be 0
+    @test value(m[:link_in][ℒ[1], t, H2]) ==
+          value.(m[:proportion_source][𝒩[4], source_h2, t]) *
+          value.(m[:link_in][ℒ[4], t, Blend]) # the flow of hydrogen should be equal to the proportion reaching node_4 times the total flow into/out node_4
 end
 
 case, model, m = generate_case_blending_pressure(; max_h2 = 0.1, min_h2 = 0.00, cost_s3 = 5)
@@ -202,7 +208,7 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
     @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 6.50 atol = 1e-1
     @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 15.841 rtol = 0.06
     @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 42.67 atol = 1e-1
-    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 65.0  rtol = 0.05
+    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 65.0 rtol = 0.05
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.1
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 0.90
 end
@@ -221,14 +227,14 @@ end
         value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]); atol = 1e-1)
 
     # Test that Taylor approximation bounds flow in link_n_3-n_4
-    rhs = EMP.test_approx(0.24,
+    rhs = test_approx(0.24,
         [(200, pout) for pout ∈ range(200, 130, length = 150)[2:end]],
         value(m[:link_potential_in][ℒ[3], first(collect(𝒯)), CH4]),
         value(m[:link_potential_out][ℒ[3], first(collect(𝒯)), CH4]))
     @test isapprox(rhs, value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]); atol = 1e-1)
 
     #  Test that Taylor approximation bounds flow in link_n_1-n_4
-    rhs = EMP.test_approx(0.24,
+    rhs = test_approx(0.24,
         [(200, pout) for pout ∈ range(200, 130, length = 150)[2:end]],
         value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]),
         value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))

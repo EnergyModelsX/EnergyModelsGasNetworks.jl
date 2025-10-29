@@ -43,7 +43,11 @@ function sources_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link})
     𝒩ˢ = filter(EMB.is_source, 𝒩ᵃ)
     return unique!(𝒩ˢ)
 end
-function sources_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link}, resources::Vector{<:EMB.Resource})
+function sources_upstream_of(
+    n::EMB.Node,
+    ℒ::Vector{<:EMB.Link},
+    resources::Vector{<:EMB.Resource},
+)
     𝒮 = sources_upstream_of(n, ℒ)
     𝒮 = filter(s -> any(res -> res ∈ resources, EMB.outputs(s)), 𝒮)
     return 𝒮
@@ -98,7 +102,14 @@ with respect to the specific gravity. This allows to calculate the flows conside
 - molmass_track::Float64 -> Molar mass of the tracking component (e.g., for hydrogen is 2.016 g/mol)
 
 """
-function calculate_flow_to_approximate(weymouth_ct, x1, x2, x3, molmass_other, molmass_track)
+function calculate_flow_to_approximate(
+    weymouth_ct,
+    x1,
+    x2,
+    x3,
+    molmass_other,
+    molmass_track,
+)
     Mᵃⁱʳ = 28.96 # g/mol
     return sqrt(
         weymouth_ct * (x1^2 - x2^2) *

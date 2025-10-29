@@ -17,9 +17,23 @@ Compares the approximation results with the value applying the Weymouth equation
 function test_approx(pwa, constant, pin, pout, prop, molmass_other, molmass_track)
     for p_out ∈ pout:pin
         println(PiecewiseAffineApprox.evaluate(pwa, (pin, p_out, prop)), "\t",
-            calculate_flow_to_approximate(constant, pin, p_out, prop, molmass_other, molmass_track), "\t",
+            calculate_flow_to_approximate(
+                constant,
+                pin,
+                p_out,
+                prop,
+                molmass_other,
+                molmass_track,
+            ), "\t",
             PiecewiseAffineApprox.evaluate(pwa, (pin, p_out, prop)) >=
-            calculate_flow_to_approximate(constant, pin, p_out, prop, molmass_other, molmass_track))
+            calculate_flow_to_approximate(
+                constant,
+                pin,
+                p_out,
+                prop,
+                molmass_other,
+                molmass_track,
+            ))
     end
 end
 function test_approx(
