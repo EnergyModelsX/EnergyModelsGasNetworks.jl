@@ -128,7 +128,7 @@ function define_points_curve(x1, x2, x3)
         repeat(x2, inner = [length(x3)], outer = [length(x1)]),
         repeat(x3, outer = [length(x1) * length(x2)]),
     )
-    valid_indices = X[:, 1] .^ 2 .> X[:, 2] .^ 2
+    valid_indices = X[:, 1] .^ 2 .>= X[:, 2] .^ 2
     X = X[valid_indices, :]
     return X
 end
