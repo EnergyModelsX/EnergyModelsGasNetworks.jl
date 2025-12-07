@@ -427,6 +427,7 @@ function constraints_flow_pressure(
         p_blend = get_blendres(blend_data)
         p_track = get_trackres(blend_data)
 
+        @info "Running pwa for $l"
         pwa = get_pwa(pressure_data, blend_data, optimizer)
         for (k, plane) ∈ enumerate(pwa.planes)
             constraints_pwa(m, l, p_blend, p_track, 𝒯, plane, pwa)

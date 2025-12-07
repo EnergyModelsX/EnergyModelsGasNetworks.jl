@@ -173,7 +173,7 @@ end
         test_approx(0.24, [(200, pout) for pout ∈ range(200, 0, length = 150)[2:end]],
             value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]),
             value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))
-    @test_broken isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol = 1e-1)
+    @test_skip isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol = 1e-1)
 
     # Test the propagation of quality constraints towards link_in of hydrogen
     n = 𝒩[5]

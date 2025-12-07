@@ -93,24 +93,28 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
 
             # Set constraints for maximum quality of resources
             for p ∈ keys(𝒫ᵐᵃˣ)
-                @constraint(m, [t ∈ 𝒯],
-                    sum(
-                        (get_source_prop(s, p) - get_max_proportion(data, p)) *
-                        m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
-                        for l ∈ ℒᵗᵒ for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
-                    ) <= 0
-                )
+                if 𝒫ᵐᵃˣ[p] != 1
+                    @constraint(m, [t ∈ 𝒯],
+                        sum(
+                            (get_source_prop(s, p) - get_max_proportion(data, p)) *
+                            m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
+                            for l ∈ ℒᵗᵒ for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
+                        ) <= 0
+                    )
+                end
             end
 
             # Set constraints for minimum quality of resources
             for p ∈ keys(𝒫ᵐⁱⁿ)
-                @constraint(m, [t ∈ 𝒯],
-                    sum(
-                        (get_source_prop(s, p) - get_min_proportion(data, p)) *
-                        m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
-                        for l ∈ ℒᵗᵒ for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
-                    ) >= 0
-                )
+                if 𝒫ᵐⁱⁿ[p] != 0
+                    @constraint(m, [t ∈ 𝒯],
+                        sum(
+                            (get_source_prop(s, p) - get_min_proportion(data, p)) *
+                            m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
+                            for l ∈ ℒᵗᵒ for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
+                        ) >= 0
+                    )
+                end
             end
         end
     end
