@@ -92,7 +92,7 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
             )
 
             # Set constraints for maximum quality of resources
-            for p ∈ keys(𝒫ᵐᵃˣ) 
+            for p ∈ keys(𝒫ᵐᵃˣ)
                 if 𝒫ᵐᵃˣ[p] != 1
                     @constraint(m, [t ∈ 𝒯],
                         sum(
