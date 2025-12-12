@@ -86,10 +86,19 @@ Blending data for Links.
 struct BlendLinkData{T<:EMB.Resource} <: BlendData
     blend::ResourcePooling{T}
     tracking_res::Dict{T,<:Real} # Tracking resource for the PWA + molar mass
+    track_molar_fraction::Dict{T, Any} # molar fraction (!not mass) of tracking resource consider to calculate the weymouth constants and normalised
     max_proportion::Real # max.proportion of tracking resource
     min_proportion::Real # min.proportion of tracking resource
     other_res::Dict{T,<:Real} # Other resources in the blend + molar mass
 end
+BlendLinkData(
+    blend::ResourcePooling{T},
+    tracking_res::Dict{T,<:Real}, # Tracking resource for the PWA + molar mass
+    max_proportion::Real, # max.proportion of tracking resource
+    min_proportion::Real, # min.proportion of tracking resource
+    other_res::Dict{T,<:Real} # Other resources in the blend + molar mass
+    ) where {T<:EMB.Resource} =
+    BlendLinkData{T}(blend, tracking_res, Dict(first(collect(keys(tracking_res))) => 0.0), max_proportion, min_proportion, other_res)
 
 function pressure(n::EMB.Node)
     data = first(filter(data -> data isa AbstractPressureData, n.data))
@@ -141,10 +150,9 @@ function get_pwa(
 )
     POut, PIn = potential_data(data_pressure)
     PropMax, PropMin = res_blendata(data_blend)
-    track_res = first(collect(keys(data_blend.tracking_res)))
-    other_res = first(collect(keys(data_blend.other_res)))
-    molmass_other = data_blend.other_res[other_res]
-    molmass_track = data_blend.tracking_res[track_res]
+    track_res, molmass_track = first(data_blend.tracking_res)
+    other_res, molmass_other = first(data_blend.other_res)
+    track_molar_fraction = data_blend.track_molar_fraction[track_res]
 
     x1 = [i for i ∈ POut:10:PIn] # TODO: See how to handle the resolutions of the pressure
     x2 = [i for i ∈ POut:10:PIn]
@@ -156,7 +164,7 @@ function get_pwa(
     weymouth = get_weymouth(data_pressure)
 
     # Normalise the weymouth constant
-    weymouth_ct = round(normalised_weymouth(weymouth, molmass_other), digits = 4)
+    weymouth_ct = round(normalised_weymouth(data_blend, weymouth, track_molar_fraction), digits = 4)
 
     # Calculate exact flow values for approximation
     z =

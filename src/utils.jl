@@ -69,20 +69,29 @@ function get_links_to_node_blend(n::EMB.Node, 𝒳ᵛᵉᶜ, sub_res, blend)
 end
 
 """
-    normalised_weymouth(weymouth)
+    normalised_weymouth(weymouth, molar_fraction_hydrogen)
 
 Calculate the normalised flow constant with respect to the specific gravity using specific operating points.
-Assumed to use operational points from flows from CH4.
-
-molmass_other is the molar mass of the component we are not tracking (e.g., for methane is 16.042 g/mol)
 """
-function normalised_weymouth(weymouth, molmass_other)
+function normalised_weymouth(data_blend, weymouth, track_molar_fraction)
     Mᵃⁱʳ = 28.96 # g/mol
-    g = molmass_other / Mᵃⁱʳ   # specific gravity of CH4
+
+    track_res, molmass_track = first(data_blend.tracking_res)
+    other_res, molmass_other = first(data_blend.other_res)
+
+    x_track = track_molar_fraction
+    x_other = 1 .- x_track
+    Mmix = x_track * molmass_track .+ x_other * molmass_other
+        
+    g = Mmix / Mᵃⁱʳ   # specific gravity of CH4
 
     weymouth_ct = weymouth * g
 
-    return weymouth_ct
+    if isa(weymouth_ct, Vector)
+        return mean(weymouth_ct)
+    else
+        return weymouth_ct
+    end
 end
 
 """
