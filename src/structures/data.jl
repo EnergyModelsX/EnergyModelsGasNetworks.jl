@@ -154,8 +154,8 @@ function get_pwa(
     other_res, molmass_other = first(data_blend.other_res)
     track_molar_fraction = data_blend.track_molar_fraction[track_res]
 
-    x1 = [i for i ∈ POut:10:PIn] # TODO: See how to handle the resolutions of the pressure
-    x2 = [i for i ∈ POut:10:PIn]
+    x1 = [i for i ∈ POut:_STEP_PRESSURE[]:PIn] # TODO: See how to handle the resolutions of the pressure
+    x2 = [i for i ∈ POut:_STEP_PRESSURE[]:PIn]
     x3 = [i for i ∈ PropMin:resolution_prop:PropMax]
 
     # Define points of the curve

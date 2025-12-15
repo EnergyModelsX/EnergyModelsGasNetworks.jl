@@ -11,6 +11,11 @@ using LinearAlgebra
 using Scratch
 using JSON3
 
+### PARAMETERS
+const _STEP_PRESSURE = Ref(10) # Pressure step for PWA approximation
+get_step_pressure() = _STEP_PRESSURE[]
+set_step_pressure!(step_pressure) = (_STEP_PRESSURE[] = step_pressure)
+
 include("utils.jl")
 include("scratch.jl")
 include("structures/resource.jl")

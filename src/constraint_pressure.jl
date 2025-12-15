@@ -388,6 +388,7 @@ function constraints_flow_pressure(
     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
 
     if !isempty(𝒫ⁿ)
+        @info "Taylor Approximation for $l"
         # Retrieve elements from PressureLinkData in `l`
         # TODO: Make a check that ensures that a `l` with CompoundResource as input has AbstractLinkPressureData
         pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
@@ -427,7 +428,7 @@ function constraints_flow_pressure(
         p_blend = get_blendres(blend_data)
         p_track = get_trackres(blend_data)
 
-        @info "Running pwa for $l"
+        @info "PWA for $l"
         pwa = get_pwa(pressure_data, blend_data, optimizer)
         for (k, plane) ∈ enumerate(pwa.planes)
             constraints_pwa(m, l, p_blend, p_track, 𝒯, plane, pwa)
