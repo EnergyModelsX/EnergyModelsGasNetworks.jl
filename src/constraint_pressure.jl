@@ -379,6 +379,20 @@ For `ResourceComponentPotential`, a Piecewise Affine Approximation (PWA) will be
 """
 function constraints_flow_pressure(
     m,
+    l::EMB.Direct,
+    𝒯,
+    𝒫::Vector{<:ResourcePressure},
+    optimizer
+) end
+function constraints_flow_pressure(
+    m,
+    l::EMB.Direct,
+    𝒯,
+    𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
+    optimizer,
+) end
+function constraints_flow_pressure(
+    m,
     l::EMB.Link,
     𝒯,
     𝒫::Vector{<:ResourcePressure},
