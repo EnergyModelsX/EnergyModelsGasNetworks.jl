@@ -172,14 +172,14 @@ function generate_case_direct(;
             FixedProfile(500),
             FixedProfile(10),
             FixedProfile(0),
-            Dict(H2 => 1)
+            Dict(H2 => 1),
         ),
         RefSource(
             2,
             FixedProfile(500),
             FixedProfile(10),
             FixedProfile(0),
-            Dict(CH4 => 1)
+            Dict(CH4 => 1),
         ),
         PoolingNode(
             3,
@@ -223,13 +223,13 @@ function generate_case_direct(;
             14,
             nodes[1],
             nodes[3],
-            Linear()
+            Linear(),
         ),
         Direct(
             24,
             nodes[2],
             nodes[3],
-            Linear()
+            Linear(),
         ),
         CapDirect(
             34,
@@ -238,15 +238,15 @@ function generate_case_direct(;
             Linear(),
             FixedProfile(200),
             [
-                PressureLinkData(0.24, 200, 130), 
-                MinPressureData(FixedProfile(1e-6)), 
+                PressureLinkData(0.24, 200, 130),
+                MinPressureData(FixedProfile(1e-6)),
                 BlendLinkData{ResourcePressure{Float64}}(
                     Blend,
                     Dict(H2=>2.02), #molar mass
                     Dict(H2=>0.0), #molar fraction of tracking resource
                     0.2,
                     0.0,
-                    Dict(CH4=>16.04))
+                    Dict(CH4=>16.04)),
             ]),
         CapDirect(
             35,
@@ -255,15 +255,15 @@ function generate_case_direct(;
             Linear(),
             FixedProfile(200),
             [
-                PressureLinkData(0.24, 200, 130), 
-                MinPressureData(FixedProfile(1e-6)), 
+                PressureLinkData(0.24, 200, 130),
+                MinPressureData(FixedProfile(1e-6)),
                 BlendLinkData{ResourcePressure{Float64}}(
                     Blend,
                     Dict(H2=>2.02), #molar mass
                     Dict(H2=>0.0), #molar fraction of tracking resource
                     0.2,
                     0.0,
-                    Dict(CH4=>16.04))
+                    Dict(CH4=>16.04)),
             ]),
     ]
 
@@ -303,10 +303,16 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
     @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 111.011 rtol = TEST_RTOL # same flow as CH4 due to weymouth value
 
     @test value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 180.0 rtol = TEST_RTOL
-    @test value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]) ≈ 180.0 rtol = TEST_RTOL # same as link_pot_in as flow is not impacted by drop pressure
-    @test value(m[:link_potential_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 180.0 rtol = TEST_RTOL
-    @test value(m[:link_potential_in][ℒ[3], first(collect(𝒯)), Blend]) ≈ 180.0 rtol = TEST_RTOL
-    @test value(m[:link_potential_out][ℒ[3], first(collect(𝒯)), Blend]) ≈ 130.0 rtol = TEST_RTOL
-    @test value(m[:link_potential_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 180.0 rtol = TEST_RTOL
-    @test value(m[:link_potential_out][ℒ[4], first(collect(𝒯)), Blend]) ≈ 100.0 rtol = TEST_RTOL
+    @test value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]) ≈ 180.0 rtol =
+        TEST_RTOL # same as link_pot_in as flow is not impacted by drop pressure
+    @test value(m[:link_potential_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 180.0 rtol =
+        TEST_RTOL
+    @test value(m[:link_potential_in][ℒ[3], first(collect(𝒯)), Blend]) ≈ 180.0 rtol =
+        TEST_RTOL
+    @test value(m[:link_potential_out][ℒ[3], first(collect(𝒯)), Blend]) ≈ 130.0 rtol =
+        TEST_RTOL
+    @test value(m[:link_potential_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 180.0 rtol =
+        TEST_RTOL
+    @test value(m[:link_potential_out][ℒ[4], first(collect(𝒯)), Blend]) ≈ 100.0 rtol =
+        TEST_RTOL
 end

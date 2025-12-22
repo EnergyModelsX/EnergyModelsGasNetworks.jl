@@ -82,7 +82,7 @@ function normalised_weymouth(data_blend, weymouth, track_molar_fraction)
     x_track = track_molar_fraction
     x_other = 1 .- x_track
     Mmix = x_track * molmass_track .+ x_other * molmass_other
-        
+
     g = Mmix / Mᵃⁱʳ   # specific gravity of CH4
 
     weymouth_ct = weymouth * g

@@ -86,7 +86,7 @@ Blending data for Links.
 struct BlendLinkData{T<:EMB.Resource} <: BlendData
     blend::ResourcePooling{T}
     tracking_res::Dict{T,<:Real} # Tracking resource for the PWA + molar mass
-    track_molar_fraction::Dict{T, Any} # molar fraction (!not mass) of tracking resource consider to calculate the weymouth constants and normalised, standard = 0.0
+    track_molar_fraction::Dict{T,Any} # molar fraction (!not mass) of tracking resource consider to calculate the weymouth constants and normalised, standard = 0.0
     max_proportion::Real # max.proportion of tracking resource
     min_proportion::Real # min.proportion of tracking resource
     other_res::Dict{T,<:Real} # Other resources in the blend + molar mass
@@ -96,9 +96,16 @@ BlendLinkData(
     tracking_res::Dict{T,<:Real}, # Tracking resource for the PWA + molar mass
     max_proportion::Real, # max.proportion of tracking resource
     min_proportion::Real, # min.proportion of tracking resource
-    other_res::Dict{T,<:Real} # Other resources in the blend + molar mass
-    ) where {T<:EMB.Resource} =
-    BlendLinkData{T}(blend, tracking_res, Dict(first(collect(keys(tracking_res))) => 0.0), max_proportion, min_proportion, other_res)
+    other_res::Dict{T,<:Real}, # Other resources in the blend + molar mass
+) where {T<:EMB.Resource} =
+    BlendLinkData{T}(
+        blend,
+        tracking_res,
+        Dict(first(collect(keys(tracking_res))) => 0.0),
+        max_proportion,
+        min_proportion,
+        other_res,
+    )
 
 function pressure(n::EMB.Node)
     data = first(filter(data -> data isa AbstractPressureData, n.data))
@@ -164,7 +171,8 @@ function get_pwa(
     weymouth = get_weymouth(data_pressure)
 
     # Normalise the weymouth constant
-    weymouth_ct = round(normalised_weymouth(data_blend, weymouth, track_molar_fraction), digits = 4)
+    weymouth_ct =
+        round(normalised_weymouth(data_blend, weymouth, track_molar_fraction), digits = 4)
 
     # Calculate exact flow values for approximation
     z =

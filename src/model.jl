@@ -274,11 +274,11 @@ function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.L
 
     # Build objective with conditional terms
     obj = objective_function(m)
-    
+
     if !isempty(𝒩ᶜ)
         obj -= sum(m[:potential_add_cost][n, t_inv] for n ∈ 𝒩ᶜ, t_inv ∈ 𝒯ᴵⁿᵛ)
     end
-    
+
     if !isempty(ℒ) && haskey(m, :potential_add_cost_link)
         obj -= sum(m[:potential_add_cost_link][l, t_inv] for l ∈ ℒ, t_inv ∈ 𝒯ᴵⁿᵛ)
     end

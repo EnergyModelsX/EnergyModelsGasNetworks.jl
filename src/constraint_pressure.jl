@@ -380,7 +380,7 @@ function constraints_flow_pressure(
     l::EMB.Direct,
     𝒯,
     𝒫::Vector{<:ResourcePressure},
-    optimizer
+    optimizer,
 ) end
 function constraints_flow_pressure(
     m,
