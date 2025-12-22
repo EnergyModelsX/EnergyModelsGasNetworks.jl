@@ -25,8 +25,6 @@ end
 const EMB = EnergyModelsBase
 const EMP = EnergyModelsPooling
 
-const TEST_RTOL = 0.02
-
 nl_solver = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
 minlp_optimizer = optimizer_with_attributes(
     Juniper.Optimizer,
