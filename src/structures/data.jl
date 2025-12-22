@@ -86,7 +86,7 @@ Blending data for Links.
 struct BlendLinkData{T<:EMB.Resource} <: BlendData
     blend::ResourcePooling{T}
     tracking_res::Dict{T,<:Real} # Tracking resource for the PWA + molar mass
-    track_molar_fraction::Dict{T, Any} # molar fraction (!not mass) of tracking resource consider to calculate the weymouth constants and normalised
+    track_molar_fraction::Dict{T, Any} # molar fraction (!not mass) of tracking resource consider to calculate the weymouth constants and normalised, standard = 0.0
     max_proportion::Real # max.proportion of tracking resource
     min_proportion::Real # min.proportion of tracking resource
     other_res::Dict{T,<:Real} # Other resources in the blend + molar mass

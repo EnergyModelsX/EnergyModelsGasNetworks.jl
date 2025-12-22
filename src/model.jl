@@ -256,28 +256,32 @@ function set_opex_var(m, 𝒳::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, modeltyp
 
     # Add small potential_add_cost cost to other nodes to penalise for increasing potential 
     for l ∈ 𝒳
-        @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
-            m[:potential_add_cost_link][l, t_inv] ==
-            sum(
-                (m[:link_potential_in][l, t, p] + m[:link_potential_out][l, t, p])
-                *
-                0.01 for p ∈ EMB.link_res(l) for t ∈ t_inv
-            ))
+        𝒫ˡ = EMB.link_res(l)
+        if !isempty(𝒫ˡ)
+            @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
+                m[:potential_add_cost_link][l, t_inv] ==
+                0.01 * sum(
+                    m[:link_potential_in][l, t, p] + m[:link_potential_out][l, t, p]
+                    for p ∈ 𝒫ˡ, t ∈ t_inv
+                ))
+        end
     end
 end
 function set_opex_var(m, 𝒳::Vector{<:EMB.AbstractElement}, 𝒳ᵛᵉᶜ, 𝒯, modeltype) end
 function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯)
     𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
+    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
 
-    new_objective = @expression(m,
-        objective_function(m) -
-        sum(m[:potential_add_cost][n, t_inv] for n ∈ 𝒩ᶜ, t_inv ∈ strategic_periods(𝒯))
-        -
-        sum(
-            m[:potential_add_cost_link][l, t_inv] for l ∈ ℒ for
-            t_inv ∈ strategic_periods(𝒯)
-        )
-    )
+    # Build objective with conditional terms
+    obj = objective_function(m)
+    
+    if !isempty(𝒩ᶜ)
+        obj -= sum(m[:potential_add_cost][n, t_inv] for n ∈ 𝒩ᶜ, t_inv ∈ 𝒯ᴵⁿᵛ)
+    end
+    
+    if !isempty(ℒ) && haskey(m, :potential_add_cost_link)
+        obj -= sum(m[:potential_add_cost_link][l, t_inv] for l ∈ ℒ, t_inv ∈ 𝒯ᴵⁿᵛ)
+    end
 
-    JuMP.set_objective_function(m, new_objective)
+    JuMP.set_objective_function(m, obj)
 end

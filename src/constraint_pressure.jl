@@ -1,11 +1,9 @@
 """
-    constraint_pressure(m, n::Source, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraint_pressure(m, n::Availability, 𝒯, 𝒫::Vector{<:CompoundResource})
-    constraint_pressure(m, n::Sink, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
 
 Set internal balance pressures between `potential_in` and `potential_out` in Nodes `n` and Links `l``.
-Source nodes have always inlet potential 0, Sink nodes have always outlet potential 0, Availability nodes have equal inlet and outlet potential.
+Availability nodes have equal inlet and outlet potential.
 """
 function constraints_pressure(m, n::EMB.Availability, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are output of `n`
