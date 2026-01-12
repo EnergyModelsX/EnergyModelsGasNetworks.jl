@@ -1,7 +1,7 @@
 """
     struct CapDirect{T} <: Link
 
-A direct link between two nodes with a maximum capacity.
+A direct link between two nodes with a maximum capacity and data.
 
 # Fields
 - **`id`** is the name/identifier of the link.
@@ -10,6 +10,7 @@ A direct link between two nodes with a maximum capacity.
 - **`formulation::Formulation`** is the used formulation of links. If not specified, a
   `Linear` link is assumed.
 - **`cap::T`** is the maximum capacity of the link.
+- **`data::Vector{<:ExtensionData}`** is a vector of extension data associated with the link.
 """
 struct CapDirect <: Link
     id::Any
@@ -19,6 +20,7 @@ struct CapDirect <: Link
     cap::TimeProfile
     data::Vector{<:EMB.ExtensionData}
 end
+Base.show(io::IO, l::CapDirect) = print(io, "l_$(l.id)")
 CapDirect(id, from, to, formulation, cap) =
     CapDirect(id, from, to, formulation, cap, EMB.ExtensionData[])
 

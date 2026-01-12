@@ -48,4 +48,5 @@ include("test_utils.jl")
     include("test_pressure.jl")
     include("test_blending.jl")
     include("test_blending_pressure.jl")
+    include("test_direct_link.jl")
 end
