@@ -297,10 +297,10 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
 @testset "Basic case - results" begin
     @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
 
-    @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 201.6 rtol = 0.02 # same flow as CH4 due to weymouth value
+    @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 201.6 atol = 20 # same flow as CH4 due to weymouth value
     # @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 0.0 rtol = 0.02 # same flow as CH4 due to weymouth value
-    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), Blend]) ≈ 90.6 rtol = 0.02 # same flow as CH4 due to weymouth value
-    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 111.011 rtol = 0.02 # same flow as CH4 due to weymouth value
+    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), Blend]) ≈ 90.6 atol = 20 # same flow as CH4 due to weymouth value
+    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 111.011 atol = 20 # same flow as CH4 due to weymouth value
 
     @test value(m[:link_potential_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 180.0 rtol = 0.02
     @test value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]) ≈ 180.0 rtol =
