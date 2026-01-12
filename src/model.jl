@@ -1,104 +1,287 @@
+function EMB.constraints_opex_var(m, n::SimpleCompressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel)
+    @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
+        m[:opex_var][n, t_inv] == 0)
+end
+
+function EMB.constraints_flow_in(
+    m,
+    n::PoolingNode,
+    𝒯::TimeStructure,
+    modeltype::EMB.EnergyModel,
+)
+    # Declaration of the required subsets
+    𝒫ⁱⁿ = EMB.inputs(n)
+
+    # Constraint for the individual input stream connections
+    @constraint(m, [t ∈ 𝒯],
+        sum(m[:flow_in][n, t, p] for p ∈ 𝒫ⁱⁿ) == m[:cap_use][n, t]
+    )
+end
+
+"""
+    create_link(m, l::CapDirect, 𝒯, 𝒫::Vector{<:CompoundResource}) 
+
+New create_link function for `CapDirect` to ensure capacity limits
+"""
+function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
+    # Generic link in which each output corresponds to the input
+    @constraint(m, [t ∈ 𝒯, p ∈ EMB.link_res(l)],
+        m[:link_out][l, t, p] == m[:link_in][l, t, p]
+    )
+
+    @constraint(
+        m, [t ∈ 𝒯, p ∈ EMB.link_res(l)],
+        m[:link_in][l, t, p] <= capacity(l, t)
+    )
+end
+
 function create_model(
-    case,
-    modeltype::EnergyModel,
-    m::JuMP.Model;
+    case::EMB.Case,
+    modeltype::EMB.EnergyModel,
+    m::JuMP.Model,
+    optimizer;
     check_timeprofiles::Bool = true,
 )
-    @debug "Construct model"
-
-    # Call of the basic model through EMG
-    m = EMG.create_model(case, modeltype, m; check_timeprofiles)
+    m = EMB.create_model(case, modeltype, m; check_timeprofiles)
 
     # Data structure
-    𝒜 = case[:areas]
-    links = case[:links]
-    ℒᵗʳᵃⁿˢ = case[:transmission]
-    𝒫 = case[:products]
-    𝒞 = case[:components]
-    𝒯 = case[:T]
+    𝒯 = get_time_struct(case)
+    𝒫 = get_products(case)
+    𝒫ᶜʳ = CompoundResource[x for x ∈ 𝒫 if isa(x, ResourcePressure)] # TODO: Eliminate when the SimpleCompressor use of Power is defined
+    𝒳ᵛᵉᶜ = get_elements_vec(case) # nodes and links
+    𝒳_𝒳 = get_couplings(case)
 
-    # Declaration of variables for blend structs
-    variables_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
+    # Declaration of element variables and constraints of the problem
+    for 𝒳 ∈ 𝒳ᵛᵉᶜ
+        variables_pressure(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+        variables_blending(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
 
-    # Construction of constraints for the problem
-    constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
+        constraints_pressure(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer)
+        constraints_blending(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
 
+        if !isempty(𝒫ᶜʳ)
+            set_opex_var(m, 𝒳, 𝒳ᵛᵉᶜ, 𝒯, modeltype) # TODO: Eliminate when the SimpleCompressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
+        end
+    end
+
+    for couple ∈ 𝒳_𝒳
+        elements_vec = [cpl(case) for cpl ∈ couple]
+        constraints_pressure(m, elements_vec..., 𝒯, 𝒫)
+        constraints_blending(m, elements_vec..., 𝒯, 𝒫)
+    end
+
+    if !isempty(𝒫ᶜʳ)
+        # Define new objective_function that includes pressure related costs
+        𝒩 = get_nodes(case)
+        ℒ = get_links(case)
+        #TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
+        set_objective_function(m, 𝒩, ℒ, 𝒯)
+    end
     return m
 end
-function create_model(case, modeltype::EnergyModel; check_timeprofiles::Bool = true)
+function create_model(
+    case,
+    modeltype::EMB.EnergyModel,
+    optimizer;
+    check_timeprofiles::Bool = true,
+)
     m = JuMP.Model()
-    create_model(case, modeltype, m; check_timeprofiles)
+    create_model(case, modeltype, m, optimizer; check_timeprofiles)
 end
 
-function variables_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒜ᵇ = filter(is_blendarea, 𝒜)
-    variables_proportion(m, 𝒜ᵇ, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    variables_tracking_prop(m, 𝒜ᵇ, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    variables_energy_content(m, 𝒜ᵇ, 𝒯)
+# function variables_energy_content(m, 𝒜, 𝒯)
+#     @variable(m, energy_content[𝒜, 𝒯] >= 0)
+# end
+
+function variables_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+    # Get the blended resources from 𝒫
+    𝒫ᶜʳ = ResourcePooling[x for x ∈ 𝒫 if isa(x, ResourcePooling)]
+
+    # If the system includes a blended resource, initialise the variables
+    if !isempty(𝒫ᶜʳ)
+        # Get the subresources included in the blends (ResourceCarrier or ResourcePressure)
+        𝒫ˢᵘᵇ = [r for res_blend ∈ 𝒫ᶜʳ for r ∈ subresources(res_blend)]
+
+        # Get the sources that can provide the subresources
+        𝒮 = filter(n -> EMB.is_source(n) && all(res -> res in 𝒫ˢᵘᵇ, EMB.outputs(n)), 𝒩)
+
+        # Create all combinations (node, source) for tracking the proportion of source in each node
+        @variable(m, 0 <= proportion_source[𝒩, s ∈ 𝒮, 𝒯] <= 1.0)
+
+        # Create a proportion_track variable for each node and subresource
+        @variable(m, 0 <= proportion_track[n ∈ 𝒩, 𝒯, p ∈ 𝒫ˢᵘᵇ] <= 1.0)
+    end
 end
-function variables_proportion(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒮 = [n for area ∈ 𝒜 for n ∈ EMG.getnodesinarea(area, links) if EMB.is_source(n)]
-    #𝒜ⁿᵗ = filter(a -> !is_terminalarea(a), 𝒜)
+function variables_blending(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
 
-    @variable(m, 0 <= prop_source[𝒜, 𝒮, 𝒯] <= 1.0)
+function variables_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+    𝒫ᶜʳ = CompoundResource[
+        x for
+        x ∈ 𝒫 if isa(x, ResourcePressure) || x isa ResourcePooling{<:ResourcePressure}
+    ]
 
-    # Define y = 0 if s not associated to the area and y = 1 if s inside area
-    for a ∈ 𝒜
-        𝒮ᵗᵐ = track_source(a, links, 𝒜, ℒᵗʳᵃⁿˢ)
-        𝒮ˢ = getsource(a, links)
+    if !isempty(𝒫ᶜʳ)
+        # Create the node potential variables
+        @variable(m, potential_in[n ∈ 𝒩, 𝒯, inputs(n)] >= 0)
+        @variable(m, potential_out[n ∈ 𝒩, 𝒯, outputs(n)] >= 0)
 
-        for s ∈ 𝒮
-            if ~(s in 𝒮ᵗᵐ) # sources not directed to a
-                @constraint(m, [t ∈ 𝒯], m[:prop_source][a, s, t] == 0)
-            end
-            if s ∈ 𝒮ˢ # sources inside area
-                @constraint(m, [t ∈ 𝒯], m[:prop_source][a, s, t] == 1.0)
+        𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
+        @variable(m, potential_Δ[n ∈ 𝒩ᶜ, 𝒯] >= 0)
+    end
+end
+function variables_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+    𝒫ᶜʳ = CompoundResource[
+        x for
+        x ∈ 𝒫 if isa(x, ResourcePressure) || x isa ResourcePooling{<:ResourcePressure}
+    ]
+
+    if !isempty(𝒫ᶜʳ)
+        # Create the link potential variables
+        @variable(m, link_potential_in[l ∈ ℒ, 𝒯, inputs(l)] >= 0)
+        @variable(m, link_potential_out[l ∈ ℒ, 𝒯, inputs(l)] >= 0)
+
+        # Add link binary variables
+        @variable(m, has_flow[l ∈ ℒ, 𝒯], Bin) # auxiliary binary that ensures that all links with flow take value 1, it can take value 1 without flow as well. Careful with this detail, it cannot be used to check actual flows.
+        @variable(m, lower_pressure_into_node[l ∈ ℒ, 𝒯], Bin) # binary for tracking lowest pressure going into a node
+    end
+end
+
+function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer)
+    # Retrieve CompoundResources from 𝒫
+    𝒫ᶜʳ = CompoundResource[
+        x for x ∈ 𝒫 if x isa ResourcePressure || x isa ResourcePooling{<:ResourcePressure}
+    ]
+
+    for n ∈ 𝒩
+        # Define internal pressure balance constraints
+        constraints_pressure(m, n, 𝒯, 𝒫ᶜʳ)
+
+        # Get AbstractPressureData and generate limit constraints if any
+        pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(n))
+        if !isempty(pressure_data)
+            for d ∈ pressure_data
+                constraints_pressure_limit(m, n, d, 𝒯, 𝒫ᶜʳ)
             end
         end
     end
 end
-function variables_tracking_prop(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    #𝒜ⁿᵗ = filter(!is_terminalarea, 𝒜)
-    𝒞ꜝ = filter(is_component_track, 𝒞)
-    if !isempty(𝒞ꜝ)
-        @variable(m, 0 <= prop_track[𝒞ꜝ, 𝒜, 𝒯] <= 1.0)
+function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫, optimizer)
+    # Retrieve CompoundResources from 𝒫
+    𝒫ᶜʳ = CompoundResource[
+        x for
+        x ∈ 𝒫 if isa(x, ResourcePressure) || x isa ResourcePooling{<:ResourcePressure}
+    ]
+    for l ∈ ℒ
+        # Define internal pressure balance constraints
+        constraints_pressure(m, l, 𝒯, 𝒫ᶜʳ)
+
+        # Get AbstractPressureData and generate limit constraints if any
+        pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(l))
+        if !isempty(pressure_data)
+            for d ∈ pressure_data
+                constraints_pressure_limit(m, l, d, 𝒯, 𝒫ᶜʳ)
+            end
+        end
+        constraints_flow_limit(m, l, 𝒯, 𝒫ᶜʳ)
+
+        𝒫_sub = res_types_seg(𝒫ᶜʳ)
+        for p_sub ∈ 𝒫_sub
+            constraints_flow_pressure(m, l, 𝒯, p_sub, optimizer)
+        end
     end
 end
-function variables_energy_content(m, 𝒜, 𝒯)
-    @variable(m, energy_content[𝒜, 𝒯] >= 0)
-end
+function constraints_pressure(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)
+    𝒫ᶜʳ = CompoundResource[
+        x for
+        x ∈ 𝒫 if isa(x, ResourcePressure) || isa(x, ResourcePooling{<:ResourcePressure})
+    ]
 
-function variables_pressure(m, 𝒜, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒜ᵖ = filter(x -> is_pressurearea(x), 𝒜)
-
-    if !isempty(𝒜ᵖ)
-        TM = [tm for l ∈ ℒᵗʳᵃⁿˢ for tm ∈ EMG.modes(l)]
-
-        @variable(m, p_in[vcat(TM, 𝒜), 𝒯] >= 0)
-        @variable(m, p_out[vcat(TM, 𝒜), 𝒯] >= 0)
-        @variable(m, has_flow[TM, 𝒯], Bin) # auxiliary binary that ensures that all transmissionmodes with flow take value 1, it can take value 1 without flow as well. Careful with this detail, it cannot be used to check actual flows.
-        @variable(m, lower_pressure_into_node[TM, 𝒯], Bin) # binary for tracking lowest pressure going into a node
-
-        constraints_flow(m, ℒᵗʳᵃⁿˢ, 𝒯)
+    for n ∈ 𝒩
+        if !isempty(𝒫ᶜʳ)
+            constraints_pressure_couple(m, n, ℒ, 𝒯, 𝒫ᶜʳ)
+        end
     end
 end
-
-function constraints_pressure(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-    𝒜ᵖ = filter(x -> is_pressurearea(x), 𝒜)
-
-    for a ∈ 𝒜ᵖ
-        data = pressure_data(a)
-
-        pressure_balance(m, a, data, ℒᵗʳᵃⁿˢ, links, 𝒯, 𝒫)
-        constraints_weymouth(m, a, 𝒫, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    end
+function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Node}, 𝒯, 𝒫)
+    constraints_pressure(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
 
-function constraints_blending(m, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
-    𝒜ᵇ = filter(x -> is_blendarea(x), 𝒜)
-    for a ∈ 𝒜ᵇ
-        create_blending_node(m, a, 𝒜, 𝒞, ℒᵗʳᵃⁿˢ, links, 𝒯)
+function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+    # Retrieve CompoundResources from 𝒫
+    𝒫ᶜʳ = ResourcePooling[x for x ∈ 𝒫 if isa(x, ResourcePooling)]
+
+    for n ∈ 𝒩
+        constraints_proportion(m, n, 𝒳ᵛᵉᶜ, 𝒯, 𝒫ᶜʳ)
+        constraints_quality(m, n, 𝒳ᵛᵉᶜ, 𝒯, 𝒫ᶜʳ)
     end
+end
+function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
+function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)
+    # Retrieve CompoundResources from 𝒫
+    𝒫ᶜʳ = ResourcePooling[x for x ∈ 𝒫 if isa(x, ResourcePooling)]
+
+    constraints_proportion_couple(m, 𝒩, ℒ, 𝒯, 𝒫ᶜʳ)
+
+    for n ∈ 𝒩
+        constraints_tracking(m, n, ℒ, 𝒯, 𝒫ᶜʳ)
+    end
+end
+function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Node}, 𝒯, 𝒫)
+    constraints_blending(m, 𝒩, ℒ, 𝒯, 𝒫)
+end
+
+function set_opex_var(m, 𝒳::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)
+    # Add addiitonal potential_add_cost for nodes
+    𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒳)
+
+    # Define variables
+    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
+    @variable(m, potential_add_cost[𝒩ᶜ, 𝒯ᴵⁿᵛ] >= 0)
+
+    # Add potential_add_cost compressors
+    for n ∈ 𝒩ᶜ
+        @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
+            m[:potential_add_cost][n, t_inv] ==
+            sum(
+                m[:potential_Δ][n, t] * EMB.opex_var(n, t) * EMB.scale_op_sp(t_inv, t) for
+                t ∈ t_inv
+            )
+        )
+    end
+end
+function set_opex_var(m, 𝒳::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)
+    # Define variables
+    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
+    @variable(m, potential_add_cost_link[𝒳, 𝒯ᴵⁿᵛ] >= 0)
+
+    # Add small potential_add_cost cost to other nodes to penalise for increasing potential 
+    for l ∈ 𝒳
+        𝒫ˡ = EMB.link_res(l)
+        if !isempty(𝒫ˡ)
+            @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
+                m[:potential_add_cost_link][l, t_inv] ==
+                0.01 * sum(
+                    m[:link_potential_in][l, t, p] + m[:link_potential_out][l, t, p]
+                    for p ∈ 𝒫ˡ, t ∈ t_inv
+                ))
+        end
+    end
+end
+function set_opex_var(m, 𝒳::Vector{<:EMB.AbstractElement}, 𝒳ᵛᵉᶜ, 𝒯, modeltype) end
+function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯)
+    𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
+    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
+
+    # Build objective with conditional terms
+    obj = objective_function(m)
+
+    if !isempty(𝒩ᶜ)
+        obj -= sum(m[:potential_add_cost][n, t_inv] for n ∈ 𝒩ᶜ, t_inv ∈ 𝒯ᴵⁿᵛ)
+    end
+
+    if !isempty(ℒ) && haskey(m, :potential_add_cost_link)
+        obj -= sum(m[:potential_add_cost_link][l, t_inv] for l ∈ ℒ, t_inv ∈ 𝒯ᴵⁿᵛ)
+    end
+
+    JuMP.set_objective_function(m, obj)
 end

@@ -1,112 +1,77 @@
 """
-	RefSourceComponent <: EMB.Source
+    SimpleCompressor <: EMB.NetworkNode
 
-A source node with specific qualities of ResourceComponent resources.
+NetworkNode that increases its potential_out.
 
 # Fields
-- **`id`** is the name/identifier of the node.
-- **`cap::TimeProfile`** is the installed capacity.
-- **`opex_var::TimeProfile`** is the variable operating expense per energy unit produced.
-- **`opex_fixed::TimeProfile`** is the fixed operating expense.
-- **`output::Dict{<:Resource, <:Real}`** are the generated [`Resource`](@ref)s with
-  conversion value `Real`.
-- **`data::Vector{<:Data}`** is the additional data (e.g. for investments). The field `data`
-  is conditional through usage of a constructor.
-"""
+- **`id::Any`** is the name/identifier of the link.
+- **`cap::TimeProfile`** the maximum flow allowed through the SimpleCompressor.
+- **`opex_var::TimeProfile`** is the variable operating expense per cap_use
+- **`opex_fixed::TimeProfile`** is the fixed operating expense per time unit.
+- **`input::Dict{<:Resource,<:Real}`** is the input flow into the SimpleCompressor.
+- **`output::Dict{<:Resource,<:Real}`** is the output flow from the SimpleCompressor.
+- **`potential_increase::TimeProfile`** maximum potential increase the SimpleCompressor can provide.
+- **`potential_opex_var::TimeProfile`** is the variable operating expense per potential unit increased.
 
-struct SourceComponent <: EMB.Source
+!NOTE: In SimpleCompressors, the operational cost is determined by the potential increase and not the :cap_use (flow within SimpleCompressor).
+"""
+struct SimpleCompressor <: EMB.NetworkNode
     id::Any
     cap::TimeProfile
     opex_var::TimeProfile
     opex_fixed::TimeProfile
+    input::Dict{<:Resource,<:Real}
     output::Dict{<:Resource,<:Real}
-    quality::Dict{<:Component,<:Real}
-    data::Vector{Data}
+    potential_increase::TimeProfile
+    potential_opex_var::TimeProfile
+    data::Vector{<:ExtensionData}
 end
-function SourceComponent(
+function SimpleCompressor(
     id,
     cap::TimeProfile,
     opex_var::TimeProfile,
     opex_fixed::TimeProfile,
+    input::Dict{<:Resource,<:Real},
     output::Dict{<:Resource,<:Real},
-    quality::Dict{<:Component,<:Real},
+    potential_increase::TimeProfile,
+    potential_opex_var::TimeProfile,
 )
-    return SourceComponent(id, cap, opex_var, opex_fixed, output, quality, Data[])
+    return SimpleCompressor(
+        id,
+        cap,
+        opex_var,
+        opex_fixed,
+        input,
+        output,
+        potential_increase,
+        potential_opex_var,
+        ExtensionData[],
+    )
 end
 
-""" A reference `BlendingSink` node
+get_potential(n::SimpleCompressor, t) = n.potential_increase[t]
 
-`Sink` node with max. boundaries in quality of `ResourceComponent`s and proportion of `ResourceCarrier`s. 
-
-#Fields
-- **`id`** is the name/identifier of the node.\n
-- **`cap::TimeProfile`** is the demand.\n
-- **`penalty::Dict{Symbol, <:TimeProfile}
-- **`input::Dict{<:ResourceBlend, <:Real}`** are the input `Resources`s.\n
-- **`data::Vector{Data}`** is the additional data (e.g. for investments). The field \
-`data` is conditional through usage of a constructor.
 """
-struct BlendingSink <: EMB.Sink
+New NetworkNode that overwrite the function constraints flow_in such that cap_use is the sum of the flow_in for blend resources.
+The constraint flow_out remain as standard NetworkNodes where cap_use = flow_out (only one resource is out of PoolingNode)
+# TODO: Define a check that guarantees that only one resource is in output.
+"""
+struct PoolingNode <: EMB.NetworkNode
     id::Any
     cap::TimeProfile
-    penalty::Dict{Symbol,<:TimeProfile}
+    opex_var::TimeProfile
+    opex_fixed::TimeProfile
     input::Dict{<:Resource,<:Real}
-    upperbound::Dict{<:Component,<:Real}
-    lowerbound::Dict{<:Component,<:Real}
-    data::Vector{Data}
+    output::Dict{<:Resource,<:Real}
+    data::Vector{<:Data}
 end
-function BlendingSink(
+function PoolingNode(
     id,
     cap::TimeProfile,
-    penalty::Dict{<:Any,<:TimeProfile},
+    opex_var::TimeProfile,
+    opex_fixed::TimeProfile,
     input::Dict{<:Resource,<:Real},
-    upperbound::Dict{<:Component,<:Real},
-    lowerbound::Dict{<:Component,<:Real},
+    output::Dict{<:Resource,<:Real},
 )
-    return BlendingSink(id, cap, penalty, input, upperbound, lowerbound, Data[])
+    return PoolingNode(id, cap, opex_var, opex_fixed, input, output, Data[])
 end
-
-components(n::SourceComponent) = collect(keys(n.quality))
-
-function get_quality(s::SourceComponent, p::Component)
-    return get(s.quality, p, 0)
-end
-
-res_upper(n::BlendingSink) = collect(keys(n.upperbound))
-res_lower(n::BlendingSink) = collect(keys(n.lowerbound))
-
-function get_upper(s::BlendingSink, p::Component)
-    upperbound = s.upperbound
-    if p in keys(upperbound)
-        return upperbound[p]
-    else
-        return 0
-    end
-end
-
-function get_lower(s::BlendingSink, p::Component)
-    lowerbound = s.lowerbound
-    if p in keys(lowerbound)
-        return lowerbound[p]
-    else
-        return 0
-    end
-end
-
-"""
-	is_geoavailability(n::Node)
-
-Checks, whether node `n` is a `GeoAvailability` node
-"""
-is_geoavailability(n::EMB.Node) = false
-is_geoavailability(n::EMG.GeoAvailability) = true
-
-"""
-	is_blending_sink(n::Node)
-
-Checks, whether node `n` is a `BlendingSink` node
-"""
-is_blending_sink(::EMB.Node) = false
-is_blending_sink(::BlendingSink) = true
-
-cap_price(n::BlendingSink, t) = n.penalty[:cap_price][t]

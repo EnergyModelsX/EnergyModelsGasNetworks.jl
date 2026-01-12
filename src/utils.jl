@@ -1,44 +1,26 @@
+"""
+    nodes_upstream_of(n::Node, ℒ::Vector{<:Link})
 
-function track_source(a::Area, links, 𝒜, ℒᵗʳᵃⁿˢ)
-    all_sources = Vector{}()
-
-    𝒜ᵃ = getadjareas(a, ℒᵗʳᵃⁿˢ)                             # it includes a
-    for area ∈ 𝒜ᵃ
-        sources = getsource(area, links)                       # get sources of adjacent Areas whose outputs in products
-        append!(all_sources, sources)
-    end
-
-    return unique!(all_sources)
-end
-function getarea(A::Vector{<:Area}, n::Availability)
-    for area ∈ A
-        if n == EMG.availability_node(area)
-            return area
-        end
-    end
-end
-function gettransmission(L::Vector{Transmission}, n::Area)
-    transto_n = []
-    transfrom_n = []
-    for trans ∈ L
-        if n == trans.from
-            push!(transfrom_n, trans)
-        elseif n == trans.to
-            push!(transto_n, trans)
-        end
-    end
-    return transto_n, transfrom_n
-end
-function getadjareas(a::Area, ℒᵗʳᵃⁿˢ)
-    visited = Vector()
-    stack = Vector{Area}()
-    append!(stack, [a])
+Tracks all nodes associated with a given node `n` through the links in `ℒ`. We refer to associated
+to all the nodes that lead to `n` following the direction of the links.
+"""
+function nodes_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link})
+    visited = Vector{EMB.Node}()
+    stack = Vector{EMB.Node}()
+    append!(stack, [n])
 
     while !isempty(stack)
+        # Get current area from stack
         current_area = pop!(stack)
+
+        # Add it as visited
         push!(visited, current_area)
-        transto_area, _ = gettransmission(ℒᵗʳᵃⁿˢ, current_area)                     # transmissions to area of n
-        for l ∈ transto_area
+
+        # Extract links into `n`
+        ℒᵗᵒ = filter(x -> x.to == current_area, ℒ)
+
+        for l ∈ ℒᵗᵒ
+            # Get node at the other end of the link
             n1 = l.from
             if ~(n1 in visited)
                 push!(stack, n1)
@@ -49,40 +31,71 @@ function getadjareas(a::Area, ℒᵗʳᵃⁿˢ)
     return visited
 end
 
-function getsource(a::Area, links)
-    source_nodes = [i for i ∈ EMG.getnodesinarea(a, links) if EMB.is_source(i)]
-    return source_nodes
+"""
+    sources_upstream_of(n::Node, ℒ::Vector{<:Link})
+    sources_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link}, resources::Vector{EMB.Resources})
+
+Tracks all nodes associated to `n` and filter by source nodes.
+If `resources` is provided, only sources which output any of the resources in `sub_res` are returned.
+"""
+function sources_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link})
+    𝒩ᵃ = nodes_upstream_of(n, ℒ)
+    𝒩ˢ = filter(EMB.is_source, 𝒩ᵃ)
+    return unique!(𝒩ˢ)
+end
+function sources_upstream_of(
+    n::EMB.Node,
+    ℒ::Vector{<:EMB.Link},
+    resources::Vector{<:EMB.Resource},
+)
+    𝒮 = sources_upstream_of(n, ℒ)
+    𝒮 = filter(s -> any(res -> res ∈ resources, EMB.outputs(s)), 𝒮)
+    return 𝒮
 end
 
 """
-    weymouth_constant(FLOW, PIN, POUT)
+    get_links_to_node_blend(n::Node, 𝒳ᵛᵉᶜ, sub_res, blend)
+
+Gets the links into node `n` which transport any of the resources in `sub_res` or the `blend` resource.
+"""
+function get_links_to_node_blend(n::EMB.Node, 𝒳ᵛᵉᶜ, sub_res, blend)
+    ℒ = 𝒳ᵛᵉᶜ[2]
+    _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
+    ℒᵗᵒ = filter(
+        l -> any(res -> (res ∈ sub_res) || (res == blend), EMB.link_res(l)),
+        ℒᵗᵒ,
+    )
+    return ℒᵗᵒ
+end
+
+"""
+    normalised_weymouth(weymouth, molar_fraction_hydrogen)
 
 Calculate the normalised flow constant with respect to the specific gravity using specific operating points.
-Assumed to use operational points from flows from CH4.
 """
-function weymouth_constant(FLOW, PIN, POUT)
-    W = FLOW^2/(PIN^2 - POUT^2)
+function normalised_weymouth(data_blend, weymouth, track_molar_fraction)
+    Mᵃⁱʳ = 28.96 # g/mol
 
-    Mᶜʰ⁴ = 16.042 # g/mol
-    Mᵃⁱʳ = 28.96 # g/mol # TODO: Generalise to other types of Resources
-    g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
+    track_res, molmass_track = first(data_blend.tracking_res)
+    other_res, molmass_other = first(data_blend.other_res)
 
-    weymouth_ct = W * g
+    x_track = track_molar_fraction
+    x_other = 1 .- x_track
+    Mmix = x_track * molmass_track .+ x_other * molmass_other
 
-    return weymouth_ct
-end
-function weymouth_constant(W)
-    Mᶜʰ⁴ = 16.042 # g/mol
-    Mᵃⁱʳ = 28.96 # g/mol # TODO: Generalise to other types of Resources
-    g = Mᶜʰ⁴/Mᵃⁱʳ   # specific gravity of CH4
+    g = Mmix / Mᵃⁱʳ   # specific gravity of CH4
 
-    weymouth_ct = W * g
+    weymouth_ct = weymouth * g
 
-    return weymouth_ct
+    if isa(weymouth_ct, Vector)
+        return mean(weymouth_ct)
+    else
+        return weymouth_ct
+    end
 end
 
 """
-    calculate_flow(constant, x1, x2, x3)
+    calculate_flow_to_approximate(constant, x1, x2, x3)
 
 Calculates the flow of gas with the Weymouth equation using the normalised weymouth constant. 
 
@@ -90,47 +103,41 @@ Typically, the constant in the Weymouth equation depends on the specific gravity
 with respect to the specific gravity. This allows to calculate the flows considering the different proportions of the components.
 
 # Variables
-- constant::Float64 -> Normalised Weymouth constant
+- weymouth_ct::Float64 -> Normalised Weymouth constant
 - x1::Float64 -> Inlet pressures
 - x2::Float64 -> Outlet pressures
-- x3::Float64 -> Proportion of hydrogen
-"""
-function calculate_flow(constant, x1, x2, x3)
-    M1 = 16.042
-    M2 = 2.016
-    M3 = 28.96
+- x3::Float64 -> Proportion of tracking component
+- molmass_other::Float64 -> Molar mass of the other component in the blend (e.g., for methane is 16.042 g/mol)
+- molmass_track::Float64 -> Molar mass of the tracking component (e.g., for hydrogen is 2.016 g/mol)
 
-    return sqrt(constant * (x1^2 - x2^2) * (M3 / (M1 * (1 - x3) + M2 * x3)))
+"""
+function calculate_flow_to_approximate(
+    weymouth_ct,
+    x1,
+    x2,
+    x3,
+    molmass_other,
+    molmass_track,
+)
+    Mᵃⁱʳ = 28.96 # g/mol
+    return sqrt(
+        weymouth_ct * (x1^2 - x2^2) *
+        (Mᵃⁱʳ / (molmass_other * (1 - x3) + molmass_track * x3)),
+    )
 end
 
 """
-    calculate_X(x1, x2, x3)
+    define_points_curve(x1, x2, x3)
 
 Defines the points (inlet and outlet pressures and proportion) for the surface for the PWA.
 """
-function calculate_X(x1, x2, x3)
+function define_points_curve(x1, x2, x3)
     X = hcat(
         repeat(x1, inner = [length(x2) * length(x3)]),
         repeat(x2, inner = [length(x3)], outer = [length(x1)]),
         repeat(x3, outer = [length(x1) * length(x2)]),
     )
-    valid_indices = X[:, 1] .^ 2 .> X[:, 2] .^ 2
+    valid_indices = X[:, 1] .^ 2 .>= X[:, 2] .^ 2
     X = X[valid_indices, :]
     return X
-end
-
-"""
-    test_approx(pwa, constant, pin, pout, prop)
-
-Compares the approximation results with the value applying the Weymouth equation
-"""
-function test_approx(pwa, constant, pin, pout, prop)
-    for p_out ∈ pout:pin
-        println(PiecewiseAffineApprox.evaluate(pwa, (pin, p_out, prop)), "\t",
-            calculate_flow(constant, pin, p_out, prop), "\t",
-            PiecewiseAffineApprox.evaluate(
-                pwa,
-                (pin, p_out, prop),
-            )>=calculate_flow(constant, pin, p_out, prop))
-    end
 end
