@@ -365,7 +365,7 @@ function constraints_flow_limit(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundRes
 
     @constraint(
         m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-        m[:link_in][l, t, p] <= capacity(l, t) * m[:has_flow][l, t])
+        m[:link_in][l, t, p] <= m[:link_cap_inst][l, t] * m[:has_flow][l, t])
 end
 
 """ 
