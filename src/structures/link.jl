@@ -26,6 +26,7 @@ CapDirect(id, from, to, formulation, cap) =
 
 EMB.capacity(l::EMB.Link, t) = 1e6 # Default large capacity
 EMB.capacity(l::CapDirect, t) = l.cap[t]
+EMB.capacity(l::CapDirect) = l.cap
 
 """
     link_data(l::CapDirect)
