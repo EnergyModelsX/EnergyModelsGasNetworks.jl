@@ -28,6 +28,8 @@ EMB.capacity(l::EMB.Link, t) = 1e6 # Default large capacity
 EMB.capacity(l::CapDirect, t) = l.cap[t]
 EMB.capacity(l::CapDirect) = l.cap
 
+EMB.has_capacity(l::CapDirect) = true
+
 """
     link_data(l::CapDirect)
 
