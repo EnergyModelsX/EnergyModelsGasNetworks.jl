@@ -33,6 +33,11 @@ function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel
         m, [t ∈ 𝒯, p ∈ EMB.link_res(l)],
         m[:link_in][l, t, p] <= capacity(l, t)
     )
+
+    if has_capacity(l)
+        EMB.constraints_capacity_installed(m, l, 𝒯, modeltype)
+    end
+
 end
 
 function create_model(
