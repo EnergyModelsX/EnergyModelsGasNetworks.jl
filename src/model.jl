@@ -34,7 +34,6 @@ function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel
     if has_capacity(l)
         EMB.constraints_capacity_installed(m, l, 𝒯, modeltype)
     end
-
 end
 
 function EMB.constraints_capacity(

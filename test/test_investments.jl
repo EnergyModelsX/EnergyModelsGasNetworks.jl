@@ -18,21 +18,21 @@ function generate_case_investments()
             FixedProfile(10), # capacity
             FixedProfile(0), # opex_var
             FixedProfile(0), # capex_fix
-            Dict(H2 => 1), # output
+            Dict(H2 => 1) # output
         ),
         RefSource(
             "2", #id
             FixedProfile(30), # capacity
             FixedProfile(0), # opex_var
             FixedProfile(0), # capex_fix
-            Dict(CH4 => 1), # output
+            Dict(CH4 => 1) # output
         ),
         RefSource(
             "3", #id
             FixedProfile(20), # capacity
             FixedProfile(0), # opex_var
             FixedProfile(0), # capex_fix
-            Dict(CH4 => 1), # output
+            Dict(CH4 => 1) # output
         ),
         PoolingNode(
             "4", #id
@@ -41,34 +41,40 @@ function generate_case_investments()
             FixedProfile(0), # capex_fix
             Dict(H2 => 1, CH4 => 1), # input products
             Dict(Blend => 1), # output products
-            [RefBlendData{ResourcePressure{Float64}}(
-                Blend,
-                Dict(H2 => 1, CH4 => 1), # maximum fractions
-                Dict(H2 => 0.01, CH4 => 0.0), # minimum fractions
-            )]
+            [
+                RefBlendData{ResourcePressure{Float64}}(
+                    Blend,
+                    Dict(H2 => 1, CH4 => 1), # maximum fractions
+                    Dict(H2 => 0.01, CH4 => 0.0), # minimum fractions
+                ),
+            ],
         ),
         RefSink(
             "5", #id
             FixedProfile(1), # capacity
             Dict(:surplus => FixedProfile(-240), :deficit => FixedProfile(500)), # penalty, surplus rewarded, deficit penalised
             Dict(Blend => 1, CH4 => 1), # input products
-            [RefBlendData{ResourcePressure{Float64}}(
-                Blend,
-                Dict(H2 => 0.15, CH4 => 1.0), # maximum fractions
-                Dict(H2 => 0.01, CH4 => 0.0), # minimum fractions
-            )]
+            [
+                RefBlendData{ResourcePressure{Float64}}(
+                    Blend,
+                    Dict(H2 => 0.15, CH4 => 1.0), # maximum fractions
+                    Dict(H2 => 0.01, CH4 => 0.0), # minimum fractions
+                ),
+            ],
         ),
         RefSink(
             "6", #id
             FixedProfile(1), # capacity
             Dict(:surplus => FixedProfile(-120), :deficit => FixedProfile(500)), # penalty, surplus rewarded, deficit penalised
             Dict(Blend => 1, CH4 => 1), # input products
-            [RefBlendData{ResourcePressure{Float64}}(
-                Blend,
-                Dict(H2 => 0.1, CH4 => 1.0), # maximum fractions
-                Dict(H2 => 0.01, CH4 => 0.0), # minimum fractions
-            )]
-        )
+            [
+                RefBlendData{ResourcePressure{Float64}}(
+                    Blend,
+                    Dict(H2 => 0.1, CH4 => 1.0), # maximum fractions
+                    Dict(H2 => 0.01, CH4 => 0.0), # minimum fractions
+                ),
+            ],
+        ),
     ]
 
     investment_data = SingleInvData(
@@ -90,7 +96,7 @@ function generate_case_investments()
                 MaxPressureData(FixedProfile(250)), # max pressure data
                 PressureLinkData(0.24, 200.0, 130.0), # pressure link data, (weymouth, PIN, POUT)
                 investment_data, # investment data
-            ]
+            ],
         ),
         CapDirect(
             "2-4", # id
@@ -102,7 +108,7 @@ function generate_case_investments()
                 MinPressureData(FixedProfile(1e-6)), # min pressure data
                 MaxPressureData(FixedProfile(250)), # max pressure data
                 PressureLinkData(0.24, 200.0, 130.0), # pressure link data, (weymouth, PIN, POUT)
-            ]
+            ],
         ),
         CapDirect(
             "3-5", # id
@@ -114,7 +120,7 @@ function generate_case_investments()
                 MinPressureData(FixedProfile(1e-6)), # min pressure data
                 MaxPressureData(FixedProfile(250)), # max pressure data
                 PressureLinkData(0.24, 200.0, 60.0), # pressure link data, (weymouth, PIN, POUT)
-            ]
+            ],
         ),
         CapDirect(
             "3-6", # id
@@ -126,7 +132,7 @@ function generate_case_investments()
                 MinPressureData(FixedProfile(1e-6)), # min pressure data
                 MaxPressureData(FixedProfile(250)), # max pressure data
                 PressureLinkData(0.24, 200.0, 60.0), # pressure link data, (weymouth, PIN, POUT)
-            ]
+            ],
         ),
         CapDirect(
             "4-5", # id
@@ -140,13 +146,13 @@ function generate_case_investments()
                 PressureLinkData(0.24, 130.0, 60.0), # pressure link data, (weymouth, PIN, POUT)
                 BlendLinkData(
                     Blend,
-                    Dict{ResourcePressure{Float64}, Float64}(H2 => 2.016), # tracking component and molar mass
-                    Dict{ResourcePressure{Float64}, Any}(H2 => 0.0), # tracking component molar proportion when obtaining weymouth constant
+                    Dict{ResourcePressure{Float64},Float64}(H2 => 2.016), # tracking component and molar mass
+                    Dict{ResourcePressure{Float64},Any}(H2 => 0.0), # tracking component molar proportion when obtaining weymouth constant
                     0.2, # max. molar proportion of tracking component considered for the PWA
                     0, # min. molar proportion of tracking component considered for the PWA
-                    Dict{ResourcePressure{Float64}, Float64}(CH4 => 16.4), # other components and molar masses
-                )
-            ]
+                    Dict{ResourcePressure{Float64},Float64}(CH4 => 16.4), # other components and molar masses
+                ),
+            ],
         ),
         CapDirect(
             "4-6", # id
@@ -160,13 +166,13 @@ function generate_case_investments()
                 PressureLinkData(0.24, 130.0, 60.0), # pressure link data, (weymouth, PIN, POUT)
                 BlendLinkData(
                     Blend,
-                    Dict{ResourcePressure{Float64}, Float64}(H2 => 2.016), # tracking component and molar mass
-                    Dict{ResourcePressure{Float64}, Any}(H2 => 0.0), # tracking component molar proportion when obtaining weymouth constant
+                    Dict{ResourcePressure{Float64},Float64}(H2 => 2.016), # tracking component and molar mass
+                    Dict{ResourcePressure{Float64},Any}(H2 => 0.0), # tracking component molar proportion when obtaining weymouth constant
                     0.2, # max. molar proportion of tracking component considered for the PWA
                     0, # min. molar proportion of tracking component considered for the PWA
-                    Dict{ResourcePressure{Float64}, Float64}(CH4 => 16.4), # other components and molar masses
-                )
-            ]
+                    Dict{ResourcePressure{Float64},Float64}(CH4 => 16.4), # other components and molar masses
+                ),
+            ],
         ),
     ]
 
@@ -176,7 +182,7 @@ function generate_case_investments()
         Dict(CO2 => FixedProfile(0.0)), # emission limit
         Dict(CO2 => FixedProfile(0.0)), # emission price
         CO2, # co2 instance
-        discount_rate
+        discount_rate,
     )
 
     return case, model
@@ -184,7 +190,7 @@ end
 
 function get_all_constraints(model)
     cs = ConstraintRef[]
-    for (F, S) in JuMP.list_of_constraint_types(model)
+    for (F, S) ∈ JuMP.list_of_constraint_types(model)
         append!(cs, JuMP.all_constraints(model, F, S))
     end
     return cs
@@ -194,31 +200,43 @@ function constraint_contains_var(cref, var)
     f = obj.func
 
     # Works for linear constraints
-    vars = [v for (_, v) in JuMP.linear_terms(f)]
+    vars = [v for (_, v) ∈ JuMP.linear_terms(f)]
     return var in vars
 end
 
 @testset "Investments in CapDirect links" begin
     case, model = generate_case_investments()
     EnergyModelsPooling.set_step_pressure!(10) # step pressure for the PWA approximations
-    m = EnergyModelsPooling.create_model(case, model, mip_optimizer; check_timeprofiles = true)
+    m = EnergyModelsPooling.create_model(
+        case,
+        model,
+        mip_optimizer;
+        check_timeprofiles = true,
+    )
 
     @test num_variables(m) == 266
-    
+
     # Check if the new variables for link capacity investments are created
-    new_variables = ["link_cap_current[l_1-4,sp1]", "link_cap_inst[l_1-4,sp1-t1]", "link_cap_capex[l_1-4,sp1]", "link_cap_invest_b[l_1-4,sp1]", "link_cap_add[l_1-4,sp1]", "link_cap_rem[l_1-4,sp1]"]
-    for v_name in new_variables
+    new_variables = [
+        "link_cap_current[l_1-4,sp1]",
+        "link_cap_inst[l_1-4,sp1-t1]",
+        "link_cap_capex[l_1-4,sp1]",
+        "link_cap_invest_b[l_1-4,sp1]",
+        "link_cap_add[l_1-4,sp1]",
+        "link_cap_rem[l_1-4,sp1]",
+    ]
+    for v_name ∈ new_variables
         v = variable_by_name(m, v_name)
         @test v !== nothing
     end
 
     # Check if the capacity investment constraints are created
     cs = get_all_constraints(m)
-    for v_name in new_variables # retrieve the variable
+    for v_name ∈ new_variables # retrieve the variable
         v = variable_by_name(m, v_name)
         # check if at least one constraint contains the variable
         found = false
-        for cref in cs
+        for cref ∈ cs
             if constraint_contains_var(cref, v)
                 found = true
                 break
