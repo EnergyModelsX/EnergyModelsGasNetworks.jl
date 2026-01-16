@@ -362,10 +362,9 @@ Constraints setting the maximum flow through link `l` at time `t` according to i
 function constraints_flow_limit(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are inputs of `l`
     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
-
     @constraint(
         m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-        m[:link_in][l, t, p] <= m[:link_cap_inst][l, t] * m[:has_flow][l, t])
+        m[:link_in][l, t, p] <= 1e6 * m[:has_flow][l, t])
 end
 
 """ 
