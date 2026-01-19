@@ -26,3 +26,16 @@ CapDirect(id, from, to, formulation, cap) =
 
 EMB.capacity(l::EMB.Link, t) = 1e6 # Default large capacity
 EMB.capacity(l::CapDirect, t) = l.cap[t]
+EMB.capacity(l::CapDirect) = l.cap
+
+EMB.has_capacity(l::CapDirect) = true
+
+"""
+    link_data(l::CapDirect)
+
+Returns the [`ExtensionData`] array of link `l`.
+
+It overwrites the EMB.link_data(l::Link) method, which returns an empty `ExtensionData` vector.
+"""
+EMB.link_data(l::CapDirect) = l.data
+EMB.element_data(l::CapDirect) = EMB.link_data(l)

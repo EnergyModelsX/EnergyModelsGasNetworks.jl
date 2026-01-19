@@ -1,6 +1,7 @@
 using Alpine
 using EnergyModelsBase
 using EnergyModelsPooling
+using EnergyModelsInvestments
 using HiGHS
 using Ipopt
 using JuMP
@@ -49,4 +50,5 @@ include("test_utils.jl")
     include("test_blending.jl")
     include("test_blending_pressure.jl")
     include("test_direct_link.jl")
+    include("test_investments.jl")
 end
