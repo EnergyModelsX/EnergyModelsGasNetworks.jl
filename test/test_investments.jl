@@ -227,7 +227,7 @@ end
     ]
     for v_name ∈ new_variables
         v = variable_by_name(m, v_name)
-        @test v !== nothing
+        @test !isnothing(v)
     end
 
     # Check if the capacity investment constraints are created
