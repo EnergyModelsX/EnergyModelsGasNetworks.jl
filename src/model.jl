@@ -87,7 +87,7 @@ function create_model(
         𝒩 = get_nodes(case)
         ℒ = get_links(case)
         #TODO: Eliminate when the Compressor use of Power is defined. For the moment, just assumed a cost of pressure increase.
-        set_objective_function(m, 𝒩, ℒ, 𝒯)
+        set_objective_function(m, 𝒩, ℒ, 𝒯, modeltype)
     end
     return m
 end
@@ -280,7 +280,13 @@ function set_opex_var(m, 𝒳::Vector{<:EMB.Link}, 𝒳ᵛᵉᶜ, 𝒯, modeltyp
     end
 end
 function set_opex_var(m, 𝒳::Vector{<:EMB.AbstractElement}, 𝒳ᵛᵉᶜ, 𝒯, modeltype) end
-function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯)
+function set_objective_function(
+    m,
+    𝒩::Vector{<:EMB.Node},
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    modeltype::EnergyModel,
+)
     𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
 
@@ -293,6 +299,38 @@ function set_objective_function(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.L
 
     if !isempty(ℒ) && haskey(m, :potential_add_cost_link)
         obj -= sum(m[:potential_add_cost_link][l, t_inv] for l ∈ ℒ, t_inv ∈ 𝒯ᴵⁿᵛ)
+    end
+
+    JuMP.set_objective_function(m, obj)
+end
+function set_objective_function(
+    m,
+    𝒩::Vector{<:EMB.Node},
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    modeltype::AbstractInvestmentModel,
+)
+    𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
+    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
+
+    # Build objective with conditional terms
+    obj = objective_function(m)
+    disc = Discounter(discount_rate(modeltype), 𝒯)
+
+    if !isempty(𝒩ᶜ)
+        obj -= sum(
+            m[:potential_add_cost][n, t_inv] *
+            duration_strat(t_inv) * objective_weight(t_inv, disc; type = "avg") for
+            n ∈ 𝒩ᶜ, t_inv ∈ 𝒯ᴵⁿᵛ
+        )
+    end
+
+    if !isempty(ℒ) && haskey(m, :potential_add_cost_link)
+        obj -= sum(
+            m[:potential_add_cost_link][l, t_inv] *
+            duration_strat(t_inv) * objective_weight(t_inv, disc; type = "avg") for
+            l ∈ ℒ, t_inv ∈ 𝒯ᴵⁿᵛ
+        )
     end
 
     JuMP.set_objective_function(m, obj)
