@@ -15,7 +15,7 @@ The balance will depend on type of nodes:
 
 Note: Sinks and Source nodes do not have internal pressure balances, as their potentials are only defined at inlet or outlet respectively.
 """
-function constraints_balance_pressure(m, n::EMB.NetworkNode, 𝒯, 𝒫::Vector{<:CompoundResource})
+function constraints_balance_pressure(m, n::EMB.Availability, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are output of `n`
     𝒫ⁿ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
 
@@ -417,6 +417,7 @@ function constraints_flow_pressure(
     𝒯,
     𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
 )
+    @info "PWA for $l"
     # Extract optimizer from model
     optimizer = _get_optimizer()
 

@@ -71,7 +71,7 @@ function EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourceP
     end
 end
 function EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePooling}, modeltype::EMB.EnergyModel) end
-function EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, modeltype::EMB.EnergyModel)
+function EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePooling{<:ResourcePressure}}, modeltype::EMB.EnergyModel)
     # Add pressure and blending constraints
     constraints_balance_pressure(m, n, 𝒯, 𝒫)
 
@@ -116,7 +116,7 @@ function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourceP
     constraints_flow_pressure(m, l, 𝒯, 𝒫)
 end
 function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePooling}, modeltype::EMB.EnergyModel) end
-function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, modeltype::EMB.EnergyModel)
+function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePooling{<:ResourcePressure}}, modeltype::EMB.EnergyModel)
 
     # Add pressure and blending constraints
     constraints_balance_pressure(m, l, 𝒯, 𝒫)
@@ -157,7 +157,7 @@ function EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vecto
 
     constraints_proportion_source(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
-function EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, 𝒯, modeltype::EMB.EnergyModel)
+function EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePooling{<:ResourcePressure}}, 𝒯, modeltype::EMB.EnergyModel)
     for n ∈ 𝒩
         constraints_pressure_couple(m, n, ℒ, 𝒯, 𝒫)
     end

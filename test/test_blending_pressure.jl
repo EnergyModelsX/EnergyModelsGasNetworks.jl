@@ -118,7 +118,8 @@ function generate_case_blending_pressure(;
         CO2,
     )
 
-    m = EMP.create_model(case, model, mip_optimizer; check_timeprofiles = true)
+    set_optimizer_pwa!(mip_optimizer) 
+    m = create_model(case, model; check_timeprofiles = true)
     set_optimizer(m, optimizer)
     optimize!(m)
 
