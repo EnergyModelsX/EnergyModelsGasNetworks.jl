@@ -179,10 +179,11 @@ function constraints_pressure_bounds(
 end
 
 """
-    constraints_pressure_couple(m, n::Source, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
-    constraints_pressure_couple(m, n::Availability, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_pressure_couple(m, n::EMB.Source, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_pressure_couple(m, n::EMB.Availability, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_pressure_couple(m, n::SimpleCompressor, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
-    constraints_pressure_couple(m, n::Sink, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_pressure_couple(m, n::PoolingNode, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_pressure_couple(m, n::EMB.Sink, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
 
 Constraints setting the pressure balance between nodes and links.
 

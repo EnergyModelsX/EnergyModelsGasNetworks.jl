@@ -131,7 +131,7 @@ function generate_case_pressure()
 end
 
 case, model = generate_case_pressure()
-m = EMP.create_model(case, model, nothing; check_timeprofiles = true)
+m = EMB.create_model(case, model; check_timeprofiles = true)
 set_optimizer(m, mip_optimizer)
 optimize!(m)
 
@@ -144,7 +144,7 @@ optimize!(m)
 # Test `create_model` builds a JuMP model without errors for typical input Cases
 @testset "Model creation" begin
     @test try
-        EMP.create_model(case, model, nothing; check_timeprofiles = true)
+        EMB.create_model(case, model; check_timeprofiles = true)
         true
     catch
         false
@@ -378,7 +378,7 @@ function generate_case2()
 end
 
 case, model = generate_case2()
-m = EMP.create_model(case, model, nothing; check_timeprofiles = true)
+m = EMB.create_model(case, model; check_timeprofiles = true)
 set_optimizer(m, mip_optimizer)
 optimize!(m)
 
@@ -390,7 +390,7 @@ optimize!(m)
 
 @testset "Model creation" begin
     @test try
-        EMP.create_model(case, model, nothing; check_timeprofiles = true)
+        EMB.create_model(case, model; check_timeprofiles = true)
         true
     catch
         false

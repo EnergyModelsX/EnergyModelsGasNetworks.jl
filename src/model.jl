@@ -1,12 +1,12 @@
 """
-    EMB.variables_flow_resource(m, 𝒩::Vector{<:Node}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EnergyModel)
-    EMB.variables_flow_resource(m, 𝒩::Vector{<:Node}, 𝒫::Vector{<:ResourcePooling}, 𝒯, modeltype::EnergyModel)  
+    EMB.variables_flow_resource(m, 𝒩::Vector{<:EMB.Node}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EMB.EnergyModel)
+    EMB.variables_flow_resource(m, 𝒩::Vector{<:EMB.Node}, 𝒫::Vector{<:ResourcePooling}, 𝒯, modeltype::EMB.EnergyModel)  
 
 Define additional potential and blending variables for nodes depending on the resources in the system.
 If exists 𝒫::Vector{<:ResourcePressure} then we create potential variables
 If exists 𝒫::Vector{<:ResourcePooling{Any}} then we create blending proportion variables
 """
-function EMB.variables_flow_resource(m, 𝒩::Vector{<:Node}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EnergyModel) 
+function EMB.variables_flow_resource(m, 𝒩::Vector{<:EMB.Node}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EMB.EnergyModel) 
 
     @variable(m, potential_in[n ∈ 𝒩, 𝒯, EMB.inputs(n)] >= 0)
     @variable(m, potential_out[n ∈ 𝒩, 𝒯, EMB.outputs(n)] >= 0)
@@ -14,7 +14,7 @@ function EMB.variables_flow_resource(m, 𝒩::Vector{<:Node}, 𝒫::Vector{<:Res
     𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
     @variable(m, potential_Δ[𝒩ᶜ, 𝒯] >= 0)
 end
-function EMB.variables_flow_resource(m, 𝒩::Vector{<:Node}, 𝒫::Vector{<:ResourcePooling{Any}}, 𝒯, modeltype::EnergyModel) 
+function EMB.variables_flow_resource(m, 𝒩::Vector{<:EMB.Node}, 𝒫::Vector{<:ResourcePooling}, 𝒯, modeltype::EMB.EnergyModel) 
 
     # Get the subresources included in the blends (ResourceCarrier or ResourcePressure)
     𝒫ᴿᴾ = [r for res_blend ∈ 𝒫 for r ∈ subresources(res_blend)]
@@ -30,7 +30,7 @@ function EMB.variables_flow_resource(m, 𝒩::Vector{<:Node}, 𝒫::Vector{<:Res
 end
 
 """
-    EMB.variables_flow_resource(m, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EnergyModel) 
+    EMB.variables_flow_resource(m, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{:ResourcePressure}, 𝒯, modeltype::EnergyModel) 
 
 Define additional pressure-related variables for links if there are `ResourcePressure` in the system. 
 Note! There is no blending variables associated to links.
@@ -46,9 +46,9 @@ function EMB.variables_flow_resource(m, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:
 end
 
 """ 
-    EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePressure}, modeltype::EnergyModel)
-    EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePooling{Any}}, modeltype::EnergyModel)  
-    EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, modeltype::EnergyModel)
+    EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{:ResourcePressure}, modeltype::EMB.EnergyModel)
+    EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{:ResourcePooling{Any}}, modeltype::EMB.EnergyModel)  
+    EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{:ResourcePooling{ResourcePressure}}, modeltype::EMB.EnergyModel)
 
 Add blending and/or pressure related constraints to node `n` based on specific resource types.
 - If 𝒫::Vector{<:ResourcePressure} then it adds only pressure related constraints
@@ -70,7 +70,7 @@ function EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourceP
         end
     end
 end
-function EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePooling{Any}}, modeltype::EMB.EnergyModel) end
+function EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePooling}, modeltype::EMB.EnergyModel) end
 function EMB.constraints_resource(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, modeltype::EMB.EnergyModel)
     # Add pressure and blending constraints
     constraints_balance_pressure(m, n, 𝒯, 𝒫)
@@ -115,7 +115,7 @@ function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourceP
     # Define weymouth flow-pressure constraints based on the resources flowing into the link.
     constraints_flow_pressure(m, l, 𝒯, 𝒫)
 end
-function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePooling{Any}}, modeltype::EMB.EnergyModel) end
+function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePooling}, modeltype::EMB.EnergyModel) end
 function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, modeltype::EMB.EnergyModel)
 
     # Add pressure and blending constraints
@@ -137,18 +137,18 @@ function EMB.constraints_resource(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourceP
 end
 
 """
-    EMB.constraints_couple_resource(m, 𝒩::Vector{<:Node}, ℒ::Vector{<:Link}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EMB.EnergyModel)
-    EMB.constraints_couple_resource(m, 𝒩::Vector{<:Node}, ℒ::Vector{<:Link}, 𝒫::Vector{<:ResourcePooling{Any}}, 𝒯, modeltype::EMB.EnergyModel)
-    EMB.constraints_couple_resource(m, 𝒩::Vector{<:Node}, ℒ::Vector{<:Link}, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, 𝒯, modeltype::EMB.EnergyModel)
+    EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EMB.EnergyModel)
+    EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePooling{Any}}, 𝒯, modeltype::EMB.EnergyModel)
+    EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, 𝒯, modeltype::EMB.EnergyModel)
 
 Add blending and/or pressure related coupling constraints between nodes and links based on specific resource types.
 """
-function EMB.constraints_couple_resource(m, 𝒩::Vector{<:Node}, ℒ::Vector{<:Link}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EMB.EnergyModel)
+function EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EMB.EnergyModel)
     for n ∈ 𝒩
         constraints_pressure_couple(m, n, ℒ, 𝒯, 𝒫)
     end
 end
-function EMB.constraints_couple_resource(m, 𝒩::Vector{<:Node}, ℒ::Vector{<:Link}, 𝒫::Vector{<:ResourcePooling{Any}}, 𝒯, modeltype::EMB.EnergyModel)
+function EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePooling}, 𝒯, modeltype::EMB.EnergyModel)
     for n ∈ 𝒩
         constraints_proportion(m, n, ℒ, 𝒯, 𝒫)
         constraints_quality(m, n, ℒ, 𝒯, 𝒫)
@@ -157,7 +157,7 @@ function EMB.constraints_couple_resource(m, 𝒩::Vector{<:Node}, ℒ::Vector{<:
 
     constraints_proportion_source(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
-function EMB.constraints_couple_resource(m, 𝒩::Vector{<:Node}, ℒ::Vector{<:Link}, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, 𝒯, modeltype::EMB.EnergyModel)
+function EMB.constraints_couple_resource(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}, 𝒯, modeltype::EMB.EnergyModel)
     for n ∈ 𝒩
         constraints_pressure_couple(m, n, ℒ, 𝒯, 𝒫)
     end
@@ -189,7 +189,10 @@ function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel
         EMB.constraints_capacity_installed(m, l, 𝒯, modeltype) # calls the function in EMB
     end
 
+    # Declaration of the required subsets.
+    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
+
     # Call for the functions for variable OPEX constraints
-    EMB.constraints_opex_fixed(m, l, 𝒯, modeltype)
-    EMB.constraints_opex_var(m, l, 𝒯, modeltype)
+    EMB.constraints_opex_fixed(m, l, 𝒯ᴵⁿᵛ, modeltype)
+    EMB.constraints_opex_var(m, l, 𝒯ᴵⁿᵛ, modeltype)
 end

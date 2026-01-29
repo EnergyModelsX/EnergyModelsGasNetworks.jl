@@ -13,6 +13,9 @@ TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 TimeStruct = "f9ed5ce0-9f41-4eaa-96da-f38ab8df101c"
 Xpress_jll = "308bddfa-7f95-4fa6-a557-f2c7addc1869"
 
+[sources]
+EnergyModelsBase = {rev = "enhance/transfer_energy_potentials", url = "https://github.com/EnergyModelsX/EnergyModelsBase.jl.git"}
+
 [compat]
 Alpine = "0.5.7"
 EnergyModelsBase = "0.9.2"
