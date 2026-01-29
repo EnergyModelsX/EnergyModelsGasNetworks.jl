@@ -20,11 +20,11 @@ const _OPT = Ref{Any}(nothing)
 """
 Set the optimizer used by EnergyModelsPooling for PWA approximations.
 """
-set_optimizer!(opt) = (_OPT[] = opt)
+set_optimizer_pwa!(opt) = (_OPT[] = opt)
 "Get optimizer; error if not set."
 function _get_optimizer()
     opt = _OPT[]
-    opt === nothing && error("B: optimizer not set. Call B.set_optimizer!(...) first.")
+    opt === nothing && error("EnergyModelsPooling: optimizer not set. Call EMP.set_optimizer_pwa!(opt) before declaring the model.")
     return opt
 end
 
@@ -39,6 +39,7 @@ include("constraint_blend.jl")
 include("constraint_pressure.jl")
 include("model.jl")
 
+export set_optimizer_pwa!, set_step_pressure!
 export SimpleCompressor, PoolingNode, CapDirect
 export ResourcePressure, ResourceComponentPotential, ResourceComponent, ResourcePooling
 export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData
