@@ -63,7 +63,7 @@ function generate_case_blending(; links = nothing)
 end
 
 case, model = generate_case_blending()
-m = EMP.create_model(case, model, nothing; check_timeprofiles = true)
+m = create_model(case, model; check_timeprofiles = true)
 
 for l ∈ get_links(case)
     @constraint(

@@ -5,8 +5,8 @@
 Keeps track of the proportions of flows from sources at each node `n`. 
 `Source` nodes have their proportions fixed to 1 for their own resource and 0 for others.
 """
-function constraints_proportion(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourcePooling}) end
-function constraints_proportion(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourcePooling})
+function constraints_proportion(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling}) end
+function constraints_proportion(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
     for blend ∈ 𝒫
         # Get the subresources for the blend
         sub_res = subresources(blend)
@@ -163,8 +163,8 @@ function constraints_proportion_source(
 end
 
 """
-    constraints_tracking(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourcePooling})
-    constraints_tracking(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourcePooling})
+    constraints_tracking(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    constraints_tracking(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
 
 Tracking the proportion of subresources at node `n`. Required for linking with the pressure constraints.
 If n is a `Source`, the :proportion_track variables are fixed to 1 for its own resources and 0 for others.
@@ -175,7 +175,7 @@ function constraints_tracking(
     n::EMB.Node,
     ℒ::Vector{<:EMB.Link},
     𝒯,
-    𝒫::Vector{ResourcePooling},
+    𝒫::Vector{<:ResourcePooling},
 )
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)
@@ -195,7 +195,7 @@ function constraints_tracking(
     n::EMB.Source,
     ℒ::Vector{<:EMB.Link},
     𝒯,
-    𝒫::Vector{ResourcePooling},
+    𝒫::Vector{<:ResourcePooling},
 )
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)
