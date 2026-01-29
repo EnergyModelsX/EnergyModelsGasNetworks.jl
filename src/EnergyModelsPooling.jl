@@ -28,6 +28,9 @@ function _get_optimizer()
     return opt
 end
 
+@info "By default, the steps for pressure PWA approximations is set to $(get_step_pressure()) units. Use `EMP.set_step_pressure!(step)` to change it."
+@info "By default, the optimizer for PWA is not set. Use `EMP.set_optimizer_pwa!(opt)` before calling `create_model()`."
+
 include("utils.jl")
 include("scratch.jl")
 include("structures/resource.jl")

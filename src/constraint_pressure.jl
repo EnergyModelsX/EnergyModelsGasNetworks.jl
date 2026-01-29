@@ -53,6 +53,14 @@ function constraints_balance_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Compo
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫],
         m[:link_potential_out][l, t, p] <= 1e4 * m[:has_flow][l, t])
 end
+function constraints_balance_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:CompoundResource})
+    # Inlet Potential should be always higher or equal to Outlet Potential (direction)
+    @constraint(
+        m,
+        [t ∈ 𝒯, p ∈ 𝒫],
+        m[:link_potential_in][l, t, p] == m[:link_potential_out][l, t, p]
+    )
+end
 function constraints_balance_pressure(m, n::EMB.Node, 𝒯, 𝒫::Vector) end
 
 """
@@ -417,7 +425,6 @@ function constraints_flow_pressure(
     𝒯,
     𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
 )
-    @info "PWA for $l"
     # Extract optimizer from model
     optimizer = _get_optimizer()
 
@@ -435,12 +442,9 @@ function constraints_flow_pressure(
     end
 end
 function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Resource}) end
-function constraints_flow_pressure(
-    m,
-    l::EMB.Direct,
-    𝒯,
-    𝒫::Vector{<:Resource},
-) end
+function constraints_flow_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:ResourcePressure}) end
+function constraints_flow_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:ResourcePooling{<:ResourcePressure}}) end
+function constraints_flow_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:Resource}) end
 
 """
     constraints_pwa(m, l::Link, p_blend::ResourcePooling, p_track::ResourcePressure, 𝒯, plane, pwa::PWAFunc)
