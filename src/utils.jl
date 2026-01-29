@@ -54,12 +54,11 @@ function sources_upstream_of(
 end
 
 """
-    get_links_to_node_blend(n::Node, 𝒳ᵛᵉᶜ, sub_res, blend)
+    get_links_to_node_blend(n::Node, ℒ::Vector{<:EMB.Link}, sub_res, blend)
 
 Gets the links into node `n` which transport any of the resources in `sub_res` or the `blend` resource.
 """
-function get_links_to_node_blend(n::EMB.Node, 𝒳ᵛᵉᶜ, sub_res, blend)
-    ℒ = 𝒳ᵛᵉᶜ[2]
+function get_links_to_node_blend(n::EMB.Node, ℒ::Vector{<:EMB.Link}, sub_res, blend)
     _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
     ℒᵗᵒ = filter(
         l -> any(res -> (res ∈ sub_res) || (res == blend), EMB.link_res(l)),

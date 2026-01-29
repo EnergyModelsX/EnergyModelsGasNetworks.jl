@@ -1,58 +1,75 @@
 """
-    constraint_pressure(m, n::Availability, 𝒯, 𝒫::Vector{<:CompoundResource})
-    constraints_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_balance_pressure(m, n::EMB.Node, 𝒯, 𝒫::Vector)
+    constraints_balance_pressure(m, n::EMB.NetworkNode, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_balance_pressure(m, n::SimpleCompressor, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:ResourcePressure})
+    constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}})
+    constraints_balance_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
 
 Set internal balance pressures between `potential_in` and `potential_out` in Nodes `n` and Links `l``.
-Availability nodes have equal inlet and outlet potential.
+The balance will depend on type of nodes:
+- For `NetworkNode` nodes, the inlet and outlet potentials are equal.
+- For `SimpleCompressor` nodes, the inlet potential is lower than or equal to the outlet potential.
+- For `PoolingNode` nodes, the inlet potential of all input resources is equal to the outlet potential of all output resources.
+- For Links, the inlet potential is higher than or equal to the outlet potential. if there is no flow through `l`, both potentials are set to zero.
+
+Note: Sinks and Source nodes do not have internal pressure balances, as their potentials are only defined at inlet or outlet respectively.
 """
-function constraints_pressure(m, n::EMB.Availability, 𝒯, 𝒫::Vector{<:CompoundResource})
+function constraints_balance_pressure(m, n::EMB.NetworkNode, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are output of `n`
     𝒫ⁿ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
 
     # Inlet and Outlet Potential should be equal
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], m[:potential_in][n, t, p] == m[:potential_out][n, t, p])
 end
-function constraints_pressure(m, n::SimpleCompressor, 𝒯, 𝒫::Vector{<:CompoundResource})
+function constraints_balance_pressure(m, n::SimpleCompressor, 𝒯, 𝒫::Vector{<:CompoundResource})
     # Filter resources CompoundResource that are output of `n`
     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(n), 𝒫)
 
     # Inlet Potential lower than Outlet Potential
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], m[:potential_in][n, t, p] <= m[:potential_out][n, t, p])
 end
-function constraints_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:CompoundResource})
+function constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:ResourcePressure})
     # Filter input and output resources
     𝒫ⁱⁿ = filter(p -> p ∈ EMB.inputs(n), 𝒫)
-    𝒫ᵒᵘᵗ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
+    𝒫ᵒᵘᵗ = EMB.outputs(n)
 
     # Inlet Potential for each input resource should equal the outlet potential of the output (no drop or increase in potential)
     @constraint(m, [t ∈ 𝒯, p_in ∈ 𝒫ⁱⁿ, p_out ∈ 𝒫ᵒᵘᵗ],
         m[:potential_in][n, t, p_in] == m[:potential_out][n, t, p_out])
 end
-function constraints_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
-    # Filter resources CompoundResource that are output of `l`
-    𝒫ⁿ = filter(p -> p ∈ EMB.outputs(l), 𝒫)
+function constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}) end
+function constraints_balance_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
 
     # Inlet Potential should be always higher or equal to Outlet Potential (direction)
     @constraint(
         m,
-        [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+        [t ∈ 𝒯, p ∈ 𝒫],
         m[:link_potential_in][l, t, p] >= m[:link_potential_out][l, t, p]
     )
 
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫],
         m[:link_potential_in][l, t, p] <= 1e4 * m[:has_flow][l, t])
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫],
         m[:link_potential_out][l, t, p] <= 1e4 * m[:has_flow][l, t])
 end
-function constraints_pressure(m, n::EMB.AbstractElement, 𝒯, 𝒫::Vector{}) end
+function constraints_balance_pressure(m, n::EMB.Node, 𝒯, 𝒫::Vector) end
 
 """
-    constraints_pressure_limit(m, n::Node, data::T, 𝒯, 𝒫::Vector{<:CompoundResource}) where {T<:PressureData}
-    constraints_pressure_limit(m, n::Sink, data::T, 𝒯, 𝒫::Vector{<:CompoundResource}) where {T<:PressureData}
+    constraints_pressure_bounds(m, n::Node, data::T, 𝒯, 𝒫::Vector{<:CompoundResource}) where {T<:PressureData}
+    constraints_pressure_bounds(m, n::Sink, data::T, 𝒯, 𝒫::Vector{<:CompoundResource}) where {T<:PressureData}
+    constraints_pressure_bounds(m, l::Link, data::T, 𝒯, 𝒫::Vector{<:CompoundResource}) where {T<:PressureData}
 
-Set the pressure limits according to the PressureData `data` assigned to Node `n`.
+Set the pressure limits according to the PressureData `data` assigned to Node `n` and Link `l`.
+If n is a Sink, the limits are applied to the inlet potential. Otherwise, the limits are applied to the outlet potential.
+For Links, the limits are applied to the outlet potential only if the link has flow.
+
+The data can be of type:
+- MaxPressureData, which will set a maximum pressure bound.
+- MinPressureData, which will set a minimum pressure bound.
+- FixPressureData, which will set an equality pressure bound.
 """
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     n::EMB.Node,
     data::MaxPressureData,
@@ -65,7 +82,7 @@ function constraints_pressure_limit(
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
         m[:potential_out][n, t, p] <= pressure(data, t))
 end
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     n::EMB.Node,
     data::MinPressureData,
@@ -78,7 +95,7 @@ function constraints_pressure_limit(
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
         m[:potential_out][n, t, p] >= pressure(data, t))
 end
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     n::EMB.Node,
     data::FixPressureData,
@@ -91,7 +108,7 @@ function constraints_pressure_limit(
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
         m[:potential_out][n, t, p] == pressure(data, t))
 end
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     n::EMB.Sink,
     data::MaxPressureData,
@@ -104,7 +121,7 @@ function constraints_pressure_limit(
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
         m[:potential_in][n, t, p] <= pressure(data, t))
 end
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     n::EMB.Sink,
     data::MinPressureData,
@@ -117,7 +134,7 @@ function constraints_pressure_limit(
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
         m[:potential_in][n, t, p] >= pressure(data, t))
 end
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     n::EMB.Sink,
     data::FixPressureData,
@@ -130,43 +147,34 @@ function constraints_pressure_limit(
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
         m[:potential_in][n, t, p] == pressure(data, t))
 end
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     l::EMB.Link,
     data::MaxPressureData,
     𝒯,
     𝒫::Vector{<:CompoundResource},
 )
-    # Filter resources CompoundResource that are inputs of `l`
-    𝒫ⁿ = filter(p -> p ∈ inputs(l), 𝒫)
-
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫],
         m[:link_potential_out][l, t, p] <= pressure(data, t) * m[:has_flow][l, t])
 end
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     l::EMB.Link,
     data::MinPressureData,
     𝒯,
     𝒫::Vector{<:CompoundResource},
 )
-    # Filter resources CompoundResource that are inputs of `l`
-    𝒫ⁿ = filter(p -> p ∈ inputs(l), 𝒫)
-
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫],
         m[:link_potential_out][l, t, p] >= pressure(data, t) * m[:has_flow][l, t])
 end
-function constraints_pressure_limit(
+function constraints_pressure_bounds(
     m,
     l::EMB.Link,
     data::FixPressureData,
     𝒯,
     𝒫::Vector{<:CompoundResource},
 )
-    # Filter resources CompoundResource that are inputs of `l`
-    𝒫ⁿ = filter(p -> p ∈ inputs(l), 𝒫)
-
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫],
         m[:link_potential_out][l, t, p] == pressure(data, t))
 end
 
@@ -355,70 +363,51 @@ end
 function constraints_pressure_couple(m, n::EMB.AbstractElement, ℒ, 𝒯, 𝒫) end
 
 """
-    constraints_flow_limit(m, l::CapDirect, 𝒯, 𝒫::Vector{<:CompoundResource}) 
+    constraints_flow_capacity(m, l::CapDirect, 𝒯, 𝒫::Vector{<:CompoundResource}) 
 
-Constraints setting the maximum flow through link `l` at time `t` according to its capacity and whether it has flow or not.
+Constraints setting the maximum flow through link `l` at time `t` whether it has flow or not.
 """
-function constraints_flow_limit(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
-    # Filter resources CompoundResource that are inputs of `l`
-    𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
+function constraints_flow_capacity(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
     @constraint(
-        m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
+        m, [t ∈ 𝒯, p ∈ 𝒫],
         m[:link_in][l, t, p] <= 1e6 * m[:has_flow][l, t])
 end
 
 """ 
-    constraints_flow_pressure(m, l::Link, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePressure})
+    constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:ResourcePooling{<:ResourcePressure}})
+    constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Resource})  
+    constraints_flow_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector)
 
-Setting Weymouth constraints in link `l` to define the link_in according to its pressure drop.
+Setting Weymouth constraints in link `l`. This calculates the flow through l based on the pressure difference between inlet and outlet.
 The Weymouth equation will be approximated using the first-order Taylor expansion when the Resource is a `ResourcePressure`.
 For `ResourceComponentPotential`, a Piecewise Affine Approximation (PWA) will be used.`
 """
 function constraints_flow_pressure(
     m,
-    l::EMB.Direct,
-    𝒯,
-    𝒫::Vector{<:ResourcePressure},
-    optimizer,
-) end
-function constraints_flow_pressure(
-    m,
-    l::EMB.Direct,
-    𝒯,
-    𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
-    optimizer,
-) end
-function constraints_flow_pressure(
-    m,
     l::EMB.Link,
     𝒯,
     𝒫::Vector{<:ResourcePressure},
-    optimizer,
 )
-    # Filter resources CompoundResource that are inputs of `l`
-    𝒫ⁿ = filter(p -> p ∈ EMB.inputs(l), 𝒫)
+    @info "Taylor Approximation for $l"
+    # Retrieve elements from PressureLinkData in `l`
+    # TODO: Make a check that ensures that a `l` with CompoundResource as input has AbstractLinkPressureData
+    pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
+    weymouth_ct = get_weymouth(pressure_data)
+    POut, PIn = potential_data(pressure_data)
 
-    if !isempty(𝒫ⁿ)
-        @info "Taylor Approximation for $l"
-        # Retrieve elements from PressureLinkData in `l`
-        # TODO: Make a check that ensures that a `l` with CompoundResource as input has AbstractLinkPressureData
-        pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
-        weymouth_ct = get_weymouth(pressure_data)
-        POut, PIn = potential_data(pressure_data)
+    # Determine the (p_in, p_out) points for the Taylor approximation
+    pressures_points = [(PIn, p) for p ∈ range(PIn, POut, length = 150)[2:end]]
 
-        # Determine the (p_in, p_out) points for the Taylor approximation
-        pressures_points = [(PIn, p) for p ∈ range(PIn, POut, length = 150)[2:end]]
-
-        # Create Taylor constraint for each point
-        # TODO: Doubt, if link_potential_in and link_potenntial_out are equal, there is still a flow
-        for (p_in, p_out) ∈ pressures_points
-            @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ],
-                m[:link_in][l, t, p] <=
-                sqrt(weymouth_ct) * (
-                    (p_in / (sqrt(p_in^2 - p_out^2))) * m[:link_potential_in][l, t, p] -
-                    (p_out / (sqrt(p_in^2 - p_out^2))) * m[:link_potential_out][l, t, p]
-                ))
-        end
+    # Create Taylor constraint for each point
+    # TODO: Doubt, if link_potential_in and link_potenntial_out are equal, there is still a flow
+    for (p_in, p_out) ∈ pressures_points
+        @constraint(m, [t ∈ 𝒯, p ∈ 𝒫],
+            m[:link_in][l, t, p] <=
+            sqrt(weymouth_ct) * (
+                (p_in / (sqrt(p_in^2 - p_out^2))) * m[:link_potential_in][l, t, p] -
+                (p_out / (sqrt(p_in^2 - p_out^2))) * m[:link_potential_out][l, t, p]
+            ))
     end
 end
 function constraints_flow_pressure(
@@ -426,27 +415,30 @@ function constraints_flow_pressure(
     l::EMB.Link,
     𝒯,
     𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
-    optimizer,
 )
+    # Extract optimizer from model
+    optimizer = _get_optimizer()
 
-    # Get inputs of `l` that are ResourcePooling
-    𝒫ⁿ = [p for p ∈ EMB.inputs(l) if p ∈ 𝒫]
+    # Extract PressureLinkData and BlendData from link `l`
+    pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
+    blend_data = first(filter(data -> data isa BlendData, l.data))
 
-    if !isempty(𝒫ⁿ)
-        pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
-        blend_data = first(filter(data -> data isa BlendData, l.data))
+    p_blend = get_blendres(blend_data)
+    p_track = get_trackres(blend_data)
 
-        p_blend = get_blendres(blend_data)
-        p_track = get_trackres(blend_data)
-
-        @info "PWA for $l"
-        pwa = get_pwa(pressure_data, blend_data, optimizer)
-        for (k, plane) ∈ enumerate(pwa.planes)
-            constraints_pwa(m, l, p_blend, p_track, 𝒯, plane, pwa)
-        end
+    @info "PWA for $l"
+    pwa = get_pwa(pressure_data, blend_data, optimizer)
+    for (k, plane) ∈ enumerate(pwa.planes)
+        constraints_pwa(m, l, p_blend, p_track, 𝒯, plane, pwa)
     end
 end
-function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Resource}, optimizer) end
+function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Resource}) end
+function constraints_flow_pressure(
+    m,
+    l::EMB.Direct,
+    𝒯,
+    𝒫::Vector{<:Resource},
+) end
 
 """
     constraints_pwa(m, l::Link, p_blend::ResourcePooling, p_track::ResourcePressure, 𝒯, plane, pwa::PWAFunc)
