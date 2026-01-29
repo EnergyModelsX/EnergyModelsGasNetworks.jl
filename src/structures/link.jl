@@ -30,6 +30,9 @@ EMB.capacity(l::CapDirect) = l.cap
 
 EMB.has_capacity(l::CapDirect) = true
 
+"""Defined to allow generation of opex_var and opex_fixed variables. Temporal solution"""
+EMB.has_opex(l::CapDirect) = true # TODO: TODO: Modify struct to be able to associate a cost to CapDirect (e.g., mantainance), see constraint_functions.jl for constraints definition
+
 """
     link_data(l::CapDirect)
 
