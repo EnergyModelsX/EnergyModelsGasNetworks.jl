@@ -5,8 +5,20 @@
 Keeps track of the proportions of flows from sources at each node `n`. 
 `Source` nodes have their proportions fixed to 1 for their own resource and 0 for others.
 """
-function constraints_proportion(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling}) end
-function constraints_proportion(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
+function constraints_proportion(
+    m,
+    n::EMB.Source,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourcePooling},
+) end
+function constraints_proportion(
+    m,
+    n::EMB.Node,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourcePooling},
+)
     for blend ∈ 𝒫
         # Get the subresources for the blend
         sub_res = subresources(blend)
@@ -50,8 +62,20 @@ end
 Defines the maximum and minimum quality constraints for a node n based on the blending data.
 `Source`nodes do not have quality constraints.
 """
-function constraints_quality(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling}) end
-function constraints_quality(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
+function constraints_quality(
+    m,
+    n::EMB.Source,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourcePooling},
+) end
+function constraints_quality(
+    m,
+    n::EMB.Node,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourcePooling},
+)
     for blend ∈ 𝒫
         # Get the subresources for the blend
         sub_res = subresources(blend)

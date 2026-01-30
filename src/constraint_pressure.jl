@@ -15,14 +15,24 @@ The balance will depend on type of nodes:
 
 Note: Sinks and Source nodes do not have internal pressure balances, as their potentials are only defined at inlet or outlet respectively.
 """
-function constraints_balance_pressure(m, n::EMB.Availability, 𝒯, 𝒫::Vector{<:CompoundResource})
+function constraints_balance_pressure(
+    m,
+    n::EMB.Availability,
+    𝒯,
+    𝒫::Vector{<:CompoundResource},
+)
     # Filter resources CompoundResource that are output of `n`
     𝒫ⁿ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
 
     # Inlet and Outlet Potential should be equal
     @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ], m[:potential_in][n, t, p] == m[:potential_out][n, t, p])
 end
-function constraints_balance_pressure(m, n::SimpleCompressor, 𝒯, 𝒫::Vector{<:CompoundResource})
+function constraints_balance_pressure(
+    m,
+    n::SimpleCompressor,
+    𝒯,
+    𝒫::Vector{<:CompoundResource},
+)
     # Filter resources CompoundResource that are output of `n`
     𝒫ⁿ = filter(p -> p ∈ EMB.inputs(n), 𝒫)
 
@@ -38,7 +48,12 @@ function constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:Re
     @constraint(m, [t ∈ 𝒯, p_in ∈ 𝒫ⁱⁿ, p_out ∈ 𝒫ᵒᵘᵗ],
         m[:potential_in][n, t, p_in] == m[:potential_out][n, t, p_out])
 end
-function constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}}) end
+function constraints_balance_pressure(
+    m,
+    n::PoolingNode,
+    𝒯,
+    𝒫::Vector{<:ResourcePooling{ResourcePressure}},
+) end
 function constraints_balance_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
 
     # Inlet Potential should be always higher or equal to Outlet Potential (direction)
@@ -443,7 +458,12 @@ function constraints_flow_pressure(
 end
 function constraints_flow_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:Resource}) end
 function constraints_flow_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:ResourcePressure}) end
-function constraints_flow_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:ResourcePooling{<:ResourcePressure}}) end
+function constraints_flow_pressure(
+    m,
+    l::EMB.Direct,
+    𝒯,
+    𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
+) end
 function constraints_flow_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:Resource}) end
 
 """

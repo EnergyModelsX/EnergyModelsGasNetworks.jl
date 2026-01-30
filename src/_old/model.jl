@@ -218,8 +218,6 @@ function constraints_pressure(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Nod
     constraints_pressure(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
 
-
-
 function constraints_blending(m, 𝒩::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
     # Retrieve CompoundResources from 𝒫
     𝒫ᶜʳ = ResourcePooling[x for x ∈ 𝒫 if isa(x, ResourcePooling)]
@@ -243,10 +241,6 @@ end
 function constraints_blending(m, ℒ::Vector{<:EMB.Link}, 𝒩::Vector{<:EMB.Node}, 𝒯, 𝒫)
     constraints_blending(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
-
-
-
-
 
 function set_opex_var(m, 𝒳::Vector{<:EMB.Node}, 𝒳ᵛᵉᶜ, 𝒯, modeltype)
     # Add addiitonal potential_add_cost for nodes

@@ -24,7 +24,9 @@ set_optimizer_pwa!(opt) = (_OPT[] = opt)
 "Get optimizer; error if not set."
 function _get_optimizer()
     opt = _OPT[]
-    opt === nothing && error("EnergyModelsPooling: optimizer not set. Call EMP.set_optimizer_pwa!(opt) before declaring the model.")
+    opt === nothing && error(
+        "EnergyModelsPooling: optimizer not set. Call EMP.set_optimizer_pwa!(opt) before declaring the model.",
+    )
     return opt
 end
 
