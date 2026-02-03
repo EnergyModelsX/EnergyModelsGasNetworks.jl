@@ -92,6 +92,11 @@ function EMB.constraints_resource(
             constraints_pressure_bounds(m, n, d, 𝒯, 𝒫)
         end
     end
+
+    if isa(n, SimpleCompressor)
+        # Define linear relationship of energy consumption and potential increase
+        constraints_energy_potential(m, n, 𝒯, 𝒫, modeltype)
+    end
 end
 function EMB.constraints_resource(
     m,
@@ -116,6 +121,11 @@ function EMB.constraints_resource(
         for d ∈ pressure_data
             constraints_pressure_bounds(m, n, d, 𝒯, 𝒫)
         end
+    end
+
+    if isa(n, SimpleCompressor)
+        # Define linear relationship of energy consumption and potential increase
+        constraints_energy_potential(m, n, 𝒯, 𝒫, modeltype)
     end
 end
 
@@ -264,9 +274,9 @@ function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel
     end
 end
 
-    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
-
-    # Call for the functions for variable OPEX constraints
-    EMB.constraints_opex_fixed(m, l, 𝒯ᴵⁿᵛ, modeltype)
-    EMB.constraints_opex_var(m, l, 𝒯ᴵⁿᵛ, modeltype)
+function EMB.create_node(m, n::SimpleCompressor, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
+    # Generic node in which each output corresponds to the input, only for the resources defined in input and output, not the energy resource.
+    @constraint(m, [t ∈ 𝒯, p ∈ EMB.outputs(n)],
+        m[:flow_out][n, t, p] == m[:flow_in][n, t, p]
+    )
 end
