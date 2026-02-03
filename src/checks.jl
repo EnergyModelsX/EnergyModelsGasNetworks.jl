@@ -15,7 +15,7 @@ function EMB.check_node_default(n::SimpleCompressor, 𝒯, modeltype::EnergyMode
         "The compressor must have at least two input resources. One energy resource and the flowing resource.",
     )
     @assert_or_log(
-        all(outputs(n) ∈ setdiff(inputs(n), [get_energy_resource(n)[1]])),
+        issubset(outputs(n), setdiff(inputs(n), [get_energy_resource(n)[1]])),
         "The output resources in SimpleCompressors must be the difference between the input resources and the energy resource.",
     )
 end
