@@ -262,8 +262,8 @@ function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel
     if has_capacity(l)
         EMB.constraints_capacity_installed(m, l, 𝒯, modeltype) # calls the function in EMB
     end
+end
 
-    # Declaration of the required subsets.
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
 
     # Call for the functions for variable OPEX constraints
