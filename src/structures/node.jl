@@ -14,16 +14,16 @@ NetworkNode that increases its potential_out and its input consumption depends o
 """
 struct SimpleCompressor <: EMB.NetworkNode
     id::Any
-    input::Dict{<:Resource,<:Real}
-    output::Dict{<:Resource,<:Real}
+    input::Vector{<:Resource}
+    output::Vector{<:Resource}
     max_incr_potential::TimeProfile
     energy_resource::Tuple{<:Resource, <:Real}
     data::Vector{<:ExtensionData}
 end
 function SimpleCompressor(
     id,
-    input::Dict{<:Resource,<:Real},
-    output::Dict{<:Resource,<:Real},
+    input::Vector{<:Resource},
+    output::Vector{<:Resource},
     max_incr_potential::TimeProfile,
     energy_resource::Tuple{<:Resource, <:Real},
 )
