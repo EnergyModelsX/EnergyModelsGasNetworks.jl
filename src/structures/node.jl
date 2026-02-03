@@ -39,9 +39,12 @@ end
 
 get_max_potential(n::SimpleCompressor, t) = n.max_incr_potential[t]
 get_energy_resource(n::SimpleCompressor) = n.energy_resource
+
 EMB.has_capacity(n::SimpleCompressor) = false
 EMB.has_emissions(n::SimpleCompressor) = false
 EMB.has_opex(n::SimpleCompressor) = false # TODO: This might be temporal until we decide which operational variable will define the opex.
+EMB.inputs(n::SimpleCompressor) = n.input
+EMB.outputs(n::SimpleCompressor) = n.output
 
 """
 New NetworkNode that overwrite the function constraints flow_in such that cap_use is the sum of the flow_in for blend resources.
