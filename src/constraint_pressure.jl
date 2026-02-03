@@ -305,7 +305,7 @@ function constraints_pressure_couple(
         m[:potential_out][n, t, p] == m[:potential_in][n, t, p] + m[:potential_Δ][n, t])
 
     @constraint(m, [t ∈ 𝒯],
-        m[:potential_Δ][n, t] <= get_potential(n, t))
+        m[:potential_Δ][n, t] <= get_max_potential(n, t))
 
     # Outlet potential of `n` and Inlet Potential of `l`
     @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ inputs(l_from), pp ∈ 𝒫ⁿ_out],
@@ -387,7 +387,7 @@ end
 function constraints_pressure_couple(m, n::EMB.AbstractElement, ℒ, 𝒯, 𝒫) end
 
 """
-    constraints_flow_capacity(m, l::CapDirect, 𝒯, 𝒫::Vector{<:CompoundResource}) 
+    constraints_flow_capacity(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource}) 
 
 Constraints setting the maximum flow through link `l` at time `t` whether it has flow or not.
 """
@@ -492,4 +492,22 @@ function constraints_pwa(
             ),
         )
     end
+end
+
+"""
+    constraints_energy_potential(m, n::SimpleCompressor, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
+
+Sets the linear relationship between energy flow and pressure increase in SimpleCompressor `n`.
+"""
+function constraints_energy_potential(
+    m,
+    n::SimpleCompressor,
+    𝒯,
+    𝒫,
+    modeltype::EMB.EnergyModel,
+)
+    p, lin_rel = get_energy_resource(n)
+
+    @constraint(m, [t ∈ 𝒯],
+        m[:flow_in][n, t, p] == lin_rel * m[:potential_Δ][n, t])
 end
