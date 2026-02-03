@@ -1,55 +1,47 @@
 """
     SimpleCompressor <: EMB.NetworkNode
 
-NetworkNode that increases its potential_out.
+NetworkNode that increases its potential_out and its input consumption depends on the potential increase.
 
 # Fields
 - **`id::Any`** is the name/identifier of the link.
-- **`cap::TimeProfile`** the maximum flow allowed through the SimpleCompressor.
-- **`opex_var::TimeProfile`** is the variable operating expense per cap_use
-- **`opex_fixed::TimeProfile`** is the fixed operating expense per time unit.
-- **`input::Dict{<:Resource,<:Real}`** is the input flow into the SimpleCompressor.
-- **`output::Dict{<:Resource,<:Real}`** is the output flow from the SimpleCompressor.
-- **`potential_increase::TimeProfile`** maximum potential increase the SimpleCompressor can provide.
-- **`potential_opex_var::TimeProfile`** is the variable operating expense per potential unit increased.
+- **`input::Dict{<:Resource,<:Real}`** is the input flow into the SimpleCompressor. Include both the inflow resource and the energy resource needed for the potential increase.
+- **`output::Dict{<:Resource,<:Real}`** is the output flow from the SimpleCompressor. Only include the outflow resource.
+- **`max_incr_potential::TimeProfile`** is the maximum potential increase the SimpleCompressor can provide.
+- **`work_resource`::Dict{<:Resource,<:Real}** is the resource used to provide the work needed for the potential increase and the linear relationship energy/potential increase. 
 
-!NOTE: In SimpleCompressors, the operational cost is determined by the potential increase and not the :cap_use (flow within SimpleCompressor).
+!NOTE: In SimpleCompressors, the operational cost is determined by the potential increase.
 """
 struct SimpleCompressor <: EMB.NetworkNode
     id::Any
-    cap::TimeProfile
-    opex_var::TimeProfile
-    opex_fixed::TimeProfile
     input::Dict{<:Resource,<:Real}
     output::Dict{<:Resource,<:Real}
-    potential_increase::TimeProfile
-    potential_opex_var::TimeProfile
+    max_incr_potential::TimeProfile
+    energy_resource::Tuple{<:Resource, <:Real}
     data::Vector{<:ExtensionData}
 end
 function SimpleCompressor(
     id,
-    cap::TimeProfile,
-    opex_var::TimeProfile,
-    opex_fixed::TimeProfile,
     input::Dict{<:Resource,<:Real},
     output::Dict{<:Resource,<:Real},
-    potential_increase::TimeProfile,
-    potential_opex_var::TimeProfile,
+    max_incr_potential::TimeProfile,
+    energy_resource::Tuple{<:Resource, <:Real},
 )
     return SimpleCompressor(
         id,
-        cap,
-        opex_var,
-        opex_fixed,
         input,
         output,
-        potential_increase,
-        potential_opex_var,
+        max_incr_potential,
+        energy_resource,
         ExtensionData[],
     )
 end
 
-get_potential(n::SimpleCompressor, t) = n.potential_increase[t]
+get_max_potential(n::SimpleCompressor, t) = n.max_incr_potential[t]
+get_energy_resource(n::SimpleCompressor) = n.energy_resource
+EMB.has_capacity(n::SimpleCompressor) = false
+EMB.has_emissions(n::SimpleCompressor) = false
+EMB.has_opex(n::SimpleCompressor) = false # TODO: This might be temporal until we decide which operational variable will define the opex.
 
 """
 New NetworkNode that overwrite the function constraints flow_in such that cap_use is the sum of the flow_in for blend resources.
