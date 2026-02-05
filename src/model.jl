@@ -87,7 +87,6 @@ function EMB.constraints_resource(
 
     # Get AbstractPressureData and generate limit constraints if any
     constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
-    
 end
 function EMB.constraints_resource(
     m,
@@ -108,7 +107,6 @@ function EMB.constraints_resource(
 
     # Get AbstractPressureData and generate limit constraints if any
     constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
-
 end
 
 """ 
