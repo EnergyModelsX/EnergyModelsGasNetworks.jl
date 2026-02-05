@@ -34,7 +34,7 @@ function EMB.variables_flow_resource(
     𝒮 = filter(n -> EMB.is_source(n) && all(res -> res in 𝒫ᴿᴾ, EMB.outputs(n)), 𝒩)
 
     # Create all combinations (node, source) for tracking the proportion of source in each node
-    @variable(m, 0 <= proportion_source[𝒩, 𝒮, 𝒯] <= 1.0)
+    @variable(m, 0.0 <= proportion_source[𝒩, 𝒮, 𝒯] <= 1.0)
 
     # Create a proportion_track variable for each node and subresource
     @variable(m, 0 <= proportion_track[𝒩, 𝒯, 𝒫ᴿᴾ] <= 1.0)
