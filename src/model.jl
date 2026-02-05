@@ -86,12 +86,8 @@ function EMB.constraints_resource(
     constraints_balance_pressure(m, n, 𝒯, 𝒫)
 
     # Get AbstractPressureData and generate limit constraints if any
-    pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(n))
-    if !isempty(pressure_data)
-        for d ∈ pressure_data
-            constraints_pressure_bounds(m, n, d, 𝒯, 𝒫)
-        end
-    end
+    constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
+    
 end
 function EMB.constraints_resource(
     m,

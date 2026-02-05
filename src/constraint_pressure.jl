@@ -79,6 +79,20 @@ end
 function constraints_balance_pressure(m, n::EMB.Node, 𝒯, 𝒫::Vector) end
 
 """
+    constraints_pressure_bounds_element(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:CompoundResource})
+
+This function calls subfunctions to set the pressure bounds for each `AbstractPressureData` assigned to Node `n`.
+"""
+function constraints_pressure_bounds_element(m, n::EMB.Node, 𝒯, 𝒫::Vector{<:CompoundResource})
+    # Get AbstractPressureData and generate limit constraints if any
+    pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(n))
+    if !isempty(pressure_data)
+        for d ∈ pressure_data
+            constraints_pressure_bounds(m, n, d, 𝒯, 𝒫)
+        end
+    end
+end
+"""
     constraints_pressure_bounds(m, n::Node, data::T, 𝒯, 𝒫::Vector{<:CompoundResource}) where {T<:PressureData}
     constraints_pressure_bounds(m, n::Sink, data::T, 𝒯, 𝒫::Vector{<:CompoundResource}) where {T<:PressureData}
     constraints_pressure_bounds(m, l::Link, data::T, 𝒯, 𝒫::Vector{<:CompoundResource}) where {T<:PressureData}
