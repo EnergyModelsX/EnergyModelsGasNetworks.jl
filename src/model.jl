@@ -4,7 +4,6 @@
 When the node vector is a `Vector{<:Compressor}` the potential increase (`potential_Δ`) variables are created for each compressor and timestep.
 """
 function EMB.variables_node(m, 𝒩ᶜ::Vector{<:Compressor}, 𝒯, modeltype::EnergyModel)
-    @show "Creating potential increase variables for compressors"
     @variable(m, potential_Δ[𝒩ᶜ, 𝒯] >= 0)
 end
 

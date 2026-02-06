@@ -7,7 +7,12 @@ Standard tests for a [`SimpleCompressor`](@ref) node.
 - At least two values in the vector `input` are required.
 - The values of the vector `output` must be the difference between the resources in input and energy_resource
 """
-function EMB.check_node_default(n::SimpleCompressor, 𝒯, modeltype::EnergyModel, check_timeprofiles::Bool)
+function EMB.check_node_default(
+    n::SimpleCompressor,
+    𝒯,
+    modeltype::EnergyModel,
+    check_timeprofiles::Bool,
+)
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
 
     @assert_or_log(

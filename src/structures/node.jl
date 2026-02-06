@@ -25,7 +25,7 @@ struct SimpleCompressor <: Compressor
     input::Vector{<:Resource}
     output::Vector{<:Resource}
     max_incr_potential::TimeProfile
-    energy_resource::Tuple{<:Resource, <:Real}
+    energy_resource::Tuple{<:Resource,<:Real}
     data::Vector{<:ExtensionData}
 end
 function SimpleCompressor(
@@ -33,7 +33,7 @@ function SimpleCompressor(
     input::Vector{<:Resource},
     output::Vector{<:Resource},
     max_incr_potential::TimeProfile,
-    energy_resource::Tuple{<:Resource, <:Real},
+    energy_resource::Tuple{<:Resource,<:Real},
 )
     return SimpleCompressor(
         id,

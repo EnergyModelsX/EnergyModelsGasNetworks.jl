@@ -247,14 +247,15 @@ end
 @testset "SimpleCompressor Cost" begin
     n_supply = first(filter(n -> n.id == "compressor_energy", 𝒩))
     opex_cost = first(value.(m[:opex_var][n_supply, :]))
-    
+
     n_compressor = first(filter(n -> n.id == 4, 𝒩))
     𝒯ⁱⁿᵛ = strategic_periods(𝒯)
     for t_inv ∈ 𝒯ⁱⁿᵛ
         @test isapprox(
             opex_cost,
             sum(
-                value.(m[:potential_Δ][n_compressor, t]) * EMP.get_energy_resource(n_compressor)[2] * n_supply.opex_var[t] *
+                value.(m[:potential_Δ][n_compressor, t]) *
+                EMP.get_energy_resource(n_compressor)[2] * n_supply.opex_var[t] *
                 EMB.scale_op_sp(t_inv, t) for t ∈ t_inv
             ),
             atol = 1e-5,
@@ -272,10 +273,17 @@ end
     @test value.(m[:potential_out][𝒩[1], first(collect(𝒯)), NG]) == 0.0
     @test value.(m[:potential_out][𝒩[2], first(collect(𝒯)), NG]) == 200.0
     @test value.(m[:potential_out][𝒩[3], first(collect(𝒯)), NG]) == 200.0
-    @test isapprox(value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG]), 178.6; atol = 1e-2)
+    @test isapprox(
+        value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG]),
+        178.6;
+        atol = 1e-2,
+    )
     @test value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) == 180.0
-    @test value.(m[:potential_Δ][𝒩[5], first(collect(𝒯))]) == 
-            (value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) - value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG]))
+    @test value.(m[:potential_Δ][𝒩[5], first(collect(𝒯))]) ==
+          (
+        value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) -
+        value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG])
+    )
 end
 
 function generate_case2()
