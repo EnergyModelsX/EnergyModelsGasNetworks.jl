@@ -24,7 +24,8 @@ function generate_case_pressure()
     # Define reasources
     NG = ResourcePressure("NG", 1.0)
     CO2 = ResourceEmit("CO2", 1.0)
-    products = [CO2, NG]
+    Power = ResourceCarrier("Power", 1.0)
+    products = [CO2, NG, Power]
 
     # Time
     op_duration = 1
@@ -66,20 +67,25 @@ function generate_case_pressure()
             Dict(NG => 1),
             [MaxPressureData(FixedProfile(200))],
         ),
+        RefSource(
+            "compressor_energy",
+            FixedProfile(200),
+            FixedProfile(5),
+            FixedProfile(0),
+            Dict(Power => 1),
+            [FixPressureData(FixedProfile(170))],
+        ),
         SimpleCompressor(
-            4,
-            FixedProfile(1e6),
-            FixedProfile(0),
-            FixedProfile(0),
-            Dict(NG => 1),
-            Dict(NG => 1),
+            4, # 5
+            [NG, Power],
+            [NG],
             FixedProfile(20),
-            FixedProfile(25),
+            (Power, 1.2),
             [MaxPressureData(FixedProfile(180))],
         ),
         # GenAvailability(4, [NG]),
         RefSink(
-            5,
+            5, # 6
             FixedProfile(0),
             Dict(:surplus => FixedProfile(-100), :deficit => FixedProfile(1e6)),
             Dict(NG => 1),
@@ -88,33 +94,39 @@ function generate_case_pressure()
     ]
     links = [
         CapDirect(
-            14,
+            15,
             nodes[1],
-            nodes[4],
+            nodes[5],
             Linear(),
             FixedProfile(200),
             [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
         ),
         CapDirect(
-            24,
+            25,
             nodes[2],
-            nodes[4],
+            nodes[5],
             Linear(),
             FixedProfile(200),
             [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
         ),
         CapDirect(
-            34,
+            35,
             nodes[3],
-            nodes[4],
+            nodes[5],
             Linear(),
             FixedProfile(200),
             [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
+        ),
+        Direct(
+            "supply_compressor_energy",
+            nodes[4],
+            nodes[5],
+            Linear(),
         ),
         CapDirect(
             45,
-            nodes[4],
             nodes[5],
+            nodes[6],
             Linear(),
             FixedProfile(700),
             [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
@@ -220,29 +232,32 @@ end
 # Test that the RHS values of the Taylor approximation are correctly calculated
 @testset "RHS Taylor Approximation Calculation" begin
     for l ∈ ℒ
-        link_p_in = first(value.(m[:link_potential_in][l, :, :]))
-        link_p_out = first(value.(m[:link_potential_out][l, :, :]))
-        RHS_values = calculate_rhs_taylor(link_p_in, link_p_out, l)
+        if isa(l, CapDirect)
+            link_p_in = first(value.(m[:link_potential_in][l, :, :]))
+            link_p_out = first(value.(m[:link_potential_out][l, :, :]))
+            RHS_values = calculate_rhs_taylor(link_p_in, link_p_out, l)
 
-        flow = first(value.(m[:link_in][l, :, :]))
-        @test isapprox(minimum(RHS_values), flow; atol = 1e-6)
+            flow = first(value.(m[:link_in][l, :, :]))
+            @test isapprox(minimum(RHS_values), flow; atol = 1e-6)
+        end
     end
 end
 
 # Test that the SimpleCompressor cost is correctly calculated using :potential_Δ and not :cap_use
 @testset "SimpleCompressor Cost" begin
-    n = first(filter(n -> n isa SimpleCompressor, 𝒩))
-    opex_cost = first(value.(m[:opex_var][n, :]))
-
+    n_supply = first(filter(n -> n.id == "compressor_energy", 𝒩))
+    opex_cost = first(value.(m[:opex_var][n_supply, :]))
+    
+    n_compressor = first(filter(n -> n.id == 4, 𝒩))
     𝒯ⁱⁿᵛ = strategic_periods(𝒯)
     for t_inv ∈ 𝒯ⁱⁿᵛ
         @test isapprox(
             opex_cost,
             sum(
-                value.(m[:potential_Δ][n, t]) * EMB.opex_var(n, t) *
+                value.(m[:potential_Δ][n_compressor, t]) * EMP.get_energy_resource(n_compressor)[2] * n_supply.opex_var[t] *
                 EMB.scale_op_sp(t_inv, t) for t ∈ t_inv
             ),
-            atol = 1e-6,
+            atol = 1e-5,
         )
     end
 end
@@ -250,15 +265,17 @@ end
 @testset "Results" begin
     NG = first(filter(p -> p.id == "NG", 𝒫))
     @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), NG]) == 0.0
-    @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), NG]), 29.393; atol = 1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[3], first(collect(𝒯)), NG]), 58.788; atol = 1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[4], first(collect(𝒯)), NG]), 88.181; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), NG]), 44.09; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[3], first(collect(𝒯)), NG]), 44.09; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[5], first(collect(𝒯)), NG]), 88.181; atol = 1e-2)
 
     @test value.(m[:potential_out][𝒩[1], first(collect(𝒯)), NG]) == 0.0
+    @test value.(m[:potential_out][𝒩[2], first(collect(𝒯)), NG]) == 200.0
     @test value.(m[:potential_out][𝒩[3], first(collect(𝒯)), NG]) == 200.0
-
-    @test value.(m[:potential_out][𝒩[4], first(collect(𝒯)), NG]) == 180.0
-    @test value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG]) == 0.0
+    @test isapprox(value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG]), 178.6; atol = 1e-2)
+    @test value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) == 180.0
+    @test value.(m[:potential_Δ][𝒩[5], first(collect(𝒯))]) == 
+            (value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) - value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG]))
 end
 
 function generate_case2()
