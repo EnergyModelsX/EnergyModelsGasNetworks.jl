@@ -173,6 +173,7 @@ function generate_case_direct(;
             FixedProfile(10),
             FixedProfile(0),
             Dict(H2 => 1),
+            [MaxPressureData(FixedProfile(180))],
         ),
         RefSource(
             2,
@@ -180,6 +181,7 @@ function generate_case_direct(;
             FixedProfile(10),
             FixedProfile(0),
             Dict(CH4 => 1),
+            [MaxPressureData(FixedProfile(180))], # Limit as potential pressures in Direct links are not penalised
         ),
         PoolingNode(
             3,
