@@ -34,7 +34,7 @@ function EMB.variables_flow_resource(
     𝒮 = filter(n -> EMB.is_source(n) && all(res -> res in 𝒫ᴿᴾ, EMB.outputs(n)), 𝒩)
 
     # Create all combinations (node, source) for tracking the proportion of source in each node
-    @variable(m, 0 <= proportion_source[𝒩, 𝒮, 𝒯] <= 1.0)
+    @variable(m, 0.0 <= proportion_source[𝒩, 𝒮, 𝒯] <= 1.0)
 
     # Create a proportion_track variable for each node and subresource
     @variable(m, 0 <= proportion_track[𝒩, 𝒯, 𝒫ᴿᴾ] <= 1.0)
@@ -86,17 +86,7 @@ function EMB.constraints_resource(
     constraints_balance_pressure(m, n, 𝒯, 𝒫)
 
     # Get AbstractPressureData and generate limit constraints if any
-    pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(n))
-    if !isempty(pressure_data)
-        for d ∈ pressure_data
-            constraints_pressure_bounds(m, n, d, 𝒯, 𝒫)
-        end
-    end
-
-    if isa(n, SimpleCompressor)
-        # Define linear relationship of energy consumption and potential increase
-        constraints_energy_potential(m, n, 𝒯, 𝒫, modeltype)
-    end
+    constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
 end
 function EMB.constraints_resource(
     m,
@@ -116,17 +106,7 @@ function EMB.constraints_resource(
     constraints_balance_pressure(m, n, 𝒯, 𝒫)
 
     # Get AbstractPressureData and generate limit constraints if any
-    pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(n))
-    if !isempty(pressure_data)
-        for d ∈ pressure_data
-            constraints_pressure_bounds(m, n, d, 𝒯, 𝒫)
-        end
-    end
-
-    if isa(n, SimpleCompressor)
-        # Define linear relationship of energy consumption and potential increase
-        constraints_energy_potential(m, n, 𝒯, 𝒫, modeltype)
-    end
+    constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
 end
 
 """ 
@@ -153,12 +133,7 @@ function EMB.constraints_resource(
     constraints_balance_pressure(m, l, 𝒯, 𝒫)
 
     # Get AbstractPressureData and generate pressure bounds constraints, if any
-    pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(l))
-    if !isempty(pressure_data)
-        for d ∈ pressure_data
-            constraints_pressure_bounds(m, l, d, 𝒯, 𝒫)
-        end
-    end
+    constraints_pressure_bounds_element(m, l, 𝒯, 𝒫)
 
     # Define capacity limit constraints
     constraints_flow_capacity(m, l, 𝒯, 𝒫)
@@ -185,12 +160,7 @@ function EMB.constraints_resource(
     constraints_balance_pressure(m, l, 𝒯, 𝒫)
 
     # Get AbstractPressureData and generate limit constraints if any
-    pressure_data = filter(d -> d isa AbstractPressureData, get_pressuredata(l))
-    if !isempty(pressure_data)
-        for d ∈ pressure_data
-            constraints_pressure_bounds(m, l, d, 𝒯, 𝒫)
-        end
-    end
+    constraints_pressure_bounds_element(m, l, 𝒯, 𝒫)
 
     # Define capacity limit constraints
     constraints_flow_capacity(m, l, 𝒯, 𝒫)
