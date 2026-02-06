@@ -1,5 +1,13 @@
 """
-    SimpleCompressor <: EMB.NetworkNode
+    abstract type Compressor
+
+A supertype for individual compressor behaviours.
+These nodes are used to model potential increase in the network.
+"""
+abstract type Compressor <: EMB.NetworkNode end
+
+"""
+    SimpleCompressor <: Compressor
 
 NetworkNode that increases its potential_out and its input consumption depends on the potential increase.
 
@@ -8,11 +16,11 @@ NetworkNode that increases its potential_out and its input consumption depends o
 - **`input::Dict{<:Resource,<:Real}`** is the input flow into the SimpleCompressor. Include both the inflow resource and the energy resource needed for the potential increase.
 - **`output::Dict{<:Resource,<:Real}`** is the output flow from the SimpleCompressor. Only include the outflow resource.
 - **`max_incr_potential::TimeProfile`** is the maximum potential increase the SimpleCompressor can provide.
-- **`work_resource`::Dict{<:Resource,<:Real}** is the resource used to provide the work needed for the potential increase and the linear relationship energy/potential increase. 
+- **`energy_resource`::Tuple{<:Resource,<:Real}** is the resource used to provide the work needed for the potential increase and the linear relationship energy/potential increase. 
 
-!NOTE: In SimpleCompressors, the operational cost is determined by the potential increase.
+!NOTE: In SimpleCompressors, the idea is to set a penalisation for the potential increase to ensure a correct behaviour of pressures.
 """
-struct SimpleCompressor <: EMB.NetworkNode
+struct SimpleCompressor <: Compressor
     id::Any
     input::Vector{<:Resource}
     output::Vector{<:Resource}

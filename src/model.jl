@@ -1,3 +1,13 @@
+""" 
+    EMB.variables_node(m, 𝒩ᶜ::Vector{<:Compressor}, 𝒯, modeltype::EMB.EnergyModel)
+
+When the node vector is a `Vector{<:Compressor}` the potential increase (`potential_Δ`) variables are created for each compressor and timestep.
+"""
+function EMB.variables_node(m, 𝒩ᶜ::Vector{<:Compressor}, 𝒯, modeltype::EnergyModel)
+    @show "Creating potential increase variables for compressors"
+    @variable(m, potential_Δ[𝒩ᶜ, 𝒯] >= 0)
+end
+
 """
     EMB.variables_flow_resource(m, 𝒩::Vector{<:EMB.Node}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EMB.EnergyModel)
     EMB.variables_flow_resource(m, 𝒩::Vector{<:EMB.Node}, 𝒫::Vector{<:ResourcePooling}, 𝒯, modeltype::EMB.EnergyModel)  
@@ -15,9 +25,6 @@ function EMB.variables_flow_resource(
 )
     @variable(m, potential_in[n ∈ 𝒩, 𝒯, EMB.inputs(n)] >= 0)
     @variable(m, potential_out[n ∈ 𝒩, 𝒯, EMB.outputs(n)] >= 0)
-
-    𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
-    @variable(m, potential_Δ[𝒩ᶜ, 𝒯] >= 0)
 end
 function EMB.variables_flow_resource(
     m,
