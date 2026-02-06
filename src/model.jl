@@ -87,6 +87,9 @@ function EMB.constraints_resource(
 
     # Get AbstractPressureData and generate limit constraints if any
     constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
+
+    # Define energy-increase potential relationship constraints for type `Compressor`
+    constraints_energy_potential(m, n, 𝒯, 𝒫, modeltype)
 end
 function EMB.constraints_resource(
     m,
@@ -107,6 +110,9 @@ function EMB.constraints_resource(
 
     # Get AbstractPressureData and generate limit constraints if any
     constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
+
+    # Define energy-increase potential relationship constraints for type `Compressor`
+    constraints_energy_potential(m, n, 𝒯, 𝒫, modeltype)
 end
 
 """ 

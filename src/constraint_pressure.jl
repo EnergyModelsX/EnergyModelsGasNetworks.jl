@@ -510,8 +510,13 @@ end
 
 """
     constraints_energy_potential(m, n::SimpleCompressor, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
+    constraints_energy_potential(m, n::EMB.Node, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
 
 Sets the linear relationship between energy flow and pressure increase in SimpleCompressor `n`.
+Skip if the node is not a type `Compressor`.
+
+Note! If new Compressor types are created with different relationships between energy flow and pressure increase, 
+this function should be updated to include the new type and relationship.
 """
 function constraints_energy_potential(
     m,
@@ -525,3 +530,4 @@ function constraints_energy_potential(
     @constraint(m, [t ∈ 𝒯],
         m[:flow_in][n, t, p] == lin_rel * m[:potential_Δ][n, t])
 end
+function constraints_energy_potential(m, n::EMB.Node, 𝒯, 𝒫, modeltype::EMB.EnergyModel) end
