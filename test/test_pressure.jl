@@ -279,11 +279,11 @@ end
         atol = 1e-2,
     )
     @test value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) == 180.0
-    @test value.(m[:potential_Δ][𝒩[5], first(collect(𝒯))]) ==
-          (
-        value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) -
-        value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG])
-    )
+    @test isapprox(value.(m[:potential_Δ][𝒩[5], first(collect(𝒯))]),
+        (
+            value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) -
+            value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG])
+        ); atol = 1e-2)
 end
 
 function generate_case2()

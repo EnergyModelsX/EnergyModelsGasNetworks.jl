@@ -2,14 +2,15 @@ function generate_case_blending_pressure(;
     max_h2 = 0.05,
     min_h2 = 0.0,
     cost_s3 = 5,
-    cost_h2 = 10,
-)
+    cost_h2 = 10)
+
     # Define reasources
     H2 = ResourcePressure("H2", 1.0)
     CH4 = ResourcePressure("CH4", 1.0)
     Blend = ResourcePooling("Blend", [H2, CH4])
     CO2 = ResourceEmit("CO2", 1.0)
-    products = [CO2, Blend, H2, CH4]
+    Power = ResourceCarrier("Power", 1.0)
+    products = [CO2, Blend, H2, CH4, Power]
 
     # Time
     op_duration = 1
@@ -28,31 +29,31 @@ function generate_case_blending_pressure(;
     # Nodes
     nodes = [
         RefSource(
-            1,
+            "supply_h2", #1
             FixedProfile(2000),
             FixedProfile(cost_h2),
             FixedProfile(0),
             Dict(H2 => 1),
-            [MaxPressureData(FixedProfile(200))],
+            [MaxPressureData(FixedProfile(0))],
         ),
         RefSource(
-            2,
+            "supply_ch4_1", #2
             FixedProfile(5000),
             FixedProfile(10),
             FixedProfile(0),
             Dict(CH4 => 1),
-            [MaxPressureData(FixedProfile(180))],
+            [MaxPressureData(FixedProfile(0))],
         ),
         RefSource(
-            3,
+            "supply_ch4_2", #3
             FixedProfile(2000),
             FixedProfile(cost_s3),
             FixedProfile(0),
             Dict(CH4 => 1),
-            [MaxPressureData(FixedProfile(200))],
+            [MaxPressureData(FixedProfile(0))],
         ),
         PoolingNode(
-            4,
+            "pooling_node", #4
             FixedProfile(1e6),
             FixedProfile(0),
             FixedProfile(0),
@@ -61,7 +62,7 @@ function generate_case_blending_pressure(;
             [MaxPressureData(FixedProfile(180))],
         ),
         RefSink(
-            5,
+            "sink", #5
             FixedProfile(0),
             Dict(:surplus => FixedProfile(-120), :deficit => FixedProfile(1e6)),
             Dict(Blend => 1),
@@ -72,12 +73,43 @@ function generate_case_blending_pressure(;
                     Dict(H2=>min_h2, CH4=>0.0),
                 ),
                 MinPressureData(FixedProfile(130))]),
+        RefSource(
+            "supply_power", #6
+            FixedProfile(1000),
+            FixedProfile(0.5),
+            FixedProfile(0),
+            Dict(Power => 1),
+        ),
+        SimpleCompressor(
+            "compressor_1", # 7
+            [H2, Power],
+            [H2],
+            FixedProfile(180),
+            (Power, 1.2),
+            [MaxPressureData(FixedProfile(180))],
+        ),
+        SimpleCompressor(
+            "compressor_2", # 8
+            [CH4, Power],
+            [CH4],
+            FixedProfile(180),
+            (Power, 1.2),
+            [MaxPressureData(FixedProfile(180))],
+        ),
+        SimpleCompressor(
+            "compressor_3", # 9
+            [CH4, Power],
+            [CH4],
+            FixedProfile(180),
+            (Power, 1.2),
+            [MaxPressureData(FixedProfile(180))],
+        ),
     ]
 
     links = [
         CapDirect(
-            14,
-            nodes[1],
+            "",
+            nodes[7],
             nodes[4],
             Linear(),
             FixedProfile(200),
@@ -85,7 +117,7 @@ function generate_case_blending_pressure(;
         ), # NOT SURE WHY I HAVE TO LIMIT THE outlet pressure in links to avoid weird behaviours
         CapDirect(
             24,
-            nodes[2],
+            nodes[8],
             nodes[4],
             Linear(),
             FixedProfile(200),
@@ -93,7 +125,7 @@ function generate_case_blending_pressure(;
         ),
         CapDirect(
             34,
-            nodes[3],
+            nodes[9],
             nodes[4],
             Linear(),
             FixedProfile(200),
@@ -109,6 +141,12 @@ function generate_case_blending_pressure(;
                     0.0,
                     Dict{ResourcePressure{Float64},Float64}(CH4=>16.04),
                 )]),
+        Direct("source_compressor_1", nodes[1], nodes[7], Linear()),
+        Direct("source_compressor_2", nodes[2], nodes[8], Linear()),
+        Direct("source_compressor_3", nodes[3], nodes[9], Linear()),
+        Direct("power_compressor_1", nodes[6], nodes[7], Linear()),
+        Direct("power_compressor_2", nodes[6], nodes[8], Linear()),
+        Direct("power_compressor_3", nodes[6], nodes[9], Linear()),
     ]
 
     case = Case(T, products, [nodes, links], [[get_nodes, get_links]])
@@ -142,20 +180,20 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
     @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
 
     @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 0
-    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 15.67 rtol = 2
-    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 45.49 atol = 2
-    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 61.17 rtol = 2
+    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 27.74 rtol = 0.1
+    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 27.74 atol = 0.1
+    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 55.5 rtol = 0.1
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.0
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 1.0
 end
 
 @testset "Basic case - approximation" begin
-    pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[end].data))
-    blend_data = first(filter(data -> data isa BlendLinkData, ℒ[end].data))
+    pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[4].data))
+    blend_data = first(filter(data -> data isa BlendLinkData, ℒ[4].data))
     pwa = EMP.get_pwa(pressure_data, blend_data, mip_optimizer)
 
-    pin = value(m[:link_potential_in][ℒ[end], first(collect(𝒯)), Blend])
-    pout = value(m[:link_potential_out][ℒ[end], first(collect(𝒯)), Blend])
+    pin = value(m[:link_potential_in][ℒ[4], first(collect(𝒯)), Blend])
+    pout = value(m[:link_potential_out][ℒ[4], first(collect(𝒯)), Blend])
     prop = 0
 
     # Test that the PWA bounds the flow in link_n_4-n_5
@@ -206,21 +244,21 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
 @testset "0.1% H2 case - results" begin
     @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
 
-    @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 6.50 atol = 3e-1
-    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 13.07 rtol = 2
-    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 44.66 atol = 2
-    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 65.0 rtol = 2
+    @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 5.852 atol = 3e-1
+    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 26.33 rtol = 2
+    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 26.33 atol = 2
+    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 58.53 rtol = 2
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.1
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 0.90
 end
 
 @testset "0.1% H2 case - approximation" begin
-    pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[end].data))
-    blend_data = first(filter(data -> data isa BlendLinkData, ℒ[end].data))
+    pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[4].data))
+    blend_data = first(filter(data -> data isa BlendLinkData, ℒ[4].data))
     pwa = EMP.get_pwa(pressure_data, blend_data, mip_optimizer)
 
-    pin = value(m[:link_potential_in][ℒ[end], first(collect(𝒯)), Blend])
-    pout = value(m[:link_potential_out][ℒ[end], first(collect(𝒯)), Blend])
+    pin = value(m[:link_potential_in][ℒ[4], first(collect(𝒯)), Blend])
+    pout = value(m[:link_potential_out][ℒ[4], first(collect(𝒯)), Blend])
     prop = 0.1
 
     # Test that the PWA bounds the flow in link_n_4-n_5
