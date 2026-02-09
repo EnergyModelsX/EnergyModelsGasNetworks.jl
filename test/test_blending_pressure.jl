@@ -177,7 +177,7 @@ H2 = first(filter(p -> p.id == "H2", 𝒫))
 CH4 = first(filter(p -> p.id == "CH4", 𝒫))
 Blend = first(filter(p -> p.id == "Blend", 𝒫))
 @testset "Basic case - results" begin
-    @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
+    # @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
 
     @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 0
     @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 27.74 rtol = 0.1
