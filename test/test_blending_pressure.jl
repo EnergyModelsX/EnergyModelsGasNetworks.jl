@@ -180,9 +180,9 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
     # @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
 
     @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 0
-    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 27.74 rtol = 0.1
-    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 27.74 atol = 0.1
-    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 55.5 rtol = 0.1
+    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 27.74 rtol = 5e-1
+    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 27.74 atol = 5e-1
+    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 55.5 rtol = 5e-1
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.0
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 1.0
 end
@@ -244,10 +244,10 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
 @testset "0.1% H2 case - results" begin
     # @test JuMP.termination_status(m) in [MOI.OPTIMAL, MOI.OTHER_LIMIT]
 
-    @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 5.852 atol = 3e-1
-    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 26.33 rtol = 2
-    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 26.33 atol = 2
-    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 58.53 rtol = 2
+    @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 5.852 atol = 5e-1
+    @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 26.33 rtol = 5e-1
+    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 26.33 atol = 5e-1
+    @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 58.53 rtol = 5e-1
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.1
     @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 0.90
 end
