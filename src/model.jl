@@ -255,10 +255,3 @@ function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel
         EMB.constraints_capacity_installed(m, l, 𝒯, modeltype) # calls the function in EMB
     end
 end
-
-function EMB.create_node(m, n::SimpleCompressor, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
-    # Generic node in which each output corresponds to the input, only for the resources defined in input and output, not the energy resource.
-    @constraint(m, [t ∈ 𝒯, p ∈ EMB.outputs(n)],
-        m[:flow_out][n, t, p] == m[:flow_in][n, t, p]
-    )
-end

@@ -77,13 +77,14 @@ function generate_case_pressure()
         ),
         SimpleCompressor(
             4, # 5
-            [NG, Power],
-            [NG],
+            FixedProfile(1e6),
+            FixedProfile(0),
+            FixedProfile(0),
+            Dict(NG => 1, Power => 1.2),
+            Dict(NG => 1),
             FixedProfile(20),
-            (Power, 1.2),
             [MaxPressureData(FixedProfile(180))],
         ),
-        # GenAvailability(4, [NG]),
         RefSink(
             5, # 6
             FixedProfile(0),
@@ -243,39 +244,19 @@ end
     end
 end
 
-# Test that the SimpleCompressor cost is correctly calculated using :potential_Δ and not :cap_use
-@testset "SimpleCompressor Cost" begin
-    n_supply = first(filter(n -> n.id == "compressor_energy", 𝒩))
-    opex_cost = first(value.(m[:opex_var][n_supply, :]))
-
-    n_compressor = first(filter(n -> n.id == 4, 𝒩))
-    𝒯ⁱⁿᵛ = strategic_periods(𝒯)
-    for t_inv ∈ 𝒯ⁱⁿᵛ
-        @test isapprox(
-            opex_cost,
-            sum(
-                value.(m[:potential_Δ][n_compressor, t]) *
-                EMP.get_energy_resource(n_compressor)[2] * n_supply.opex_var[t] *
-                EMB.scale_op_sp(t_inv, t) for t ∈ t_inv
-            ),
-            atol = 1e-5,
-        )
-    end
-end
-
 @testset "Results" begin
     NG = first(filter(p -> p.id == "NG", 𝒫))
     @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), NG]) == 0.0
-    @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), NG]), 44.09; atol = 1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[3], first(collect(𝒯)), NG]), 44.09; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), NG]), 29.393; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[3], first(collect(𝒯)), NG]), 58.788; atol = 1e-2)
     @test isapprox(value.(m[:link_in][ℒ[5], first(collect(𝒯)), NG]), 88.181; atol = 1e-2)
 
     @test value.(m[:potential_out][𝒩[1], first(collect(𝒯)), NG]) == 0.0
-    @test value.(m[:potential_out][𝒩[2], first(collect(𝒯)), NG]) == 200.0
+    @test isapprox(value.(m[:potential_out][𝒩[2], first(collect(𝒯)), NG]), 170.8; atol = 1e-1)
     @test value.(m[:potential_out][𝒩[3], first(collect(𝒯)), NG]) == 200.0
     @test isapprox(
         value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG]),
-        178.6;
+        160;
         atol = 1e-2,
     )
     @test value.(m[:potential_out][𝒩[5], first(collect(𝒯)), NG]) == 180.0
