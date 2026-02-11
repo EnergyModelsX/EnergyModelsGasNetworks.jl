@@ -285,17 +285,19 @@ function constraints_pressure_couple(
 end
 function constraints_pressure_couple(
     m,
-    n::SimpleCompressor,
+    n::Compressor,
     ℒ::Vector{<:EMB.Link},
     𝒯,
     𝒫::Vector{<:CompoundResource},
 )
     # Filter resources CompoundResource that are inputs of `n`
-    𝒫ⁿ_in = filter(p -> p ∈ EMB.inputs(n), 𝒫)
-    𝒫ⁿ_out = filter(p -> p ∈ EMB.outputs(n), 𝒫)
+    𝒫ⁿ_in = EMB.inputs(n)
+    𝒫ⁿ_out = EMB.outputs(n)
+    P = setdiff(𝒫ⁿ_in, 𝒫ⁿ_out)
 
     # Get links from and to `n`
     ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
+    ℒᵗᵒ = filter(l -> inputs(l) != P, ℒᵗᵒ) # Filter out links whose resource is not relevant for pressure coupling
 
     @constraint(m, [t ∈ 𝒯],
         sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
@@ -315,7 +317,7 @@ function constraints_pressure_couple(
 
     # The Outlet Potential in SimpleCompressor `n` is equal to the inlet potential + the required increased pressure
     # Note: The potential_Δ will be priced at opex_var in the objective function # TODO: Delete comment when SimpleCompressor Power consumption is defined
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ_in],
+    @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ⁿ_in, P)],
         m[:potential_out][n, t, p] == m[:potential_in][n, t, p] + m[:potential_Δ][n, t])
 
     @constraint(m, [t ∈ 𝒯],
