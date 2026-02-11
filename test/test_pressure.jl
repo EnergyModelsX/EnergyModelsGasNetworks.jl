@@ -84,7 +84,7 @@ function generate_case_pressure()
             FixedProfile(0),
             Dict(NG => 1, Power => 0.1),
             Dict(NG => 1),
-            FixedProfile(60), 
+            FixedProfile(60),
             [MaxPressureData(FixedProfile(190))],
         ),
         SimpleCompressor(
@@ -184,7 +184,6 @@ function generate_case_pressure()
     )
     return case, model
 end
-
 
 case, model = generate_case_pressure()
 m = EMB.create_model(case, model; check_timeprofiles = true)
@@ -295,10 +294,9 @@ end
     @test value.(m[:flow_out][𝒩[1], first(collect(𝒯)), NG]) == 0.0
     @test value.(m[:flow_out][𝒩[2], first(collect(𝒯)), NG]) == 0.0
     @test value.(m[:flow_out][𝒩[3], first(collect(𝒯)), NG]) == 20.0
-    @test isapprox(value.(m[:flow_out][𝒩[end-1], first(collect(𝒯)), Power]), 
-                value.(m[:potential_Δ][𝒩[6], first(collect(𝒯))]) * EMB.inputs(𝒩[6], Power);
-                atol = 1e-2) # Check the flow of power corresponds to the linear relationship
-
+    @test isapprox(value.(m[:flow_out][𝒩[end-1], first(collect(𝒯)), Power]),
+        value.(m[:potential_Δ][𝒩[6], first(collect(𝒯))]) * EMB.inputs(𝒩[6], Power);
+        atol = 1e-2) # Check the flow of power corresponds to the linear relationship
 
     @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), NG]) == 0.0
     @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), NG]), 0.0; atol = 1e-2)
@@ -309,7 +307,11 @@ end
     @test isapprox(value.(m[:link_in][ℒ[9], first(collect(𝒯)), Power]), 3.51; atol = 1e-1)
 
     @test value.(m[:potential_in][𝒩[6], first(collect(𝒯)), NG]) == 130
-    @test isapprox(value.(m[:potential_out][𝒩[6], first(collect(𝒯)), NG]), 165.12; atol = 1e-1)
+    @test isapprox(
+        value.(m[:potential_out][𝒩[6], first(collect(𝒯)), NG]),
+        165.12;
+        atol = 1e-1,
+    )
     @test isapprox(value.(m[:potential_Δ][𝒩[6], first(collect(𝒯))]),
         (
             value.(m[:potential_out][𝒩[6], first(collect(𝒯)), NG]) -
