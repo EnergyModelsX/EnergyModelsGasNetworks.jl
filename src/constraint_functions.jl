@@ -30,3 +30,14 @@ function EMB.constraints_flow_in(
         sum(m[:flow_in][n, t, p] for p ∈ 𝒫ⁱⁿ) == m[:cap_use][n, t]
     )
 end
+
+function EMB.constraints_flow_in(m, n::Compressor, 𝒯::TimeStructure, modeltype::EnergyModel)
+    # Declaration of the required subsets
+    𝒫ⁱⁿ = EMB.inputs(n)
+    P = setdiff(𝒫ⁱⁿ, EMB.outputs(n)) # Energy resource
+
+    # Constraint for the individual input stream connections
+    @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ⁱⁿ, P)],
+        m[:flow_in][n, t, p] == m[:cap_use][n, t] * EMB.inputs(n, p)
+    )
+end

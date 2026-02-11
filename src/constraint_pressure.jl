@@ -528,5 +528,12 @@ function constraints_energy_potential(
     𝒫,
     modeltype::EMB.EnergyModel,
 )
+    # Filter resources CompoundResource that are inputs of `n`
+    𝒫ⁿ_in = EMB.inputs(n)
+    𝒫ⁿ_out = EMB.outputs(n)
+    P = setdiff(𝒫ⁿ_in, 𝒫ⁿ_out)
+
+    @constraint(m, [t ∈ 𝒯, p ∈ P],
+        m[:flow_in][n, t, p] >= EMB.inputs(n, p) * m[:potential_Δ][n, t])
 end
 function constraints_energy_potential(m, n::EMB.Node, 𝒯, 𝒫, modeltype::EMB.EnergyModel) end

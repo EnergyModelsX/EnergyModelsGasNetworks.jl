@@ -43,7 +43,7 @@ include("constraint_functions.jl")
 include("constraint_blend.jl")
 include("constraint_pressure.jl")
 include("model.jl")
-include("checks.jl")
+# include("checks.jl")
 
 export set_optimizer_pwa!, set_step_pressure!
 export SimpleCompressor, PoolingNode, CapDirect
