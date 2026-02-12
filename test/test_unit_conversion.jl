@@ -34,7 +34,7 @@ function generate_case_single_resource()
             Dict(NG => 1),
             Dict(Energy => 1),
             [
-                FlowToEnergyData(10.3, :Sm3d, :h), # 10.3 kWh/Sm3
+                FlowToEnergyData(10.3), # 10.3 kWh/Sm3
             ] 
         ),
         RefSink(
@@ -104,15 +104,11 @@ end
     n_conversion = first(filter(n -> n.id == "conversion", 𝒩))
     unit_data = n_conversion.data[1] # FlowToEnergyData
 
-    Δt = EMP.get_time_factor(unit_data)
-    time_factor = 1/86400 * 3600 # 1 / (number of seconds in a day (Sm3/d)) * number of seconds in an hour (hourly resolution)
-    @test isapprox(Δt, time_factor; atol = 1e-6)
-
-    volume = value(m[:flow_in][n_conversion, t, NG]) * Δt
-    @test isapprox(volume, 24.5 * time_factor; atol = 1e-2)
+    flow_in = value(m[:flow_in][n_conversion, t, NG])
+    @test isapprox(flow_in, 24.5; atol = 1e-2)
 
     flow_out_energy = value(m[:flow_out][n_conversion, t, Energy])
-    @test isapprox(flow_out_energy, 24.5 * time_factor * 10.3; atol = 1e-2) # volume * LHV(NG)
+    @test isapprox(flow_out_energy, 24.5 * 10.3; atol = 1e-2) # volume * LHV(NG)
 
     n_sink = first(filter(n -> n.id == "sink_1", 𝒩))
     flow_in_sink = value(m[:flow_in][n_sink, t, Energy])
@@ -147,7 +143,7 @@ function generate_case_pooling_resource()
         RefSource(
             "source_ng",
             FixedProfile(200),
-            FixedProfile(100),
+            FixedProfile(10),
             FixedProfile(0),
             Dict(NG => 1)
         ),
@@ -172,13 +168,13 @@ function generate_case_pooling_resource()
             Dict(Blend => 1),
             Dict(Energy => 1),
             [
-                FlowToEnergyData(Dict(NG => 10.3, H2 => 3.5), :Sm3d, :h), # LHV (kWh/Sm3), flow unit, time unit
+                FlowToEnergyData(Dict(NG => 10.3, H2 => 3.5)), # LHV (kWh/Sm3)
             ] 
         ),
         RefSink(
             "sink",
             FixedProfile(0),
-            Dict(:surplus => FixedProfile(-1000), :deficit => FixedProfile(1e6)),
+            Dict(:surplus => FixedProfile(-100), :deficit => FixedProfile(1e6)),
             Dict(Energy => 1),
         ),
     ]
@@ -220,7 +216,7 @@ end
 
 case, model = generate_case_pooling_resource()
 m = EMB.create_model(case, model; check_timeprofiles = true)
-set_optimizer(m, mip_optimizer)
+set_optimizer(m, optimizer)
 optimize!(m)
 
 # Extract data from the case
@@ -230,6 +226,37 @@ optimize!(m)
 𝒯 = get_time_struct(case)
 
 @testset "Test Unit Conversion Pooling Resource - Pooling Results" begin
+    H2 = first(filter(p -> p.id == "H2", 𝒫))
+    Blend = first(filter(p -> p.id == "Blend", 𝒫))
+
+    # Check the prooportion of H2 in the pooling and conversion node is at its maximum
     n = first(filter(n -> n.id == "pooling", 𝒩))
+    proportion_h2 = value(m[:proportion_track][n, first(𝒯), H2])
+    @test isapprox(proportion_h2, 0.1; atol = 0.02)  # Alpine has 1% rel_gap
+
+    n = first(filter(n -> n.id == "conversion", 𝒩))
+    proportion_h2 = value(m[:proportion_track][n, first(𝒯), H2])
+    flow_in = value(m[:flow_in][n, first(𝒯), Blend])
+    @test isapprox(proportion_h2, 0.1; atol = 0.02)  # Alpine has 1% rel_gap
+    @test isapprox(flow_in, 222.222; rtol = 0.05) # Check the flow_in to the conversion node is at the maximum capacity from the sources.
 end
 
+@testset "Test Unit Conversion Pooling Resource - Unit Conversion Results" begin
+    t = first(𝒯)
+    NG = first(filter(p -> p.id == "NG", 𝒫))
+    H2 = first(filter(p -> p.id == "H2", 𝒫))
+    Blend = first(filter(p -> p.id == "Blend", 𝒫))
+    Energy = first(filter(p -> p.id == "Energy", 𝒫))
+    n_conversion = first(filter(n -> n.id == "conversion", 𝒩))
+    unit_data = n_conversion.data[1] # FlowToEnergyData
+
+    flow_in = value(m[:flow_in][n_conversion, t, Blend])
+    proportion_h2 = 0.1
+    proportion_ng = 0.9
+    flow_out_energy = value(m[:flow_out][n_conversion, t, Energy])
+    @test isapprox(flow_out_energy, flow_in * (10.3 * proportion_ng + 3.5 * proportion_h2); rtol = 0.02) # flow_in * low heating value
+
+    n_sink = first(filter(n -> n.id == "sink", 𝒩))
+    flow_in_sink = value(m[:flow_in][n_sink, t, Energy])
+    @test isapprox(flow_in_sink, 2137.78; rtol = 0.05)  # Alpine has 1% rel_gap
+end
