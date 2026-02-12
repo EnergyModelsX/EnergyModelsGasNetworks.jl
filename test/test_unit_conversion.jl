@@ -1,4 +1,4 @@
-function generate_case_pressure()
+function generate_case_single_resource()
     # Define reasources
     NG = ResourcePressure("NG", 1.0)
     CO2 = ResourceEmit("CO2", 1.0)
@@ -70,7 +70,7 @@ function generate_case_pressure()
     return case, model
 end
 
-case, model = generate_case_pressure()
+case, model = generate_case_single_resource()
 m = EMB.create_model(case, model; check_timeprofiles = true)
 set_optimizer(m, mip_optimizer)
 optimize!(m)
@@ -81,7 +81,7 @@ optimize!(m)
 𝒫 = get_products(case)
 𝒯 = get_time_struct(case)
 
-@testset "Test Unit Conversion - Flow-Pressure Results" begin
+@testset "Test Unit Conversion Single Resource - Flow-Pressure Results" begin
     t = first(𝒯)
     NG = first(filter(p -> p.id == "NG", 𝒫))
 
@@ -97,7 +97,7 @@ optimize!(m)
     @test isapprox(rhs, link_in; atol = 1e-2)
 end
 
-@testset "Test Unit Conversion - Unit Conversion Results" begin
+@testset "Test Unit Conversion Single Resource - Unit Conversion Results" begin
     t = first(𝒯)
     NG = first(filter(p -> p.id == "NG", 𝒫))
     Energy = first(filter(p -> p.id == "Energy", 𝒫))
@@ -118,3 +118,118 @@ end
     flow_in_sink = value(m[:flow_in][n_sink, t, Energy])
     @test isapprox(flow_in_sink, flow_out_energy; atol = 1e-2)
 end
+
+function generate_case_pooling_resource()
+    # Define reasources
+    NG = ResourceCarrier("NG", 1.0)
+    H2 = ResourceCarrier("H2", 1.0)
+    Blend = ResourcePooling("Blend", [NG, H2])
+    Energy = ResourceCarrier("Energy", 1.0) # kWh
+    CO2 = ResourceEmit("CO2", 1.0)
+    products = [CO2, NG, H2, Blend, Energy]
+
+    # Time
+    op_duration = 1
+    op_number = 1
+    operational_periods = TimeStruct.SimpleTimes(op_number, op_duration)
+    op_per_strat = op_duration * op_number
+
+    T = TwoLevel(1, 1, operational_periods; op_per_strat)
+
+    # Initialise EMB model
+    model = OperationalModel(
+        Dict(CO2 => StrategicProfile([0])),
+        Dict(CO2 => FixedProfile(0)),
+        CO2)
+
+    # Nodes
+    nodes = [
+        RefSource(
+            "source_ng",
+            FixedProfile(200),
+            FixedProfile(100),
+            FixedProfile(0),
+            Dict(NG => 1)
+        ),
+        RefSource(
+            "source_h2",
+            FixedProfile(200),
+            FixedProfile(0),
+            FixedProfile(0),
+            Dict(H2 => 1)
+        ),
+        PoolingNode(
+            "pooling",
+            FixedProfile(1e6),
+            FixedProfile(0),
+            FixedProfile(0),
+            Dict(NG => 1, H2 => 1),
+            Dict(Blend => 1),
+            [RefBlendData(Blend, Dict(H2 => 0.1, NG => 1.0), Dict(H2 => 0.0, NG => 0.0))] # ResourcePooling, max. proportion, min.proportion
+        ),
+        RefConversion(
+            "conversion",
+            Dict(Blend => 1),
+            Dict(Energy => 1),
+            [
+                FlowToEnergyData(Dict(NG => 10.3, H2 => 3.5), :Sm3d, :h), # LHV (kWh/Sm3), flow unit, time unit
+            ] 
+        ),
+        RefSink(
+            "sink",
+            FixedProfile(0),
+            Dict(:surplus => FixedProfile(-1000), :deficit => FixedProfile(1e6)),
+            Dict(Energy => 1),
+        ),
+    ]
+    links = [
+        Direct(
+            "ng_to_pooling",
+            nodes[1],
+            nodes[3],
+            Linear(),
+        ),
+        Direct(
+            "h2_to_pooling",
+            nodes[2],
+            nodes[3],
+            Linear(),
+        ),
+        Direct(
+            "pooling_to_conversion",
+            nodes[3],
+            nodes[4],
+            Linear(),
+        ),
+        Direct(
+            "conversion_to_sink",
+            nodes[4],
+            nodes[5],
+            Linear(),
+        ),
+    ]
+
+    case = Case(T, products, [nodes, links], [[get_nodes, get_links]])
+    model = OperationalModel(
+        Dict(CO2 => FixedProfile(0)),
+        Dict(CO2 => FixedProfile(0)),
+        CO2,
+    )
+    return case, model
+end
+
+case, model = generate_case_pooling_resource()
+m = EMB.create_model(case, model; check_timeprofiles = true)
+set_optimizer(m, mip_optimizer)
+optimize!(m)
+
+# Extract data from the case
+𝒩 = get_nodes(case)
+ℒ = get_links(case)
+𝒫 = get_products(case)
+𝒯 = get_time_struct(case)
+
+@testset "Test Unit Conversion Pooling Resource - Pooling Results" begin
+    n = first(filter(n -> n.id == "pooling", 𝒩))
+end
+
