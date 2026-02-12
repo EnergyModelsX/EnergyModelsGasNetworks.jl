@@ -39,16 +39,20 @@ include("structures/resource.jl")
 include("structures/node.jl")
 include("structures/link.jl")
 include("structures/data.jl")
+include("structures/data_units.jl")
 include("constraint_functions.jl")
 include("constraint_blend.jl")
 include("constraint_pressure.jl")
+include("data_functions.jl")
 include("model.jl")
-# include("checks.jl")
+include("checks.jl")
 
 export set_optimizer_pwa!, set_step_pressure!
 export SimpleCompressor, PoolingNode, CapDirect
 export ResourcePressure, ResourceComponentPotential, ResourceComponent, ResourcePooling
 export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData
 export RefBlendData, BlendLinkData
+export RefConversion
+export FlowToEnergyData
 
 end

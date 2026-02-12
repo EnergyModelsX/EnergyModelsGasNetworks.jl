@@ -77,3 +77,30 @@ function PoolingNode(
 )
     return PoolingNode(id, cap, opex_var, opex_fixed, input, output, Data[])
 end
+
+"""
+    abstract type UnitConversion <: NetworkNode end
+New abstract type of NetworkNode that allows to convert flow units to other units.
+"""
+abstract type UnitConversion <: EMB.NetworkNode end
+
+"""
+    struct RefConversion <: UnitConversion
+
+Default `UnitConversion` node to convert units.
+# Fields
+- **`id::Any`** is the name/identifier of the node.
+- **`input::Dict{<:Resource,<:Real}`** is the input flow into the RefConversion. The conversion value `Real` is not used. #TODO: As the conversion value is not used, should we consider changing the type of `input` to `Vector{<:Resource}`?
+- **`output::Dict{<:Resource,<:Real}`** is the output flow from the RefConversion. The conversion value `Real` is not used. #TODO: As the conversion value is not used, should we consider changing the type of `output` to `Vector{<:Resource}`?
+- **`data::Vector{<:UnitsData}`** is the vector of `UnitsData`. This data will define the type of conversion (e.g., volumetric flow to energy).
+"""
+struct RefConversion <: UnitConversion
+    id::Any
+    input::Dict{<:Resource,<:Real}
+    output::Dict{<:Resource,<:Real}
+    data::Vector{<:UnitsData}
+end
+
+EMB.has_capacity(n::UnitConversion) = false
+EMB.has_opex(n::UnitConversion) = false
+EMB.has_emissions(n::UnitConversion) = false
