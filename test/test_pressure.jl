@@ -1,25 +1,3 @@
-
-function calculate_rhs_taylor(link_p_in, link_p_out, l)
-    pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
-    weymouth_ct = EMP.get_weymouth(pressure_data)
-    POut, PIn = EMP.potential_data(pressure_data)
-
-    # Determine the (p_in, p_out) points for the Taylor approximation
-    pressures_points = [(PIn, p) for p ∈ range(PIn, POut, length = 150)[2:end]]
-
-    # Create Taylor constraint for each point
-    RHS_values = []
-    for (p_in, p_out) ∈ pressures_points
-        val_rhs =
-            sqrt(weymouth_ct) * (
-                (p_in/(sqrt(p_in^2 - p_out^2))) * link_p_in -
-                (p_out/(sqrt(p_in^2 - p_out^2))) * link_p_out
-            )
-        push!(RHS_values, val_rhs)
-    end
-    return RHS_values
-end
-
 function generate_case_pressure()
     # Define reasources
     NG = ResourcePressure("NG", 1.0)
