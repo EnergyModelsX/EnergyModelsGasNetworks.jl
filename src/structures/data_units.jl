@@ -26,7 +26,7 @@ The symbols for `time_units` are:
 - :d for days
 """
 struct FlowToEnergyData <: UnitsData
-    LHV::Dict{<:Resource,<:Real}
+    LHV::Union{Real, Dict{<:Resource,<:Real}}
     flow_units::Symbol
     time_units::Symbol
 end
@@ -59,5 +59,18 @@ function get_time_factor(data::FlowToEnergyData)
     return Δt
 end
 
-get_LHV(data::FlowToEnergyData) = collect(keys(data.LHV))
+"""
+    get_LHV(data::FlowToEnergyData)
+    get_LHV(data::FlowToEnergyData, p::EMB.Resource) 
+
+Collects the resources if Dict{<:Resource,<:Real} (used for ResourcePooling) or the LHV if is a Real (for other types of resources)
+If the resource `p` is specified, retrieves the LHV for that specific resource from the dictionary.
+"""
+function get_LHV(data::FlowToEnergyData) 
+    if isa(data.LHV, Real)
+        return data.LHV
+    elseif isa(data.LHV, Dict{<:Resource,<:Real})
+        return collect(keys(data.LHV))
+    end
+end
 get_LHV(data::FlowToEnergyData, p::EMB.Resource) = data.LHV[p]

@@ -13,7 +13,7 @@ function EMB.constraints_ext_data(m, n::UnitConversion, 𝒯, 𝒫, modeltype::E
     volume = @expression(m, [t ∈ 𝒯], sum(m[:flow_in][n, t, p] for p in 𝒫ⁿ) * Δt)
 
     # Calculate the LHV of the input resource
-    𝒫ˡʰᵛ = get_LHV(data)
+    𝒫ˡʰᵛ = get_LHV(data) # collects the resources if Dict{<:Resource,<:Real} (for blends) or the LHV if is a Real (for single resources)
     LHV = resource_lhv(m, n, 𝒫ˡʰᵛ, data, 𝒯)
 
     # Calculate the flow_out in energy units
@@ -30,10 +30,9 @@ If the input resource is of type `ResourcePooling`, the LHV is calculated as the
 If the input resource is any other type of `Resource`, the LHV is simply retrieved from the data.
 
 """
-function resource_lhv(m, n::EMB.Node, 𝒫ˡʰᵛ::Vector{ResourcePooling}, data::FlowToEnergyData, 𝒯)
+function resource_lhv(m, n::EMB.Node, 𝒫ˡʰᵛ::Dict{<:Resource,<:Real}, data::FlowToEnergyData, 𝒯)
     return @expression(m, [t ∈ 𝒯], sum(get_LHV(data, p) * m[:proportion_track][n, t, p] for p in 𝒫ˡʰᵛ))
 end
-function resource_lhv(m, n::EMB.Node, 𝒫ˡʰᵛ::Vector{<:EMB.Resource}, data::FlowToEnergyData, 𝒯)
-    p = first(𝒫ˡʰᵛ)
-    return @expression(m, [t ∈ 𝒯], get_LHV(data, p))
+function resource_lhv(m, n::EMB.Node, LHV::Real, data::FlowToEnergyData, 𝒯)
+    return @expression(m, [t ∈ 𝒯], LHV)
 end

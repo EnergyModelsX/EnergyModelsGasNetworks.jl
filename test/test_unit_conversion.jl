@@ -34,7 +34,7 @@ function generate_case_pressure()
             Dict(NG => 1),
             Dict(Energy => 1),
             [
-                FlowToEnergyData(Dict(NG => 10.3), :Sm3d, :h), # 10.3 kWh/Sm3
+                FlowToEnergyData(10.3, :Sm3d, :h), # 10.3 kWh/Sm3
             ] 
         ),
         RefSink(
