@@ -14,7 +14,12 @@ end
 
 Remove the capacity constraints for UnitConversion nodes. These nodes do not have :cap_use.
 """
-function EMB.constraints_capacity(m, n::UnitConversion, 𝒯::TimeStructure, modeltype::EMB.EnergyModel) end
+function EMB.constraints_capacity(
+    m,
+    n::UnitConversion,
+    𝒯::TimeStructure,
+    modeltype::EMB.EnergyModel,
+) end
 
 """
     EMB.constraints_opex_var(m, n::UnitConversion, 𝒯, modeltype::EMB.EnergyModel)
@@ -23,14 +28,12 @@ Remove the opex variable constraints for UnitConversion nodes.
 """
 function EMB.constraints_opex_var(m, n::UnitConversion, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel) end
 
-
 """
     EMB.constraints_opex_fixed(m, n::UnitConversion, 𝒯, modeltype::EMB.EnergyModel)
 
 Remove the opex fixed constraints for UnitConversion nodes.
 """
 function EMB.constraints_opex_fixed(m, n::UnitConversion, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel) end
-
 
 """
     EMB.constraints_flow_in(m, n::PoolingNode, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
@@ -71,11 +74,21 @@ end
 Remove the flow_in constraints for UnitConversion nodes. These nodes do not use :cap_use, instead flows
 are calculated based on their data extension in EMB.constraints_ext_data.
 """
-function EMB.constraints_flow_in(m, n::UnitConversion, 𝒯::TimeStructure, modeltype::EnergyModel) end
+function EMB.constraints_flow_in(
+    m,
+    n::UnitConversion,
+    𝒯::TimeStructure,
+    modeltype::EnergyModel,
+) end
 """
     EMB.constraints_flow_out(m, n::UnitConversion, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
 
 Remove the flow_out constraints for UnitConversion nodes. These nodes do not use :cap_use, instead flows
 are calculated based on their data extension in EMB.constraints_ext_data.
 """
-function EMB.constraints_flow_out(m, n::UnitConversion, 𝒯::TimeStructure, modeltype::EnergyModel) end
+function EMB.constraints_flow_out(
+    m,
+    n::UnitConversion,
+    𝒯::TimeStructure,
+    modeltype::EnergyModel,
+) end

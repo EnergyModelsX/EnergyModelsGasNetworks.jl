@@ -1,4 +1,9 @@
-function EMB.check_node_default(n::UnitConversion, 𝒯, modeltype::EMB.EnergyModel, check_timeprofiles::Bool)
+function EMB.check_node_default(
+    n::UnitConversion,
+    𝒯,
+    modeltype::EMB.EnergyModel,
+    check_timeprofiles::Bool,
+)
     𝒯ᴵⁿᵛ = strategic_periods(𝒯)
 
     @assert_or_log(

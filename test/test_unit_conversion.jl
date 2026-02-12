@@ -34,8 +34,8 @@ function generate_case_single_resource()
             Dict(NG => 1),
             Dict(Energy => 1),
             [
-                FlowToEnergyData(10.3), # 10.3 kWh/Sm3
-            ] 
+                FlowToEnergyData(10.3) # 10.3 kWh/Sm3
+            ],
         ),
         RefSink(
             "sink_1",
@@ -145,14 +145,14 @@ function generate_case_pooling_resource()
             FixedProfile(200),
             FixedProfile(10),
             FixedProfile(0),
-            Dict(NG => 1)
+            Dict(NG => 1),
         ),
         RefSource(
             "source_h2",
             FixedProfile(200),
             FixedProfile(0),
             FixedProfile(0),
-            Dict(H2 => 1)
+            Dict(H2 => 1),
         ),
         PoolingNode(
             "pooling",
@@ -161,15 +161,15 @@ function generate_case_pooling_resource()
             FixedProfile(0),
             Dict(NG => 1, H2 => 1),
             Dict(Blend => 1),
-            [RefBlendData(Blend, Dict(H2 => 0.1, NG => 1.0), Dict(H2 => 0.0, NG => 0.0))] # ResourcePooling, max. proportion, min.proportion
+            [RefBlendData(Blend, Dict(H2 => 0.1, NG => 1.0), Dict(H2 => 0.0, NG => 0.0))], # ResourcePooling, max. proportion, min.proportion
         ),
         RefConversion(
             "conversion",
             Dict(Blend => 1),
             Dict(Energy => 1),
             [
-                FlowToEnergyData(Dict(NG => 10.3, H2 => 3.5)), # LHV (kWh/Sm3)
-            ] 
+                FlowToEnergyData(Dict(NG => 10.3, H2 => 3.5)) # LHV (kWh/Sm3)
+            ],
         ),
         RefSink(
             "sink",
@@ -254,7 +254,11 @@ end
     proportion_h2 = 0.1
     proportion_ng = 0.9
     flow_out_energy = value(m[:flow_out][n_conversion, t, Energy])
-    @test isapprox(flow_out_energy, flow_in * (10.3 * proportion_ng + 3.5 * proportion_h2); rtol = 0.02) # flow_in * low heating value
+    @test isapprox(
+        flow_out_energy,
+        flow_in * (10.3 * proportion_ng + 3.5 * proportion_h2);
+        rtol = 0.02,
+    ) # flow_in * low heating value
 
     n_sink = first(filter(n -> n.id == "sink", 𝒩))
     flow_in_sink = value(m[:flow_in][n_sink, t, Energy])
