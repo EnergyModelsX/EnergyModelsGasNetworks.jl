@@ -10,6 +10,32 @@ function EMB.constraints_capacity(m, l::CapDirect, 𝒯, modeltype::EMB.EnergyMo
 end
 
 """
+    EMB.constraints_capacity(m, n::UnitConversion, 𝒯, modeltype::EMB.EnergyModel)
+
+Remove the capacity constraints for UnitConversion nodes. These nodes do not have :cap_use.
+"""
+function EMB.constraints_capacity(
+    m,
+    n::UnitConversion,
+    𝒯::TimeStructure,
+    modeltype::EMB.EnergyModel,
+) end
+
+"""
+    EMB.constraints_opex_var(m, n::UnitConversion, 𝒯, modeltype::EMB.EnergyModel)
+
+Remove the opex variable constraints for UnitConversion nodes.
+"""
+function EMB.constraints_opex_var(m, n::UnitConversion, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel) end
+
+"""
+    EMB.constraints_opex_fixed(m, n::UnitConversion, 𝒯, modeltype::EMB.EnergyModel)
+
+Remove the opex fixed constraints for UnitConversion nodes.
+"""
+function EMB.constraints_opex_fixed(m, n::UnitConversion, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel) end
+
+"""
     EMB.constraints_flow_in(m, n::PoolingNode, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
 
 Function for creating the constraint on the inlet flow of a `PoolingNode`. The sum of the flows
@@ -31,36 +57,38 @@ function EMB.constraints_flow_in(
     )
 end
 
-"""
-    Temporal function before integrating Compressors correctly
-"""
-function EMB.constraints_opex_var(m, n::SimpleCompressor, 𝒯ᴵⁿᵛ, modeltype::EMB.EnergyModel)
-    @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
-        m[:opex_var][n, t_inv] == sum(
-            m[:potential_Δ][n, t] * EMB.opex_var(n, t) * EMB.scale_op_sp(t_inv, t) for
-            t ∈ t_inv
-        ))
+function EMB.constraints_flow_in(m, n::Compressor, 𝒯::TimeStructure, modeltype::EnergyModel)
+    # Declaration of the required subsets
+    𝒫ⁱⁿ = EMB.inputs(n)
+    P = setdiff(𝒫ⁱⁿ, EMB.outputs(n)) # Energy resource
+
+    # Constraint for the individual input stream connections
+    @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ⁱⁿ, P)],
+        m[:flow_in][n, t, p] == m[:cap_use][n, t] * EMB.inputs(n, p)
+    )
 end
 
 """
-    Temporal function before integrating Compressors correctly. This adds a penalty for increasing link_potential_in and link_potential_out.
-"""
-function EMB.constraints_opex_var(m, l::CapDirect, 𝒯ᴵⁿᵛ, modeltype::EnergyModel) # TODO: Modify to be able to associate a cost to CapDirect (e.g., mantainance)
-    𝒫ˡ = EMB.link_res(l)
+    EMB.constraints_flow_in(m, n::UnitConversion, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
 
-    if any(p -> p isa ResourcePressure || p isa ResourcePooling{<:ResourcePressure}, 𝒫ˡ)
-        @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
-            m[:link_opex_var][l, t_inv] ==
-            0.01 * sum(
-                m[:link_potential_in][l, t, p] + m[:link_potential_out][l, t, p]
-                for p ∈ 𝒫ˡ, t ∈ t_inv
-            ))
-    else
-        @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
-            m[:link_opex_var][l, t_inv] == 0)
-    end
-end
-function EMB.constraints_opex_fixed(m, l::CapDirect, 𝒯ᴵⁿᵛ, modeltype::EnergyModel)
-    @constraint(m, [t_inv ∈ 𝒯ᴵⁿᵛ],
-        m[:link_opex_fixed][l, t_inv] == 0)
-end
+Remove the flow_in constraints for UnitConversion nodes. These nodes do not use :cap_use, instead flows
+are calculated based on their data extension in EMB.constraints_ext_data.
+"""
+function EMB.constraints_flow_in(
+    m,
+    n::UnitConversion,
+    𝒯::TimeStructure,
+    modeltype::EnergyModel,
+) end
+"""
+    EMB.constraints_flow_out(m, n::UnitConversion, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
+
+Remove the flow_out constraints for UnitConversion nodes. These nodes do not use :cap_use, instead flows
+are calculated based on their data extension in EMB.constraints_ext_data.
+"""
+function EMB.constraints_flow_out(
+    m,
+    n::UnitConversion,
+    𝒯::TimeStructure,
+    modeltype::EnergyModel,
+) end

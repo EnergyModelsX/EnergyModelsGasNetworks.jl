@@ -1,29 +1,33 @@
 """
-    SimpleCompressor <: EMB.NetworkNode
+    abstract type Compressor
 
-NetworkNode that increases its potential_out.
+A supertype for individual compressor behaviours.
+These nodes are used to model potential increase in the network.
+"""
+abstract type Compressor <: EMB.NetworkNode end
+
+"""
+    SimpleCompressor <: Compressor
+
+Type of Compressor that allows pressure increase (:potential_Δ) and whose operation is penalised through the energy resource consumption proportional to its :cap_use.
 
 # Fields
 - **`id::Any`** is the name/identifier of the link.
-- **`cap::TimeProfile`** the maximum flow allowed through the SimpleCompressor.
-- **`opex_var::TimeProfile`** is the variable operating expense per cap_use
-- **`opex_fixed::TimeProfile`** is the fixed operating expense per time unit.
-- **`input::Dict{<:Resource,<:Real}`** is the input flow into the SimpleCompressor.
-- **`output::Dict{<:Resource,<:Real}`** is the output flow from the SimpleCompressor.
-- **`potential_increase::TimeProfile`** maximum potential increase the SimpleCompressor can provide.
-- **`potential_opex_var::TimeProfile`** is the variable operating expense per potential unit increased.
-
-!NOTE: In SimpleCompressors, the operational cost is determined by the potential increase and not the :cap_use (flow within SimpleCompressor).
+- **`cap::TimeProfile`** is the maximum flow that the compressor can handle.
+- **`opex_var::TimeProfile`** is the variable operational expenditure of the compressor, based on inflow.
+- **`opex_fixed::TimeProfile`** is the fixed operational expenditure of the compressor.
+- **`input::Dict{<:Resource,<:Real}`** is the input flow into the SimpleCompressor. Include both the inflow resource and the energy resource needed for the potential increase.
+- **`output::Dict{<:Resource,<:Real}`** is the output flow from the SimpleCompressor. Only include the outflow resource.
+- **`max_incr_potential::TimeProfile`** is the maximum potential increase the SimpleCompressor can provide.
 """
-struct SimpleCompressor <: EMB.NetworkNode
+struct SimpleCompressor <: Compressor
     id::Any
     cap::TimeProfile
     opex_var::TimeProfile
     opex_fixed::TimeProfile
     input::Dict{<:Resource,<:Real}
     output::Dict{<:Resource,<:Real}
-    potential_increase::TimeProfile
-    potential_opex_var::TimeProfile
+    max_incr_potential::TimeProfile
     data::Vector{<:ExtensionData}
 end
 function SimpleCompressor(
@@ -33,8 +37,7 @@ function SimpleCompressor(
     opex_fixed::TimeProfile,
     input::Dict{<:Resource,<:Real},
     output::Dict{<:Resource,<:Real},
-    potential_increase::TimeProfile,
-    potential_opex_var::TimeProfile,
+    max_incr_potential::TimeProfile,
 )
     return SimpleCompressor(
         id,
@@ -43,13 +46,12 @@ function SimpleCompressor(
         opex_fixed,
         input,
         output,
-        potential_increase,
-        potential_opex_var,
+        max_incr_potential,
         ExtensionData[],
     )
 end
 
-get_potential(n::SimpleCompressor, t) = n.potential_increase[t]
+get_max_potential(n::SimpleCompressor, t) = n.max_incr_potential[t]
 
 """
 New NetworkNode that overwrite the function constraints flow_in such that cap_use is the sum of the flow_in for blend resources.
@@ -75,3 +77,30 @@ function PoolingNode(
 )
     return PoolingNode(id, cap, opex_var, opex_fixed, input, output, Data[])
 end
+
+"""
+    abstract type UnitConversion <: NetworkNode end
+New abstract type of NetworkNode that allows to convert flow units to other units.
+"""
+abstract type UnitConversion <: EMB.NetworkNode end
+
+"""
+    struct RefConversion <: UnitConversion
+
+Default `UnitConversion` node to convert units.
+# Fields
+- **`id::Any`** is the name/identifier of the node.
+- **`input::Dict{<:Resource,<:Real}`** is the input flow into the RefConversion. The conversion value `Real` is not used. #TODO: As the conversion value is not used, should we consider changing the type of `input` to `Vector{<:Resource}`?
+- **`output::Dict{<:Resource,<:Real}`** is the output flow from the RefConversion. The conversion value `Real` is not used. #TODO: As the conversion value is not used, should we consider changing the type of `output` to `Vector{<:Resource}`?
+- **`data::Vector{<:EMB.ExtensionData}`** is the vector of `ExtensionData`. This data will define the type of conversion (e.g., volumetric flow to energy).
+"""
+struct RefConversion <: UnitConversion
+    id::Any
+    input::Dict{<:Resource,<:Real}
+    output::Dict{<:Resource,<:Real}
+    data::Vector{<:EMB.ExtensionData}
+end
+
+EMB.has_capacity(n::UnitConversion) = false
+EMB.has_opex(n::UnitConversion) = false
+EMB.has_emissions(n::UnitConversion) = false

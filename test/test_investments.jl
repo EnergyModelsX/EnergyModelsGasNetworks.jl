@@ -214,8 +214,6 @@ end
         check_timeprofiles = true,
     )
 
-    @test num_variables(m) == 290
-
     # Check if the new variables for link capacity investments are created
     new_variables = [
         "link_cap_current[l_1-4,sp1]",

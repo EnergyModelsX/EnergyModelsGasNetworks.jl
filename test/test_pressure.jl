@@ -1,30 +1,9 @@
-
-function calculate_rhs_taylor(link_p_in, link_p_out, l)
-    pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
-    weymouth_ct = EMP.get_weymouth(pressure_data)
-    POut, PIn = EMP.potential_data(pressure_data)
-
-    # Determine the (p_in, p_out) points for the Taylor approximation
-    pressures_points = [(PIn, p) for p ∈ range(PIn, POut, length = 150)[2:end]]
-
-    # Create Taylor constraint for each point
-    RHS_values = []
-    for (p_in, p_out) ∈ pressures_points
-        val_rhs =
-            sqrt(weymouth_ct) * (
-                (p_in/(sqrt(p_in^2 - p_out^2))) * link_p_in -
-                (p_out/(sqrt(p_in^2 - p_out^2))) * link_p_out
-            )
-        push!(RHS_values, val_rhs)
-    end
-    return RHS_values
-end
-
 function generate_case_pressure()
     # Define reasources
     NG = ResourcePressure("NG", 1.0)
     CO2 = ResourceEmit("CO2", 1.0)
-    products = [CO2, NG]
+    Power = ResourceCarrier("Power", 1.0)
+    products = [CO2, NG, Power]
 
     # Time
     op_duration = 1
@@ -43,81 +22,135 @@ function generate_case_pressure()
     # Nodes
     nodes = [
         RefSource(
-            1,
+            "source_1",
             FixedProfile(200),
             FixedProfile(15),
             FixedProfile(0),
             Dict(NG => 1),
-            [MaxPressureData(FixedProfile(200))],
+            [FixPressureData(FixedProfile(130))],
         ),
         RefSource(
-            2,
+            "source_2",
             FixedProfile(200),
             FixedProfile(10),
             FixedProfile(0),
             Dict(NG => 1),
-            [MaxPressureData(FixedProfile(200))],
+            [FixPressureData(FixedProfile(130))],
         ),
         RefSource(
-            3,
+            "source_3",
             FixedProfile(200),
             FixedProfile(5),
             FixedProfile(0),
             Dict(NG => 1),
-            [MaxPressureData(FixedProfile(200))],
+            [FixPressureData(FixedProfile(130))],
         ),
         SimpleCompressor(
-            4,
+            "compressor_1", # 4
             FixedProfile(1e6),
             FixedProfile(0),
             FixedProfile(0),
+            Dict(NG => 1, Power => 0.1),
             Dict(NG => 1),
-            Dict(NG => 1),
-            FixedProfile(20),
-            FixedProfile(25),
-            [MaxPressureData(FixedProfile(180))],
+            FixedProfile(60),
+            [MaxPressureData(FixedProfile(190))],
         ),
-        # GenAvailability(4, [NG]),
-        RefSink(
-            5,
+        SimpleCompressor(
+            "compressor_2", # 5
+            FixedProfile(1e6),
             FixedProfile(0),
-            Dict(:surplus => FixedProfile(-100), :deficit => FixedProfile(1e6)),
+            FixedProfile(0),
+            Dict(NG => 1, Power => 0.1),
             Dict(NG => 1),
-            [MaxPressureData(FixedProfile(180)), MinPressureData(FixedProfile(1e-6))],
+            FixedProfile(60),
+            [MaxPressureData(FixedProfile(190))],
+        ),
+        SimpleCompressor(
+            "compressor_3", # 6
+            FixedProfile(1e6),
+            FixedProfile(0),
+            FixedProfile(0),
+            Dict(NG => 1, Power => 0.1),
+            Dict(NG => 1),
+            FixedProfile(60),
+            [MaxPressureData(FixedProfile(190))],
+        ),
+        RefSource(
+            "power_source",
+            FixedProfile(200),
+            FixedProfile(2),
+            FixedProfile(0),
+            Dict(Power => 1),
+            [FixPressureData(FixedProfile(0))],
+        ),
+        RefSink(
+            "sink_1",
+            FixedProfile(20),
+            Dict(:surplus => FixedProfile(1e6), :deficit => FixedProfile(1e6)),
+            Dict(NG => 1),
+            [MaxPressureData(FixedProfile(180)), MinPressureData(FixedProfile(160))],
         ),
     ]
     links = [
-        CapDirect(
-            14,
+        Direct(
+            "source_comp_1",
             nodes[1],
             nodes[4],
             Linear(),
-            FixedProfile(200),
-            [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
         ),
-        CapDirect(
-            24,
+        Direct(
+            "source_comp_2",
             nodes[2],
-            nodes[4],
-            Linear(),
-            FixedProfile(200),
-            [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
-        ),
-        CapDirect(
-            34,
-            nodes[3],
-            nodes[4],
-            Linear(),
-            FixedProfile(200),
-            [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
-        ),
-        CapDirect(
-            45,
-            nodes[4],
             nodes[5],
             Linear(),
-            FixedProfile(700),
+        ),
+        Direct(
+            "source_comp_2",
+            nodes[3],
+            nodes[6],
+            Linear(),
+        ),
+        CapDirect(
+            "comp_1_sink",
+            nodes[4],
+            nodes[8],
+            Linear(),
+            FixedProfile(200),
             [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
+        ),
+        CapDirect(
+            "comp_2_sink",
+            nodes[5],
+            nodes[8],
+            Linear(),
+            FixedProfile(200),
+            [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
+        ),
+        CapDirect(
+            "comp_3_sink",
+            nodes[6],
+            nodes[8],
+            Linear(),
+            FixedProfile(200),
+            [PressureLinkData(0.24, 200, 0), MinPressureData(FixedProfile(1e-6))],
+        ),
+        Direct(
+            "power_comp_1",
+            nodes[7],
+            nodes[4],
+            Linear(),
+        ),
+        Direct(
+            "power_comp_2",
+            nodes[7],
+            nodes[5],
+            Linear(),
+        ),
+        Direct(
+            "power_comp_3",
+            nodes[7],
+            nodes[6],
+            Linear(),
         ),
     ]
 
@@ -204,14 +237,15 @@ end
         ]
         @test in_val == out_val
 
+        NG = first(filter(p -> p.id == "NG", 𝒫))
         𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
         in_val = [
             value(m[:potential_in][nt]) for
-            nt ∈ eachindex(m[:potential_in]) if nt[1] in 𝒩ᶜ
+            nt ∈ eachindex(m[:potential_in]) if (nt[1] in 𝒩ᶜ) & (nt[3] == NG)
         ]
         out_val = [
             value(m[:potential_out][nt]) for
-            nt ∈ eachindex(m[:potential_out]) if nt[1] in 𝒩ᶜ
+            nt ∈ eachindex(m[:potential_out]) if (nt[1] in 𝒩ᶜ) & (nt[3] == NG)
         ]
         @test all(in_val .<= out_val)
     end
@@ -220,45 +254,47 @@ end
 # Test that the RHS values of the Taylor approximation are correctly calculated
 @testset "RHS Taylor Approximation Calculation" begin
     for l ∈ ℒ
-        link_p_in = first(value.(m[:link_potential_in][l, :, :]))
-        link_p_out = first(value.(m[:link_potential_out][l, :, :]))
-        RHS_values = calculate_rhs_taylor(link_p_in, link_p_out, l)
+        if isa(l, CapDirect)
+            link_p_in = first(value.(m[:link_potential_in][l, :, :]))
+            link_p_out = first(value.(m[:link_potential_out][l, :, :]))
+            RHS_values = calculate_rhs_taylor(link_p_in, link_p_out, l)
 
-        flow = first(value.(m[:link_in][l, :, :]))
-        @test isapprox(minimum(RHS_values), flow; atol = 1e-6)
-    end
-end
-
-# Test that the SimpleCompressor cost is correctly calculated using :potential_Δ and not :cap_use
-@testset "SimpleCompressor Cost" begin
-    n = first(filter(n -> n isa SimpleCompressor, 𝒩))
-    opex_cost = first(value.(m[:opex_var][n, :]))
-
-    𝒯ⁱⁿᵛ = strategic_periods(𝒯)
-    for t_inv ∈ 𝒯ⁱⁿᵛ
-        @test isapprox(
-            opex_cost,
-            sum(
-                value.(m[:potential_Δ][n, t]) * EMB.opex_var(n, t) *
-                EMB.scale_op_sp(t_inv, t) for t ∈ t_inv
-            ),
-            atol = 1e-6,
-        )
+            flow = first(value.(m[:link_in][l, :, :]))
+            @test isapprox(minimum(RHS_values), flow; atol = 1e-6)
+        end
     end
 end
 
 @testset "Results" begin
     NG = first(filter(p -> p.id == "NG", 𝒫))
+    Power = first(filter(p -> p.id == "Power", 𝒫))
+
+    @test value.(m[:flow_out][𝒩[1], first(collect(𝒯)), NG]) == 0.0
+    @test value.(m[:flow_out][𝒩[2], first(collect(𝒯)), NG]) == 0.0
+    @test value.(m[:flow_out][𝒩[3], first(collect(𝒯)), NG]) == 20.0
+    @test isapprox(value.(m[:flow_out][𝒩[end-1], first(collect(𝒯)), Power]),
+        value.(m[:potential_Δ][𝒩[6], first(collect(𝒯))]) * EMB.inputs(𝒩[6], Power);
+        atol = 1e-2) # Check the flow of power corresponds to the linear relationship
+
     @test value.(m[:link_in][ℒ[1], first(collect(𝒯)), NG]) == 0.0
-    @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), NG]), 29.393; atol = 1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[3], first(collect(𝒯)), NG]), 58.788; atol = 1e-2)
-    @test isapprox(value.(m[:link_in][ℒ[4], first(collect(𝒯)), NG]), 88.181; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[2], first(collect(𝒯)), NG]), 0.0; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[3], first(collect(𝒯)), NG]), 20; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[4], first(collect(𝒯)), NG]), 0.0; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[5], first(collect(𝒯)), NG]), 0.0; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[6], first(collect(𝒯)), NG]), 20.0; atol = 1e-2)
+    @test isapprox(value.(m[:link_in][ℒ[9], first(collect(𝒯)), Power]), 3.51; atol = 1e-1)
 
-    @test value.(m[:potential_out][𝒩[1], first(collect(𝒯)), NG]) == 0.0
-    @test value.(m[:potential_out][𝒩[3], first(collect(𝒯)), NG]) == 200.0
-
-    @test value.(m[:potential_out][𝒩[4], first(collect(𝒯)), NG]) == 180.0
-    @test value.(m[:potential_in][𝒩[5], first(collect(𝒯)), NG]) == 0.0
+    @test value.(m[:potential_in][𝒩[6], first(collect(𝒯)), NG]) == 130
+    @test isapprox(
+        value.(m[:potential_out][𝒩[6], first(collect(𝒯)), NG]),
+        165.12;
+        atol = 1e-1,
+    )
+    @test isapprox(value.(m[:potential_Δ][𝒩[6], first(collect(𝒯))]),
+        (
+            value.(m[:potential_out][𝒩[6], first(collect(𝒯)), NG]) -
+            value.(m[:potential_in][𝒩[6], first(collect(𝒯)), NG])
+        ); atol = 1e-2)
 end
 
 function generate_case2()

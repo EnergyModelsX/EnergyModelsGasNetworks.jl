@@ -29,6 +29,18 @@ function constraints_balance_pressure(
 end
 function constraints_balance_pressure(
     m,
+    n::UnitConversion,
+    𝒯,
+    𝒫::Vector{<:CompoundResource},
+)
+    # Filter resources CompoundResource that are output of `n`
+    p_out = first(EMB.outputs(n))
+
+    # Inlet and Outlet Potential should be equal
+    @constraint(m, [t ∈ 𝒯], m[:potential_out][n, t, p_out] == 0)
+end
+function constraints_balance_pressure(
+    m,
     n::SimpleCompressor,
     𝒯,
     𝒫::Vector{<:CompoundResource},
@@ -246,7 +258,7 @@ function constraints_pressure_couple(
 end
 function constraints_pressure_couple(
     m,
-    n::EMB.Availability,
+    n::EMB.NetworkNode,
     ℒ::Vector{<:EMB.Link},
     𝒯,
     𝒫::Vector{<:CompoundResource},
@@ -285,17 +297,19 @@ function constraints_pressure_couple(
 end
 function constraints_pressure_couple(
     m,
-    n::SimpleCompressor,
+    n::Compressor,
     ℒ::Vector{<:EMB.Link},
     𝒯,
     𝒫::Vector{<:CompoundResource},
 )
     # Filter resources CompoundResource that are inputs of `n`
-    𝒫ⁿ_in = filter(p -> p ∈ EMB.inputs(n), 𝒫)
-    𝒫ⁿ_out = filter(p -> p ∈ EMB.outputs(n), 𝒫)
+    𝒫ⁿ_in = EMB.inputs(n)
+    𝒫ⁿ_out = EMB.outputs(n)
+    P = setdiff(𝒫ⁿ_in, 𝒫ⁿ_out)
 
     # Get links from and to `n`
     ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
+    ℒᵗᵒ = filter(l -> inputs(l) != P, ℒᵗᵒ) # Filter out links whose resource is not relevant for pressure coupling
 
     @constraint(m, [t ∈ 𝒯],
         sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
@@ -315,11 +329,11 @@ function constraints_pressure_couple(
 
     # The Outlet Potential in SimpleCompressor `n` is equal to the inlet potential + the required increased pressure
     # Note: The potential_Δ will be priced at opex_var in the objective function # TODO: Delete comment when SimpleCompressor Power consumption is defined
-    @constraint(m, [t ∈ 𝒯, p ∈ 𝒫ⁿ_in],
+    @constraint(m, [t ∈ 𝒯, p ∈ setdiff(𝒫ⁿ_in, P)],
         m[:potential_out][n, t, p] == m[:potential_in][n, t, p] + m[:potential_Δ][n, t])
 
     @constraint(m, [t ∈ 𝒯],
-        m[:potential_Δ][n, t] <= get_potential(n, t))
+        m[:potential_Δ][n, t] <= get_max_potential(n, t))
 
     # Outlet potential of `n` and Inlet Potential of `l`
     @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ inputs(l_from), pp ∈ 𝒫ⁿ_out],
@@ -401,7 +415,7 @@ end
 function constraints_pressure_couple(m, n::EMB.AbstractElement, ℒ, 𝒯, 𝒫) end
 
 """
-    constraints_flow_capacity(m, l::CapDirect, 𝒯, 𝒫::Vector{<:CompoundResource}) 
+    constraints_flow_capacity(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource}) 
 
 Constraints setting the maximum flow through link `l` at time `t` whether it has flow or not.
 """
@@ -509,6 +523,36 @@ function constraints_pwa(
 end
 
 """
+    constraints_energy_potential(m, n::SimpleCompressor, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
+    constraints_energy_potential(m, n::EMB.Node, 𝒯, 𝒫, modeltype::EMB.EnergyModel)
+
+Sets the relationship between energy needs and pressure increase, or any other parameter in Compressor `n` that determines its energy consumption.
+Skip if the node is not a type `Compressor`.
+
+If n is a `SimpleCompressor`, the energy consumption will be calculated as the product of the flow through the compressor, and the energy input required per unit of flow.
+This is defined with the default constraint `constraints_flow_in()`.
+
+Note! If new Compressor types are created with different relationships between energy flow and pressure increase, 
+this function should be updated to include the new type and relationship.
+"""
+function constraints_energy_potential(
+    m,
+    n::SimpleCompressor,
+    𝒯,
+    𝒫,
+    modeltype::EMB.EnergyModel,
+)
+    # Filter resources CompoundResource that are inputs of `n`
+    𝒫ⁿ_in = EMB.inputs(n)
+    𝒫ⁿ_out = EMB.outputs(n)
+    P = setdiff(𝒫ⁿ_in, 𝒫ⁿ_out)
+
+    @constraint(m, [t ∈ 𝒯, p ∈ P],
+        m[:flow_in][n, t, p] >= EMB.inputs(n, p) * m[:potential_Δ][n, t])
+end
+function constraints_energy_potential(m, n::EMB.Node, 𝒯, 𝒫, modeltype::EMB.EnergyModel) end
+
+""""
     constraints_bidirectional_pressure(m, l::EMB.Link, ℒ, 𝒯, 𝒫)
     constraints_bidirectional_pressure(m, l::EMB.Direct, ℒ, 𝒯, 𝒫)
 

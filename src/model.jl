@@ -1,3 +1,12 @@
+""" 
+    EMB.variables_node(m, 𝒩ᶜ::Vector{<:Compressor}, 𝒯, modeltype::EMB.EnergyModel)
+
+When the node vector is a `Vector{<:Compressor}` the potential increase (`potential_Δ`) variables are created for each compressor and timestep.
+"""
+function EMB.variables_node(m, 𝒩ᶜ::Vector{<:Compressor}, 𝒯, modeltype::EnergyModel)
+    @variable(m, potential_Δ[𝒩ᶜ, 𝒯] >= 0)
+end
+
 """
     EMB.variables_flow_resource(m, 𝒩::Vector{<:EMB.Node}, 𝒫::Vector{<:ResourcePressure}, 𝒯, modeltype::EMB.EnergyModel)
     EMB.variables_flow_resource(m, 𝒩::Vector{<:EMB.Node}, 𝒫::Vector{<:ResourcePooling}, 𝒯, modeltype::EMB.EnergyModel)  
@@ -15,9 +24,6 @@ function EMB.variables_flow_resource(
 )
     @variable(m, potential_in[n ∈ 𝒩, 𝒯, EMB.inputs(n)] >= 0)
     @variable(m, potential_out[n ∈ 𝒩, 𝒯, EMB.outputs(n)] >= 0)
-
-    𝒩ᶜ = filter(n -> n isa SimpleCompressor, 𝒩)
-    @variable(m, potential_Δ[𝒩ᶜ, 𝒯] >= 0)
 end
 function EMB.variables_flow_resource(
     m,
@@ -87,6 +93,9 @@ function EMB.constraints_resource(
 
     # Get AbstractPressureData and generate limit constraints if any
     constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
+
+    # Define energy-increase potential relationship constraints for type `Compressor`
+    constraints_energy_potential(m, n, 𝒯, 𝒫, modeltype)
 end
 function EMB.constraints_resource(
     m,
@@ -107,6 +116,9 @@ function EMB.constraints_resource(
 
     # Get AbstractPressureData and generate limit constraints if any
     constraints_pressure_bounds_element(m, n, 𝒯, 𝒫)
+
+    # Define energy-increase potential relationship constraints for type `Compressor`
+    constraints_energy_potential(m, n, 𝒯, 𝒫, modeltype)
 end
 
 """ 
@@ -250,11 +262,4 @@ function EMB.create_link(m, l::CapDirect, 𝒯, 𝒫, modeltype::EMB.EnergyModel
     if has_capacity(l)
         EMB.constraints_capacity_installed(m, l, 𝒯, modeltype) # calls the function in EMB
     end
-
-    # Declaration of the required subsets.
-    𝒯ᴵⁿᵛ = strategic_periods(𝒯)
-
-    # Call for the functions for variable OPEX constraints
-    EMB.constraints_opex_fixed(m, l, 𝒯ᴵⁿᵛ, modeltype)
-    EMB.constraints_opex_var(m, l, 𝒯ᴵⁿᵛ, modeltype)
 end
