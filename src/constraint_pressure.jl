@@ -566,4 +566,3 @@ function constraints_bidirectional_pressure(m, l::EMB.Link, ℒ::Vector{<:EMB.Li
         m[:has_flow][ll, t] + m[:has_flow][l, t] <= 1)
 end
 function constraints_bidirectional_pressure(m, l::EMB.Direct, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫) end
-
