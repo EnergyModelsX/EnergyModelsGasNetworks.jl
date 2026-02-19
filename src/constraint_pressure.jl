@@ -507,3 +507,18 @@ function constraints_pwa(
         )
     end
 end
+
+"""
+    constraints_bidirectional_pressure(m, l::EMB.Link, ℒ, 𝒯, 𝒫)
+    constraints_bidirectional_pressure(m, l::EMB.Direct, ℒ, 𝒯, 𝒫)
+
+Ensure that parallel links defining bidirectionality cannot have flow at the same time. The link without flow will automatically have zero 
+link_in_potential and link_out_potential due to the `constraints_balance_pressure` constraints.
+"""
+function constraints_bidirectional_pressure(m, l::EMB.Link, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫)
+    ℒᵇ = filter(ll -> (ll.from == l.to && ll.to == l.from), ℒ)
+
+    @constraint(m, [ll ∈ ℒᵇ, t ∈ 𝒯],
+        m[:has_flow][ll, t] + m[:has_flow][l, t] <= 1)
+end
+function constraints_bidirectional_pressure(m, l::EMB.Direct, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫) end
