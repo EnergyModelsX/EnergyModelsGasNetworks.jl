@@ -51,4 +51,6 @@ include("test_utils.jl")
     include("test_blending_pressure.jl")
     include("test_direct_link.jl")
     include("test_investments.jl")
+    include("test_unit_conversion.jl")
+    include("test_bidirectional_links.jl")
 end

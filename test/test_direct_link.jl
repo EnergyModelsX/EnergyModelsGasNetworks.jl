@@ -173,6 +173,7 @@ function generate_case_direct(;
             FixedProfile(10),
             FixedProfile(0),
             Dict(H2 => 1),
+            [MaxPressureData(FixedProfile(180))],
         ),
         RefSource(
             2,
@@ -180,6 +181,7 @@ function generate_case_direct(;
             FixedProfile(10),
             FixedProfile(0),
             Dict(CH4 => 1),
+            [MaxPressureData(FixedProfile(180))], # Limit as potential pressures in Direct links are not penalised
         ),
         PoolingNode(
             3,
@@ -274,7 +276,8 @@ function generate_case_direct(;
         CO2,
     )
 
-    m = EMP.create_model(case, model, mip_optimizer; check_timeprofiles = true)
+    set_optimizer_pwa!(mip_optimizer)
+    m = EMP.create_model(case, model; check_timeprofiles = true)
     set_optimizer(m, optimizer)
     optimize!(m)
 

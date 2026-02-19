@@ -27,8 +27,8 @@ CapDirect(id, from, to, formulation, cap) =
 EMB.capacity(l::EMB.Link, t) = 1e6 # Default large capacity
 EMB.capacity(l::CapDirect, t) = l.cap[t]
 EMB.capacity(l::CapDirect) = l.cap
-
 EMB.has_capacity(l::CapDirect) = true
+EMB.has_opex(l::CapDirect) = false # TODO: Modify struct to be able to associate a cost to CapDirect (e.g., mantainance), see constraint_functions.jl for constraints definition
 
 """
     link_data(l::CapDirect)

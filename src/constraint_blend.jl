@@ -1,15 +1,24 @@
 """
-    function constraints_proportion(m, n::Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫)
+    constraints_proportion(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourcePooling})
+    constraints_proportion(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourcePooling})
 
-Ensures keeping track of the proportions of resources from sources at each node `n`. 
-
-Note! It is assumed that all the ResourceComponentPotential and ResourceComponent that meet in a node are blended.
-If 𝒫 is not a Vector{ResourcePooling}, no constraints are applied.
+Keeps track of the proportions of flows from sources at each node `n`. 
+`Source` nodes have their proportions fixed to 1 for their own resource and 0 for others.
 """
-# Fallback method for any type of 𝒫 that is not Vector{ResourcePooling}
-function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
-function constraints_proportion(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourcePooling}) end
-function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{ResourcePooling})
+function constraints_proportion(
+    m,
+    n::EMB.Source,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourcePooling},
+) end
+function constraints_proportion(
+    m,
+    n::EMB.Node,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourcePooling},
+)
     for blend ∈ 𝒫
         # Get the subresources for the blend
         sub_res = subresources(blend)
@@ -18,8 +27,7 @@ function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vecto
         if any(res -> res ∈ EMB.inputs(n), sub_res) || blend ∈ EMB.inputs(n)
 
             # Get links into `n` which transport any sub_resource or blend
-            ℒ = 𝒳ᵛᵉᶜ[2]
-            ℒᵗᵒ = get_links_to_node_blend(n, 𝒳ᵛᵉᶜ, sub_res, blend)
+            ℒᵗᵒ = get_links_to_node_blend(n, ℒ, sub_res, blend)
 
             # Get sources associated to `n` whose outputs are any subresource
             𝒮 = sources_upstream_of(n, ℒ, sub_res)
@@ -48,15 +56,26 @@ function constraints_proportion(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vecto
 end
 
 """
-    function constraints_quality(m, n::Node, 𝒯, 𝒫)
+    constraints_quality(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    constraints_quality(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
 
 Defines the maximum and minimum quality constraints for a node n based on the blending data.
+`Source`nodes do not have quality constraints.
 """
-function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫) end
-function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourcePooling})
-    # Get blend data for node `n`
-    blend_data = get_blenddata(n)
-
+function constraints_quality(
+    m,
+    n::EMB.Source,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourcePooling},
+) end
+function constraints_quality(
+    m,
+    n::EMB.Node,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:ResourcePooling},
+)
     for blend ∈ 𝒫
         # Get the subresources for the blend
         sub_res = subresources(blend)
@@ -74,7 +93,6 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
             𝒫ᵐⁱⁿ = Dict(key => val for (key, val) ∈ 𝒫ᵐⁱⁿ)
 
             # Get links into `n` that deliver any sub_resource of blend
-            ℒ = 𝒳ᵛᵉᶜ[2]
             _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
             ℒᵗᵒ = filter(
                 l ->
@@ -119,16 +137,16 @@ function constraints_quality(m, n::EMB.Node, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<
         end
     end
 end
-function constraints_quality(m, n::EMB.Source, 𝒳ᵛᵉᶜ, 𝒯, 𝒫::Vector{<:ResourcePooling}) end
 
 """
-    function constraints_proportion_couple(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    function constraints_proportion_source(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
 
-Sets standard proportion_source values. 
-The proportion source of a node n from a source is set to 1 if source == n.
-The proportion source of a node n from a source not associated to it is set to 0.
+Set standard proportion_source values for all nodes. 
+For nodes of type `Source`, the proportion source from itself is set to 1 and from other sources to 0.
+For other nodes, the proportion source from non-associated sources is set to 0. Non-associated sources are those that are not 
+upstream of the node.
 """
-function constraints_proportion_couple(
+function constraints_proportion_source(
     m,
     𝒩::Vector{<:EMB.Node},
     ℒ::Vector{<:EMB.Link},
@@ -158,27 +176,30 @@ function constraints_proportion_couple(
         end
     end
 end
-function constraints_proportion_couple(
+function constraints_proportion_source(
     m,
     ℒ::Vector{<:EMB.Link},
     𝒩::Vector{<:EMB.Node},
     𝒯,
     𝒫::Vector{<:ResourcePooling},
 )
-    constraints_proportion_couple(m, 𝒩, ℒ, 𝒯, 𝒫)
+    constraints_proportion_source(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
 
 """
-    function constraints_tracking(m, n::Node, ℒ::Vector{<:Link}, 𝒯, 𝒫)
+    constraints_tracking(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    constraints_tracking(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
 
-These are constraints required for tracking the proportion of resources each node `n`. This is used for linking with the pressure constraints.
+Tracking the proportion of subresources at node `n`. Required for linking with the pressure constraints.
+If n is a `Source`, the :proportion_track variables are fixed to 1 for its own resources and 0 for others.
+For other node types, the :proportion_track variables are defined based on the :proportion_source variables of upstream sources.
 """
 function constraints_tracking(
     m,
     n::EMB.Node,
     ℒ::Vector{<:EMB.Link},
     𝒯,
-    𝒫::Vector{ResourcePooling},
+    𝒫::Vector{<:ResourcePooling},
 )
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)
@@ -198,7 +219,7 @@ function constraints_tracking(
     n::EMB.Source,
     ℒ::Vector{<:EMB.Link},
     𝒯,
-    𝒫::Vector{ResourcePooling},
+    𝒫::Vector{<:ResourcePooling},
 )
     for p_blend ∈ 𝒫
         𝒫ʳ = subresources(p_blend)

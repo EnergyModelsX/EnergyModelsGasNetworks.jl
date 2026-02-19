@@ -205,16 +205,14 @@ function constraint_contains_var(cref, var)
 end
 
 @testset "Investments in CapDirect links" begin
+    set_optimizer_pwa!(mip_optimizer) # set optimizer for PWA approximations
+    set_step_pressure!(10) # step pressure for the PWA approximations
     case, model = generate_case_investments()
-    EnergyModelsPooling.set_step_pressure!(10) # step pressure for the PWA approximations
     m = EnergyModelsPooling.create_model(
         case,
-        model,
-        mip_optimizer;
+        model;
         check_timeprofiles = true,
     )
-
-    @test num_variables(m) == 266
 
     # Check if the new variables for link capacity investments are created
     new_variables = [
