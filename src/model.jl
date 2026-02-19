@@ -199,6 +199,10 @@ function EMB.constraints_couple_resource(
     for n ∈ 𝒩
         constraints_pressure_couple(m, n, ℒ, 𝒯, 𝒫)
     end
+
+    for l ∈ ℒ
+        constraints_bidirectional_pressure(m, l, ℒ, 𝒯, 𝒫)
+    end
 end
 function EMB.constraints_couple_resource(
     m,
@@ -236,6 +240,10 @@ function EMB.constraints_couple_resource(
     end
 
     constraints_proportion_source(m, 𝒩, ℒ, 𝒯, 𝒫)
+
+    for l ∈ ℒ
+        constraints_bidirectional_pressure(m, l, ℒ, 𝒯, 𝒫)
+    end
 end
 
 """
