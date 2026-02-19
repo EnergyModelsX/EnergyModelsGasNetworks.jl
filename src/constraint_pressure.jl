@@ -29,6 +29,18 @@ function constraints_balance_pressure(
 end
 function constraints_balance_pressure(
     m,
+    n::UnitConversion,
+    𝒯,
+    𝒫::Vector{<:CompoundResource},
+)
+    # Filter resources CompoundResource that are output of `n`
+    p_out = first(EMB.outputs(n))
+
+    # Inlet and Outlet Potential should be equal
+    @constraint(m, [t ∈ 𝒯], m[:potential_out][n, t, p_out] == 0)
+end
+function constraints_balance_pressure(
+    m,
     n::SimpleCompressor,
     𝒯,
     𝒫::Vector{<:CompoundResource},
@@ -246,7 +258,7 @@ function constraints_pressure_couple(
 end
 function constraints_pressure_couple(
     m,
-    n::EMB.Availability,
+    n::EMB.NetworkNode,
     ℒ::Vector{<:EMB.Link},
     𝒯,
     𝒫::Vector{<:CompoundResource},
