@@ -2,7 +2,6 @@
 /extra/
 *Manifest.toml
 *.txt
-/docs/build/
 *.DS_Store
 *.log
 .vscode
