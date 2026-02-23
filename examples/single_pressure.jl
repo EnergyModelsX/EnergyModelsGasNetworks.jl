@@ -17,12 +17,12 @@ const TS = TimeStruct
 """
     generate_single_pressure_case()
 
-Generate the case and model for the single pressure test.
+Generate the case and model for the single pressure case.
 The system only has one gas resource of type `ResourcePressure` to activate pressure-flow constraints.
 The pressure-flow relationship for all pipelines are, therefore, defined by the Taylor approximation.
 """
 function generate_single_pressure_case()
-    @info "Generate case data - Single Gas Pressure Test"
+    @info "Generate case data - Single Gas Pressure Case"
 
     # Define the resources in the system and their emission intensity.
     # The resource `CH4` is defined as a `ResourcePressure` to activate the pressure-flow constraints in the model.
@@ -301,7 +301,8 @@ nodal_inlet_potentials, nodal_outlet_potentials, link_flows, link_rhs = process_
     "Results for the single pressure test case:\n" *
     "Compressors 2 and 3 are active increasing pressures from 130 to 189.78 bars" *
     "This outlet pressure is not at its maximum due to the capacity constraint of 50 MSm3/d in the links between the compressors and the sink" *
-    "Only sources 2 and 3 deliver gas, as source 1 is more expensive than the reward in the sink for delivering gas."
+    "Only sources 2 and 3 deliver gas, as source 1 is more expensive than the reward in the sink for delivering gas." *
+    "The Taylor approximation is tight for the flow through the pipelines."
     )
 pretty_table(nodal_inlet_potentials)
 pretty_table(nodal_outlet_potentials)
