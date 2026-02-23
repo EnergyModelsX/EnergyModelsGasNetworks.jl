@@ -1,19 +1,16 @@
 """
-Compund resources that have a potential in addition to a flow rate,
-these potential behave differently when summarized in a junction.
-E.q. electric power which consist of voltage (potential) and power/current (flow rate),
-    or gas which have both pressure (potential) and gas flow (flow rate).
+Abstract `Resource` type that allows to define potentials (e.g. gas flow with pressure) and pooling constraints through dispatch.
 """
 abstract type CompoundResource <: EMB.Resource end
 
 """
     ResourcePressure{T<:Real} <: CompoundResource
 
-Resources that can be transported and converted, but also have energy potential.
+Resource with an associated pressure potential in addition to a flow rate.
 
 # Fields
-- **`id`** is the name/identifyer of the resource.
-- **`co2_int::T`** is the CO₂ intensity, *e.g.*, t/MWh.
+- **`id`** is the name/identifier of the resource.
+- **`co2_int::T`** is the CO₂ intensity (e.g. t/MWh).
 """
 struct ResourcePressure{T<:Real} <: CompoundResource
     id::Any
@@ -23,8 +20,9 @@ end
 """
     ResourcePooling{T<:Real} <: EMB.Resource
 
-Resources that can be composed of other subresources of subtypes `Resources`. 
-Using `ResourcePressure` activates the potential variables and constraints in the model.
+Resource that represents a blend of subresources. 
+
+Note! When the subresources are `ResourcePressure`, the pressure formulation is also activated for the blend. Otherwise, the blend activates only the pooling constraints.
 """
 struct ResourcePooling{R<:EMB.Resource} <: CompoundResource
     id::Any

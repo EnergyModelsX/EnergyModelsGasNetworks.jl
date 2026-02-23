@@ -1,10 +1,12 @@
 """
-    PressureData to apply to Nodes and Links in a gas network.
-    For Source, Availability and SimpleCompressor nodes, the pressure chosen applies to the outlet potential.
-    For Sink nodes, the pressure chosen applies to the inlet potential.
+Pressure-related extension data applied to nodes and links.
+For sources, availability nodes, and compressors the pressure applies to the outlet potential; for sinks it applies to the inlet.
 """
 abstract type PressureData <: EMB.ExtensionData end
 
+"""
+Abstract data attached to nodes or links to describe blend quality requirements or tracking parameters.
+"""
 abstract type BlendData <: EMB.ExtensionData end
 
 """
@@ -20,7 +22,7 @@ abstract type AbstractLinkPressureData <: PressureData end
 """
     FixPressureData
 
-    Used to define a fixed pressure in Nodes or Links
+Set a fixed pressure in nodes or links.
 """
 struct FixPressureData <: AbstractPressureData
     pressure::TimeProfile
@@ -29,7 +31,7 @@ end
 """
     MaxPressureData
 
-    Used to define a fixed maximum pressure in Nodes or Links
+Set a maximum pressure in nodes or links.
 """
 struct MaxPressureData <: AbstractPressureData
     pressure::TimeProfile
@@ -38,7 +40,7 @@ end
 """
     MinPressureData
 
-    Used to define a fixed minimum pressure in Nodes or Links
+Set a minimum pressure in nodes or links.
 """
 struct MinPressureData <: AbstractPressureData
     pressure::TimeProfile

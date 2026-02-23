@@ -44,10 +44,10 @@
     Using other MIP solvers such as  *Gurobi* or *Xpress* can significantly improve performance.
 
 
-    !!! tip "JuMP and solver"
-        While JuMP is automatically installed when you add `EnergyModelsBase`, it is still necessary to load it to optimize a model or extract the results.
-        It is hence necessary to load it in each model run explicitly.
+!!! tip "JuMP and solver"
+    While JuMP is automatically installed when you add `EnergyModelsBase`, it is still necessary to load it to optimize a model or extract the results.
+    It is hence necessary to load it in each model run explicitly.
 
-        `EnergyModelsX` models are in general agnostic towards which solver is used.
-        They are hence not automatically included.
-        Therefore, they require you to explicitly load the corresponding solver.
+    `EnergyModelsX` models are in general agnostic towards which solver is used.
+    They are hence not automatically included.
+    Therefore, they require you to explicitly load the corresponding solver.

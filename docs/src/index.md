@@ -1,10 +1,11 @@
 # EnergyModelsPooling
 
-`EnergyModelsPooling` extends [EnergyModelsX](https://github.com/EnergyModelsX) with functionality to model gas networks. The model allows integrating i) flow-pressure constraints and/or 2) quality tracking using a pooling formulation.
+`EnergyModelsPooling` extends [EnergyModelsX](https://github.com/EnergyModelsX) with pressure-aware gas transport and pool-quality tracking. It adds two tightly coupled capabilities on top of [`EnergyModelsBase`](https://energymodelsx.github.io/EnergyModelsBase.jl/):
 
-The flow-pressure constraints allows setting internal pressures in `Node`s and `Link`s, set pressure bounds (i.e., maximum, minimum and fixed pressures) using the new data type [`AbstractPressureData`](@ref), transmission of pressures between `Node`s and `Link`s and define flow-pressure relationships in each `Link`. For the latter constraints, `EnergyModelsPooling` approximates the non-linear Weymouth formulation either with First Order Taylor Approximations in the case of single gases flowing througth the pipe or tangent planes defined using [PiecewiseAffineApprox](https://github.com/sintefore/PiecewiseAffineApprox.jl) for blended gases of two components.
+- **Flow–pressure coupling.** Nodes and links carry pressure potentials, enforce bounds via [`AbstractPressureData`](@ref), and approximate the Weymouth relation. Single-component gases use first-order Taylor cuts; blended gases use piecewise-affine planes from [PiecewiseAffineApprox](https://github.com/sintefore/PiecewiseAffineApprox.jl).
+- **Pooling and quality tracking.** Based on the multi-commodity formulation of [@alfaki_multi-commodity_2013], compositions are tracked through [`PoolingNode`](@ref) and sinks. Maximum/minimum component shares are set through [`BlendData`](@ref) subtypes.
 
-The quality tracking is based on the multi-commodity model formulated in Alfaki & Haugland (2013), and allows tracking the composition of the components reaching each pooling node ([`PoolingNode`](@ref)) and `Sink`. Minimum and maximum qualities for each component can be defined at each node using the subtypes of the abstract data type [`BlendData`].
+Use this package when you need pressure-feasible gas transport, hydrogen–methane blending, or compositional quality constraints within an `EnergyModelsX` optimisation.
 
 ## Manual outline
 
@@ -13,74 +14,34 @@ Pages = [
     "manual/quick-start.md",
     "manual/simple-example.md",
     "manual/NEWS.md",
+    "background/background.md",
+    "library/public.md",
 ]
-Depth = 1
+Depth = 2
 ```
 
-## Description of the resources
+- **Getting started.** Jump to the [Quick Start](@ref man-quick_start) for installation, solvers, and running the bundled examples.
+- **Examples.** See the [examples overview](@ref man-examples) for what each script demonstrates.
+- **Background.** The [background note](@ref background-overview) summarises the pressure and pooling formulations.
+- **Library.** The [library page](@ref lib-public) lists the main types, controls, and data structures.
 
-<!-- ```@contents
-Pages = [
-    "resources/resourceheat.md",
-]
-Depth = 1
-``` -->
-
-## Description of the links
-
-<!-- ```@contents
-Pages = [
-    "links/dhpipe.md",
-]
-Depth = 1
-``` -->
-
-## Description of the nodes
-
-<!-- ```@contents
-Pages = [
-    "nodes/heatpump.md",
-    "nodes/thermalenergystorage.md",
-    "nodes/heatexchanger.md",
-]
-Depth = 1
-``` -->
-
-## How to guides
-
-<!-- ```@contents
-Pages = [
-    "howto/simple_conversion.md",
-    "howto/contribute.md",
-]
-Depth = 1
-``` -->
-
-## Library outline
-
-<!-- ```@contents
-Pages = [
-    "library/public.md",
-    "library/internals/types-EMH.md",
-    "library/internals/methods-fields.md",
-    "library/internals/methods-EMH.md",
-    "library/internals/methods-EMB.md",
-]
-Depth = 1
-``` -->
-
-## Background
-
+## Description of elements
 ```@contents
 Pages = [
-    "background/background.md",
+    "elements/resources.md",
+    "elements/nodes.md",
+    "elements/links.md",
+    "elements/data.md"
 ]
-Depth = 1
 ```
 
-## References
-Alfaki, M., & Haugland, D. (2013). A multi-commodity flow formulation for the generalized pooling problem. Journal of Global Optimization, 56(3), 917–937. https://doi.org/10.1007/s10898-012-9890-7
+## Auxiliary functions #TODO: Add weymouth calculation functions
+```@contents
+Pages = [    
+    "aux-fun/scratch.md",
+]
+```
 
-## Project Funding
+## Project funding
 
 The development of `EnergyModelsPooling` was funded by the the European Union’s Clean Hydrogen Partnership in the project [SHIMMER](https://shimmerproject.eu/) under grant agreement [101111888](https://doi.org/10.3030/101111888).
