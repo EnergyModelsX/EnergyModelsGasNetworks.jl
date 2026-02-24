@@ -11,7 +11,7 @@ Run them from a REPL after adding the package:
 ```julia
 julia> using EnergyModelsPooling
 julia> exdir = joinpath(pkgdir(EnergyModelsPooling), "examples")
-julia> include(joinpath(exdir, "single_pressure.jl"))
+julia> include(joinpath(exdir, "pressure.jl"))
 julia> include(joinpath(exdir, "pooling.jl"))
 julia> include(joinpath(exdir, "pooling_pressure.jl"))
 ```
