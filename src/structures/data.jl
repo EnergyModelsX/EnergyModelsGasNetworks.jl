@@ -145,11 +145,10 @@ function res_blendata(blend_data::BlendData)
 end
 
 """
-    function get_pwa(data_pressure::PressureLinkData, data_blend::BlendData; resolution_prop=0.01)
-    function get_pwa(l::EMB.Link; resolution_prop=0.01)
+    function get_pwa(data_pressure::PressureLinkData, data_blend::BlendData, optimizer; resolution_prop=0.01)
+    function get_pwa(l::EMB.Link, optimizer; resolution_prop=0.01)
 
 Generates/retrieves the PWA functions for a link with blending and pressure data to calculate the Weymouth equation with blending.
-# TODO: Improve calling the optimizer. For the moment, it is a parameter included when 
 """
 function get_pwa(
     data_pressure::PressureLinkData,

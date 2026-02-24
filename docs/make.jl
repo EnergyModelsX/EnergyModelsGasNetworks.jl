@@ -40,6 +40,8 @@ Documenter.makedocs(
         ],
         "Background" => ["background/background.md"],
         "Library" => ["library/public.md"],
+        "Auxiliary Functions" => [
+            "Scratch" => "aux-fun/scratch.md"],
     ],
     plugins = [links, bib],
 )
