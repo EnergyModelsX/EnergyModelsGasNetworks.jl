@@ -1,4 +1,4 @@
-# EnergyModelsPooling
+# EnergyModelsGasNetworks
 
 `EnergyModelsPooling` extends the [`EnergyModelsX`](https://github.com/EnergyModelsX) ecosystem with pressure-feasible gas transport and pooling of blended gases (e.g. hydrogen–methane). It adds pressure potentials, Weymouth-based link constraints, and quality tracking to [`EnergyModelsBase`](https://energymodelsx.github.io/EnergyModelsBase.jl/).
 
