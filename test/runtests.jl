@@ -1,6 +1,6 @@
 using Alpine
 using EnergyModelsBase
-using EnergyModelsPooling
+using EnergyModelsGasNetworks
 using EnergyModelsInvestments
 using HiGHS
 using Ipopt
@@ -24,7 +24,7 @@ catch err
 end
 
 const EMB = EnergyModelsBase
-const EMP = EnergyModelsPooling
+const EMGN = EnergyModelsGasNetworks
 
 nl_solver = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
 minlp_optimizer = optimizer_with_attributes(
@@ -45,7 +45,7 @@ optimizer = optimizer_with_attributes(
 
 include("test_utils.jl")
 
-@testset "EnergyModelsPooling" begin
+@testset "EnergyModelsGasNetworks" begin
     include("test_pressure.jl")
     include("test_blending.jl")
     include("test_blending_pressure.jl")

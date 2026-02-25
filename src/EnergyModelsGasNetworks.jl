@@ -1,4 +1,4 @@
-module EnergyModelsPooling
+module EnergyModelsGasNetworks
 
 using EnergyModelsBase
 const EMB = EnergyModelsBase
@@ -25,13 +25,13 @@ set_optimizer_pwa!(opt) = (_OPT[] = opt)
 function _get_optimizer()
     opt = _OPT[]
     opt === nothing && error(
-        "EnergyModelsPooling: optimizer not set. Call EMP.set_optimizer_pwa!(opt) before declaring the model.",
+        "EnergyModelsPooling: optimizer not set. Call EMGN.set_optimizer_pwa!(opt) before declaring the model.",
     )
     return opt
 end
 
-@info "By default, the steps for pressure PWA approximations is set to $(get_step_pressure()) units. Use `EMP.set_step_pressure!(step)` to change it."
-@info "By default, the optimizer for PWA is not set. Use `EMP.set_optimizer_pwa!(opt)` before calling `create_model()`."
+@info "By default, the steps for pressure PWA approximations is set to $(get_step_pressure()) units. Use `EMGN.set_step_pressure!(step)` to change it."
+@info "By default, the optimizer for PWA is not set. Use `EMGN.set_optimizer_pwa!(opt)` before calling `create_model()`."
 
 include("utils.jl")
 include("scratch.jl")

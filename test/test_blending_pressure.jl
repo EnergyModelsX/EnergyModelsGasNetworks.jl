@@ -196,7 +196,7 @@ end
 @testset "Basic case - approximation" begin
     pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[4].data))
     blend_data = first(filter(data -> data isa BlendLinkData, ℒ[4].data))
-    pwa = EMP.get_pwa(pressure_data, blend_data, mip_optimizer)
+    pwa = EMGN.get_pwa(pressure_data, blend_data, mip_optimizer)
 
     pin = value(m[:link_potential_in][ℒ[4], first(collect(𝒯)), Blend])
     pout = value(m[:link_potential_out][ℒ[4], first(collect(𝒯)), Blend])
@@ -222,13 +222,13 @@ end
 
     # Test the propagation of quality constraints towards link_in of hydrogen
     n = 𝒩[5]
-    blend_data = EnergyModelsPooling.get_blenddata(n)
+    blend_data = EMGN.get_blenddata(n)
     data = first(blend_data)
     t = first(collect(𝒯))
     source_h2 = 𝒩[1]
     @test (
-              EnergyModelsPooling.get_source_prop(source_h2, H2) -
-              EnergyModelsPooling.get_max_proportion(data, H2)
+              EMGN.get_source_prop(source_h2, H2) -
+              EMGN.get_max_proportion(data, H2)
           ) * value.(m[:proportion_source][𝒩[4], source_h2, t]) *
           m[:link_in][ℒ[4], t, Blend] == 0 # the quality of H2 reaching node_5 should be 0
     @test value(m[:link_in][ℒ[1], t, H2]) ==
@@ -261,7 +261,7 @@ end
 @testset "0.1% H2 case - approximation" begin
     pressure_data = first(filter(data -> data isa PressureLinkData, ℒ[4].data))
     blend_data = first(filter(data -> data isa BlendLinkData, ℒ[4].data))
-    pwa = EMP.get_pwa(pressure_data, blend_data, mip_optimizer)
+    pwa = EMGN.get_pwa(pressure_data, blend_data, mip_optimizer)
 
     pin = value(m[:link_potential_in][ℒ[4], first(collect(𝒯)), Blend])
     pout = value(m[:link_potential_out][ℒ[4], first(collect(𝒯)), Blend])
