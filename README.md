@@ -1,4 +1,4 @@
-# EnergyModelsPooling
+# EnergyModelsGasNetworks
 
 
 
@@ -15,14 +15,14 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://gitlab.sintef.no/shimmer/EnergyModelsPooling.git
+git remote add origin https://gitlab.sintef.no/shimmer/EnergyModelsGasNetworks.git
 git branch -M main
 git push -uf origin main
 ```
 
 ## Integrate with your tools
 
-- [ ] [Set up project integrations](https://gitlab.sintef.no/shimmer/EnergyModelsPooling/-/settings/integrations)
+- [ ] [Set up project integrations](https://gitlab.sintef.no/shimmer/EnergyModelsGasNetworks/-/settings/integrations)
 
 ## Collaborate with your team
 

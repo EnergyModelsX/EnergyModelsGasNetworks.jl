@@ -1,10 +1,10 @@
 function generate_case_investments()
 
     # Create products
-    H2 = EnergyModelsPooling.ResourcePressure("H2", 0.0)
-    CH4 = EnergyModelsPooling.ResourcePressure("CH4", 0.0)
-    Blend = EnergyModelsPooling.ResourcePooling("Blend", [H2, CH4])
-    CO2 = EnergyModelsPooling.ResourceEmit("CO2", 1.0)
+    H2 = ResourcePressure("H2", 0.0)
+    CH4 = ResourcePressure("CH4", 0.0)
+    Blend = ResourcePooling("Blend", [H2, CH4])
+    CO2 = ResourceEmit("CO2", 1.0)
     products = [H2, CH4, Blend, CO2]
 
     # Create time structure
@@ -208,7 +208,7 @@ end
     set_optimizer_pwa!(mip_optimizer) # set optimizer for PWA approximations
     set_step_pressure!(10) # step pressure for the PWA approximations
     case, model = generate_case_investments()
-    m = EnergyModelsPooling.create_model(
+    m = create_model(
         case,
         model;
         check_timeprofiles = true,
