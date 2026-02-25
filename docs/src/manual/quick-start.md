@@ -23,8 +23,8 @@
 5. Install a suitable solver
     
     Some constraints defined in `EnergyModelsPooling` are nonlinear and nonconvex. 
-        - **Pooling constraints**. The pooling formuation introduces bilinear terms (non-convex quadratic), defining a nonconvex QCQP (and, if integer variables are present, a nonconvex MINLP). 
-        - **Pressure-flow constraints for blended gases**. The pressure-flow relation for blended gases is also nonlinear and nonconvex (adapted Weymouth equation for blended gases). However, within the physically operating region (i.e., inlet pressure >= outlet pressure, nonngative flows and bounded pressures), the relation is smooth and monotonic. To obtain a MILP, we approximate the nonlinear surface using a piecewise-affine outer approximation built from tangent planes via [`PiecewiseAffineApprox`](https://sintefore.github.io/PiecewiseAffineApprox.jl/stable/). 
+        - **Pooling constraints**. The pooling formulation introduces bilinear terms (non-convex quadratic), defining a nonconvex QCQP (and, if integer variables are present, a nonconvex MINLP). 
+        - **Pressure-flow constraints for blended gases**. The pressure-flow relation for blended gases is also nonlinear and nonconvex (adapted Weymouth equation for blended gases). However, within the physically operating region (i.e., inlet pressure >= outlet pressure, nonnegative flows and bounded pressures), the relation is smooth and monotonic. To obtain a MILP, we approximate the nonlinear surface using a piecewise-affine outer approximation built from tangent planes via [`PiecewiseAffineApprox`](https://sintefore.github.io/PiecewiseAffineApprox.jl/stable/). 
     Consequently, when pooling and/or pressure-flow constraints are enabled, you need a solver capable of handling nonconvex MINLP problems, such as [`Alpine`](https://github.com/lanl-ansi/Alpine.jl), which uses a MIP solver and a continous NLP solver internally.
 
     ```julia

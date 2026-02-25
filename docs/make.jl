@@ -24,13 +24,13 @@ bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"))
 
 Documenter.makedocs(
     sitename = "EnergyModelsPooling",
-    repo  ="https://gitlab.sintef.no/shimmer/EnergyModelsPooling",
+    # repo  ="https://gitlab.sintef.no/shimmer/EnergyModelsPooling",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
         edit_link = "main",
         assets = String[],
     ),
-    # modules = [EnergyModelsPooling],
+    modules = [EnergyModelsPooling],
     pages = [
         "Home" => "index.md",
         "Manual" => [
@@ -39,11 +39,17 @@ Documenter.makedocs(
             "Release notes" => "manual/NEWS.md",
         ],
         "Background" => ["background/background.md"],
-        "Library" => ["library/public.md"],
-        "Auxiliary Functions" => [
-            "Scratch" => "aux-fun/scratch.md"],
+        "Library" => [
+            "Public" => "library/public.md",
+            "Internal" => Any[
+                "Functions" => "library/internal/functions.md",
+            ]
+        ],
+        # "Auxiliary Functions" => [
+        #     "Scratch" => "aux-fun/scratch.md"],
     ],
     plugins = [links, bib],
+    remotes = nothing
 )
 
 # deploydocs(;

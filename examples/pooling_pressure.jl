@@ -4,7 +4,7 @@ Pkg.activate(joinpath(@__DIR__))
 using HiGHS, Alpine, Ipopt, Juniper, Xpress # TODO: Remove Xpress
 using JuMP
 using EnergyModelsBase
-Pkg.develop(path=joinpath(@__DIR__,".."));
+Pkg.develop(path=joinpath(@__DIR__, ".."));
 using EnergyModelsPooling
 using TimeStruct
 using PrettyTables
@@ -45,7 +45,7 @@ function generate_pooling_pressure_case()
             FixedProfile(10),   # Variable OPEX in €/(MSm3/d)
             FixedProfile(0),    # Fixed €/(MSm3/d)/a
             Dict(H2 => 1),      # Output from the node, in this case, H2
-            [FixedPressureData(FixedProfile(130))] # Fixed outlet pressure in bars
+            [FixPressureData(FixedProfile(130))] # Fixed outlet pressure in bars
         ),     
             
         RefSource(
@@ -54,7 +54,7 @@ function generate_pooling_pressure_case()
             FixedProfile(10),   # Variable OPEX in €/(MSm3/d)
             FixedProfile(0),    # Fixed €/(MSm3/d)/a
             Dict(CH4 => 1),    # Output from the node, in this case, CH4
-            [FixedPressureData(FixedProfile(130))] # Fixed outlet pressure in bars
+            [FixPressureData(FixedProfile(130))] # Fixed outlet pressure in bars
         ),
         RefSource(
             "source_ch4_2",     # Node 3 - CH4 source
@@ -62,7 +62,7 @@ function generate_pooling_pressure_case()
             FixedProfile(15),   # Variable OPEX in €/(MSm3/d)
             FixedProfile(0),    # Fixed €/(MSm3/d)/a
             Dict(CH4 => 1),    # Output from the node, in this case, CH4
-            [FixedPressureData(FixedProfile(130))] # Fixed outlet pressure in bars
+            [FixPressureData(FixedProfile(130))] # Fixed outlet pressure in bars
         ),
         RefSource(
             "source_h2_2",      # Node 4 - H2 source
@@ -70,7 +70,7 @@ function generate_pooling_pressure_case()
             FixedProfile(10),   # Variable OPEX in €/(MSm3/d)
             FixedProfile(0),    # Fixed €/(MSm3/d)/a
             Dict(H2 => 1),      # Output from the node, in this case, H2
-            [FixedPressureData(FixedProfile(130))] # Fixed outlet pressure in bars
+            [FixPressureData(FixedProfile(130))] # Fixed outlet pressure in bars
         ),
         PoolingNode(
             "pooling_1",                # Node 5 - Pooling node
@@ -98,7 +98,7 @@ function generate_pooling_pressure_case()
                     Gas,                        # `ResourcePooling`
                     Dict(H2=>0.07, CH4=>1.0),   # Maximum allowed pooling shares of the subresources of the `ResourcePooling` (volumetric %)
                     Dict(H2=>0.0, CH4=>0.0)),   # Minimum required pooling shares of the subresources of the `ResourcePooling` (volumetric %)
-                MinPressureData(130)            # Minimum required pressure in bars
+                MinPressureData(FixedProfile(130))            # Minimum required pressure in bars
             ]),
         RefSink(
             "sink_2",                           # Node 8 - Sink node
@@ -110,7 +110,7 @@ function generate_pooling_pressure_case()
                     Gas,                        # `ResourcePooling`
                     Dict(H2=>0.05, CH4=>1.0),   # Maximum allowed pooling shares of the subresources of the `ResourcePooling` (volumetric %)
                     Dict(H2=>0.0, CH4=>0.0)),    # Minimum required pooling shares of the subresources of the `ResourcePooling` (volumetric %)
-                MinPressureData(130) # Minimum required pressure in bars
+                MinPressureData(FixedProfile(130)) # Minimum required pressure in bars
             ]),
         SimpleCompressor(
             "compressor_1",         # Node 9 - Compressor node for source_h2_1
@@ -169,36 +169,42 @@ function generate_pooling_pressure_case()
             nodes[10], 
             nodes[5], 
             Linear(),
+            FixedProfile(200), 
             [PressureLinkData(0.24, 180, 130)]),
         CapDirect(
             "compressor_3_pool_1", 
             nodes[11], 
             nodes[5], 
             Linear(),
+            FixedProfile(200), 
             [PressureLinkData(0.24, 180, 130)]),
         CapDirect(
             "compressor_4_pool_2", 
             nodes[12], 
             nodes[6], 
             Linear(),
+            FixedProfile(200), 
             [PressureLinkData(0.24, 180, 130)]),
         CapDirect(
             "pool_1_pool_2", 
             nodes[5], 
             nodes[6], 
             Linear(),
+            FixedProfile(200), 
             [PressureLinkData(0.24, 180, 130)]),
         CapDirect(
             "pool_1_sink_2", 
             nodes[5],
             nodes[8], 
             Linear(), 
+            FixedProfile(200), 
             [PressureLinkData(0.24, 180, 130)]),
         CapDirect(
             "pool_2_sink_1", 
             nodes[6], 
             nodes[7], 
             Linear(), 
+            FixedProfile(200), 
             [PressureLinkData(0.24, 180, 130)]),
     ]
 
@@ -213,7 +219,7 @@ function generate_pooling_pressure_case()
 end
 
 # Generate the case and model data and run the model
-case, model = generate_single_pressure_case()
+case, model = generate_pooling_pressure_case()
 
 """
     define_optimizer(mip_solver)

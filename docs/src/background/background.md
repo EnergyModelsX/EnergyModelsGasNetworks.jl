@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = EnergyModelsPooling
+```
+
 # [Background](@id background-overview)
 
 This page sketches the two pillars of `EnergyModelsPooling`: gas transport based on flow-pressure relationship and quality-tracking pooling.
@@ -11,7 +15,7 @@ This page sketches the two pillars of `EnergyModelsPooling`: gas transport based
 ## Pooling and quality tracking
 
 - **Pooling formulation.** [`ResourcePooling`](@ref) stores a blended resource and its subresources. Subresources can be of type `ResourceCarrier` or `ResourcePressure`. The former activates only the pooling formulation, the latter the pooling formuation and flow-pressure constraints. The implementation follows the multi-commodity pooling model of [@alfaki_multi-commodity_2013] to propagate source contributions through the network.
-- **Quality limits.** [`BlendData`](@ref) subtypes specify maximum and minimum shares for each component at nodes or links. Quality is enforced at pooling nodes and sinks, and component proportions are tracked so they can be reused by the pressure formulation of blended gases.
+- **Quality limits.** [`RefBlendData`](@ref) (for nodes) and [`BlendLinkData`](@ref) (for links) subtypes specify maximum and minimum shares for each component at nodes or links. Quality is enforced at pooling nodes and sinks, and component proportions are tracked so they can be reused by the pressure formulation of blended gases.
 
 ## References
 ```@bibliography

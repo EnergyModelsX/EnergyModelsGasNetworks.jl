@@ -10,7 +10,7 @@ Abstract data attached to nodes or links to describe blend quality requirements 
 abstract type BlendData <: EMB.ExtensionData end
 
 """
-    Reference PressureData that can be applied to Nodes and Links
+Reference PressureData that can be applied to Nodes and Links
 """
 abstract type AbstractPressureData <: PressureData end
 

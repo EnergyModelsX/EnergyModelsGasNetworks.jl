@@ -1,9 +1,13 @@
+```@meta
+CurrentModule = EnergyModelsPooling
+```
+
 # EnergyModelsPooling
 
 `EnergyModelsPooling` extends [EnergyModelsX](https://github.com/EnergyModelsX) with pressure-aware gas transport and pool-quality tracking. It adds two tightly coupled capabilities on top of [`EnergyModelsBase`](https://energymodelsx.github.io/EnergyModelsBase.jl/):
 
-- **Flow–pressure coupling.** Nodes and links carry pressure potentials, enforce bounds via [`AbstractPressureData`](@ref), and approximate the Weymouth relation. Single-component gases use first-order Taylor cuts; blended gases use piecewise-affine planes from [PiecewiseAffineApprox](https://github.com/sintefore/PiecewiseAffineApprox.jl).
-- **Pooling and quality tracking.** Based on the multi-commodity formulation of [@alfaki_multi-commodity_2013], compositions are tracked through [`PoolingNode`](@ref) and sinks. Maximum/minimum component shares are set through [`BlendData`](@ref) subtypes.
+- **Flow–pressure coupling.** Nodes and links carry pressure potentials, enforce bounds via `AbstractPressureData` subtypes, namely [`FixPressureData`](@ref), [`MaxPressureData`](@ref) and [`MinPressureData`](@ref), and approximate the Weymouth relation. Data on how perform the approximation requires adding the data type [`PressureLinkData`](@ref) to the links, and, in the case of transporting [`ResourcePooling`](@ref) resources, also the data type [`RefBlendData`](@ref). Single-component gases use first-order Taylor cuts; blended gases use piecewise-affine planes from [PiecewiseAffineApprox](https://github.com/sintefore/PiecewiseAffineApprox.jl).
+- **Pooling and quality tracking.** Based on the multi-commodity formulation of [@alfaki_multi-commodity_2013], compositions are tracked through [`PoolingNode`](@ref) and `EMB.Sinks`. Maximum/minimum component shares in nodes are set through [`RefBlendData`](@ref).
 
 Use this package when you need pressure-feasible gas transport, hydrogen–methane blending, or compositional quality constraints within an `EnergyModelsX` optimisation.
 

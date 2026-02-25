@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = EnergyModelsPooling
+```
+
 # [Public Interface](@id lib-public)
 
 This page lists the main user-facing types and controls added by `EnergyModelsPooling`.
@@ -6,8 +10,8 @@ This page lists the main user-facing types and controls added by `EnergyModelsPo
 
 ```@docs
 set_step_pressure!
-get_step_pressure
 set_optimizer_pwa!
+delete_cache
 ```
 
 ## Resources and blends
