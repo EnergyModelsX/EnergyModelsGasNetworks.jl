@@ -2,12 +2,12 @@ using Documenter, DocumenterCitations, DocumenterInterLinks, DocumenterMermaid
 
 using TimeStruct
 using EnergyModelsBase
-using EnergyModelsPooling
+using EnergyModelsGasNetworks
 
 DocMeta.setdocmeta!(
-    EnergyModelsPooling,
+    EnergyModelsGasNetworks,
     :DocTestSetup,
-    :(using EnergyModelsPooling);
+    :(using EnergyModelsGasNetworks);
     recursive = true,
 )
 
@@ -23,14 +23,14 @@ links = InterLinks(
 bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"))
 
 Documenter.makedocs(
-    sitename = "EnergyModelsPooling",
-    # repo  ="https://gitlab.sintef.no/shimmer/EnergyModelsPooling",
+    sitename = "EnergyModelsGasNetworks",
+    repo  = "https://gitlab.sintef.no/shimmer/EnergyModelsGasNetworks",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
         edit_link = "main",
         assets = String[],
     ),
-    modules = [EnergyModelsPooling],
+    modules = [EnergyModelsGasNetworks],
     pages = [
         "Home" => "index.md",
         "Manual" => [
@@ -43,15 +43,16 @@ Documenter.makedocs(
             "Public" => "library/public.md",
             "Internal" => Any[
                 "Functions" => "library/internal/functions.md",
+                "Elements" => "library/internal/elements.md",
             ]
         ],
         # "Auxiliary Functions" => [
         #     "Scratch" => "aux-fun/scratch.md"],
     ],
     plugins = [links, bib],
-    remotes = nothing
+    # remotes = nothing
 )
 
 # deploydocs(;
-#     repo = "github.com/EnergyModelsX/EnergyModelsPooling.jl.git",
+#     repo = "github.com/EnergyModelsX/EnergyModelsGasNetworks.jl.git",
 # )

@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = EnergyModelsPooling
+CurrentModule = EnergyModelsGasNetworks
 ```
 
 # [Background](@id background-overview)
 
-This page sketches the two pillars of `EnergyModelsPooling`: gas transport based on flow-pressure relationship and quality-tracking pooling.
+This page sketches the two pillars of `EnergyModelsGasNetworks`: gas transport based on flow-pressure relationship and quality-tracking pooling.
 
 ## Flow–pressure coupling
 

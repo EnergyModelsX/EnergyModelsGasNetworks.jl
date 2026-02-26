@@ -1,5 +1,6 @@
 """
-    abstract type UnitsData <: EMB.ExtensionData end
+    abstract type UnitsData <: EMB.ExtensionData
+
 Abstract type for data used in conversion units (`UnitConversion`).
 """
 abstract type UnitsData <: EMB.ExtensionData end

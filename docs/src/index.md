@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = EnergyModelsPooling
+CurrentModule = EnergyModelsGasNetworks
 ```
 
-# EnergyModelsPooling
+# EnergyModelsGasNetworks
 
-`EnergyModelsPooling` extends [EnergyModelsX](https://github.com/EnergyModelsX) with pressure-aware gas transport and pool-quality tracking. It adds two tightly coupled capabilities on top of [`EnergyModelsBase`](https://energymodelsx.github.io/EnergyModelsBase.jl/):
+`EnergyModelsGasNetworks` extends [EnergyModelsX](https://github.com/EnergyModelsX) with pressure-aware gas transport and pool-quality tracking. It adds two tightly coupled capabilities on top of [`EnergyModelsBase`](https://energymodelsx.github.io/EnergyModelsBase.jl/):
 
 - **Flow–pressure coupling.** Nodes and links carry pressure potentials, enforce bounds via `AbstractPressureData` subtypes, namely [`FixPressureData`](@ref), [`MaxPressureData`](@ref) and [`MinPressureData`](@ref), and approximate the Weymouth relation. Data on how perform the approximation requires adding the data type [`PressureLinkData`](@ref) to the links, and, in the case of transporting [`ResourcePooling`](@ref) resources, also the data type [`RefBlendData`](@ref). Single-component gases use first-order Taylor cuts; blended gases use piecewise-affine planes from [PiecewiseAffineApprox](https://github.com/sintefore/PiecewiseAffineApprox.jl).
 - **Pooling and quality tracking.** Based on the multi-commodity formulation of [@alfaki_multi-commodity_2013], compositions are tracked through [`PoolingNode`](@ref) and `EMB.Sinks`. Maximum/minimum component shares in nodes are set through [`RefBlendData`](@ref).
@@ -48,4 +48,4 @@ Pages = [
 
 ## Project funding
 
-The development of `EnergyModelsPooling` was funded by the the European Union’s Clean Hydrogen Partnership in the project [SHIMMER](https://shimmerproject.eu/) under grant agreement [101111888](https://doi.org/10.3030/101111888).
+The development of `EnergyModelsGasNetworks` was funded by the the European Union’s Clean Hydrogen Partnership in the project [SHIMMER](https://shimmerproject.eu/) under grant agreement [101111888](https://doi.org/10.3030/101111888).

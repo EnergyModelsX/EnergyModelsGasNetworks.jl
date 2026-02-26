@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = EnergyModelsPooling
+CurrentModule = EnergyModelsGasNetworks
 ```
 
 # [Public Interface](@id lib-public)
 
-This page lists the main user-facing types and controls added by `EnergyModelsPooling`.
+This page lists the main user-facing types and controls added by `EnergyModelsGasNetworks`.
 
 ## Controls
 

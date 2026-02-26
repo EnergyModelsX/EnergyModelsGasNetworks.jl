@@ -1,6 +1,6 @@
 # [Examples](@id man-examples)
 
-Three examples are included within the repository (see the [examples](https://github.com/EnergyModelsX/EnergyModelsPooling.jl/tree/main/examples) folder):
+Three examples are included within the repository (see the [examples](https://github.com/EnergyModelsX/EnergyModelsGasNetworks.jl/tree/main/examples) folder):
 
 - **`single_pressure.jl`** – single-component gas transport with pressure bounds, compressors, and Weymouth approximations using Taylor approximations.
 - **`pooling.jl`** – hydrogen–methane blending with pooling constraints, component tracking, and quality limits at sinks.
@@ -9,8 +9,8 @@ Three examples are included within the repository (see the [examples](https://gi
 Run them from a REPL after adding the package:
 
 ```julia
-julia> using EnergyModelsPooling
-julia> exdir = joinpath(pkgdir(EnergyModelsPooling), "examples")
+julia> using EnergyModelsGasNetworks
+julia> exdir = joinpath(pkgdir(EnergyModelsGasNetworks), "examples")
 julia> include(joinpath(exdir, "pressure.jl"))
 julia> include(joinpath(exdir, "pooling.jl"))
 julia> include(joinpath(exdir, "pooling_pressure.jl"))

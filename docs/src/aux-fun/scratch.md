@@ -1,5 +1,5 @@
 ```@meta
-CurrentModule = EnergyModelsPooling
+CurrentModule = EnergyModelsGasNetworks
 ```
 
 # [Scratch](@id aux-scratch)
@@ -14,5 +14,5 @@ The file `src/scratch.jl` contains the following:
 - [`write_to_json`](@ref): Writes the `PiecewiseAffineApprox.PWAFunc` objects in a particular cached filename.
 - [`delete_cache`](@ref): Deletes all files in the cache directory. 
 
-All the functions are internally used by `EnergyModelsPooling`, except [`delete_cache`](@ref) which can be called directly by the user if necessary.
+All the functions are internally used by `EnergyModelsGasNetworks`, except [`delete_cache`](@ref) which can be called directly by the user if necessary.
 

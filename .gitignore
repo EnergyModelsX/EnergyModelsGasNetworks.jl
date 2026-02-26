@@ -8,3 +8,4 @@
 .vscode/settings.json
 *.sh
 issue.jl
+docs/build/
