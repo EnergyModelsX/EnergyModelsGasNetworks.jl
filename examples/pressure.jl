@@ -1,17 +1,17 @@
 using Pkg
-# Activate the local environment including EnergyModelsBase, EnergyModelsPooling, HiGHS, Alpine, Ipopt, JuMP
+# Activate the local environment including EnergyModelsBase, EnergyModelsGasNetworks, HiGHS, Alpine, Ipopt, JuMP
 Pkg.activate(joinpath(@__DIR__))
+Pkg.instantiate()
+
 using HiGHS
 using JuMP
 using EnergyModelsBase
-Pkg.develop(path=joinpath(@__DIR__,".."));
-using EnergyModelsPooling
+using EnergyModelsGasNetworks
 using TimeStruct
 using PrettyTables
-Pkg.instantiate()
 
 const EMB = EnergyModelsBase
-const EMP = EnergyModelsPooling
+const EMGN = EnergyModelsGasNetworks
 const TS = TimeStruct
 
 """
@@ -219,8 +219,8 @@ This allows for testing the tightness of the approximation.
 """
 function calculate_rhs_taylor(link_p_in, link_p_out, l)
     pressure_data = first(filter(data -> data isa PressureLinkData, l.data))
-    weymouth_ct = EMP.get_weymouth(pressure_data)
-    POut, PIn = EMP.potential_data(pressure_data)
+    weymouth_ct = EMGN.get_weymouth(pressure_data)
+    POut, PIn = EMGN.potential_data(pressure_data)
 
     # Determine the (p_in, p_out) points for the Taylor approximation
     pressures_points = [(PIn, p) for p ∈ range(PIn, POut, length = 150)[2:end]]
@@ -299,10 +299,10 @@ nodal_inlet_potentials, nodal_outlet_potentials, link_flows, link_rhs = process_
 
 @info(
     "Results for the single pressure test case:\n" *
-    "Compressors 2 and 3 are active increasing pressures from 130 to 189.78 bars" *
-    "This outlet pressure is not at its maximum due to the capacity constraint of 50 MSm3/d in the links between the compressors and the sink" *
-    "Only sources 2 and 3 deliver gas, as source 1 is more expensive than the reward in the sink for delivering gas." *
-    "The Taylor approximation is tight for the flow through the pipelines."
+    "Compressors 2 and 3 are active increasing pressures from 130 to 189.78 bars.\n" *
+    "This outlet pressure is not at its maximum due to the capacity constraint of 50 MSm3/d in the links between the compressors and the sink \n" *
+    "Only sources 2 and 3 deliver gas, as source 1 is more expensive than the reward in the sink for delivering gas. \n" *
+    "The Taylor approximation is tight for the flow through the pipelines. \n"
     )
 pretty_table(nodal_inlet_potentials)
 pretty_table(nodal_outlet_potentials)

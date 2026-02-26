@@ -1,17 +1,17 @@
 using Pkg
-# Activate the local environment including EnergyModelsBase, EnergyModelsPooling, HiGHS, Alpine, Ipopt, JuMP
+# Activate the local environment including EnergyModelsBase, EnergyModelsGasNetworks, HiGHS, Alpine, Ipopt, JuMP
 Pkg.activate(joinpath(@__DIR__))
-using HiGHS, Alpine, Ipopt, Juniper, Xpress # TODO: Remove Xpress
-using JuMP
-using EnergyModelsBase
-Pkg.develop(path=joinpath(@__DIR__,".."));
-using EnergyModelsPooling
-using TimeStruct
-using PrettyTables
 Pkg.instantiate()
 
+using HiGHS, Alpine, Ipopt, Juniper
+using JuMP
+using EnergyModelsBase
+using EnergyModelsGasNetworks
+using TimeStruct
+using PrettyTables
+
 const EMB = EnergyModelsBase
-const EMP = EnergyModelsPooling
+const EMGN = EnergyModelsGasNetworks
 const TS = TimeStruct
 
 """
@@ -158,7 +158,7 @@ function define_optimizer(mip_solver)
     return optimizer
 end
 
-optimizer = define_optimizer(optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => true))
+optimizer = define_optimizer(optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => true))
 m = create_model(case, model; check_timeprofiles = true)
 set_optimizer(m, optimizer)
 optimize!(m)
@@ -222,9 +222,6 @@ end
 
 link_flows, node_h2_proportions, node_ch4_proportions, gas_delivered = process_pooling_results(m, case)
 
-# @info(
-#     ""
-# )
 @info ("Delivered flow of Gas to the sinks")
 pretty_table(gas_delivered)
 @info("Flows through the links")

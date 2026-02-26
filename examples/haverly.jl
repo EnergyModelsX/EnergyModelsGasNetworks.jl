@@ -1,18 +1,18 @@
 using Pkg
 # Activate the local environment including EnergyModelsBase, EnergyModelsPooling, HiGHS, Alpine, Ipopt, JuMP
 Pkg.activate(joinpath(@__DIR__))
-using HiGHS, Alpine, Ipopt, Juniper, Xpress # TODO: Remove Xpress
+Pkg.instantiate()
+
+using HiGHS, Alpine, Ipopt, Juniper
 using JuMP
 using EnergyModelsBase
-Pkg.develop(path=joinpath(@__DIR__, ".."));
-using EnergyModelsPooling
+using EnergyModelsGasNetworks
 using TimeStruct
 using PrettyTables
 using PiecewiseAffineApprox
-Pkg.instantiate()
 
 const EMB = EnergyModelsBase
-const EMP = EnergyModelsPooling
+const EMGN = EnergyModelsGasNetworks
 const TS = TimeStruct
 
 """
@@ -238,8 +238,8 @@ function define_optimizer(mip_solver)
     return optimizer
 end
 
-optimizer = define_optimizer(optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => true))
-set_optimizer_pwa!(optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => true))
+optimizer = define_optimizer(optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => true))
+set_optimizer_pwa!(optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => true))
 m = create_model(case, model; check_timeprofiles = true)
 set_optimizer(m, optimizer)
 optimize!(m)
@@ -255,15 +255,15 @@ function process_pwa_results(m, link, prop, T, Blend)
     other_res, molmass_other = first(blend_data.other_res)
     track_molar_fraction = blend_data.track_molar_fraction[track_res]
 
-    weymouth = EMP.get_weymouth(pressure_data)
+    weymouth = EMGN.get_weymouth(pressure_data)
     # Normalise the weymouth constant
     weymouth_ct =
-        round(EMP.normalised_weymouth(blend_data, weymouth, track_molar_fraction), digits = 4)
+        round(EMGN.normalised_weymouth(blend_data, weymouth, track_molar_fraction), digits = 4)
         
     pin = value(m[:link_potential_in][link, first(collect(T)), Blend])
     pout = value(m[:link_potential_out][link, first(collect(T)), Blend])
         
-    z = EMP.calculate_flow_to_approximate.(
+    z = EMGN.calculate_flow_to_approximate.(
             weymouth_ct,
             pin,
             pout,
@@ -343,7 +343,7 @@ function process_haverly_results(m, case)
     ]
 
     # Check the PWA results for the link pool_1_sink_1 and pool_1_sink_2
-    optimizer = optimizer_with_attributes(Xpress.Optimizer, MOI.Silent() => true)
+    optimizer = optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => true)
     link_pool_1_sink_1 = first(filter(l -> l.id == "pool_1_sink_1", links))
     link_pool_1_sink_2 = first(filter(l -> l.id == "pool_1_sink_2", links))
     node = first(filter(n -> n.id == "pooling_1", nodes))
