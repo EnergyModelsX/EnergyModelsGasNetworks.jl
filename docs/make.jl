@@ -20,7 +20,7 @@ links = InterLinks(
     "EnergyModelsBase" => "https://energymodelsx.github.io/EnergyModelsBase.jl/stable/",
 )
 
-bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"))
+bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"); style=:authoryear)
 
 Documenter.makedocs(
     sitename = "EnergyModelsGasNetworks",
@@ -38,7 +38,10 @@ Documenter.makedocs(
             "Examples" => "manual/simple-example.md",
             "Release notes" => "manual/NEWS.md",
         ],
-        "Background" => ["background/background.md"],
+        "Background" => [
+            "Overview" => "background/overview.md",
+            "Theoretical Background" => "background/method.md",
+            ],
         "Library" => [
             "Public" => "library/public.md",
             "Internal" => Any[

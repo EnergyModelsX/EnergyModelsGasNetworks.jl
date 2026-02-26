@@ -9,4 +9,3 @@
 *.sh
 issue.jl
 docs/build/
-examples/pooling_pressure.jl

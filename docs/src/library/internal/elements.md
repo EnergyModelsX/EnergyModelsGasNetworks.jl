@@ -1,4 +1,4 @@
-# [Elements](@id lib-int-elem)
+# [Internal Elements](@id lib-int-elem)
 
 ## [Index](@id lib-int-elem-idx)
 
