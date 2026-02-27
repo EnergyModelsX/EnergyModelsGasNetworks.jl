@@ -1,5 +1,10 @@
 # EnergyModelsGasNetworks
 
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.06619/status.svg)](https://doi.org/10.21105/joss.06619)
+[![Build Status](https://github.com/EnergyModelsX/EnergyModelsGasNetworks.jl/workflows/CI/badge.svg)](https://github.com/EnergyModelsX/EnergyModelsGasNetworks.jl/actions?query=workflow%3ACI)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://energymodelsx.github.io/EnergyModelsGasNetworks.jl/stable/)
+[![In Development](https://img.shields.io/badge/docs-dev-blue.svg)](https://energymodelsx.github.io/EnergyModelsGasNetworks.jl/dev/)
+
 `EnergyModelsGasNetworks` extends the [`EnergyModelsX`](https://github.com/EnergyModelsX) ecosystem with pressure-feasible gas transport and pooling of blended gases (e.g. hydrogen–methane). It adds pressure potentials, Weymouth-based link constraints, and quality tracking to [`EnergyModelsBase`](https://energymodelsx.github.io/EnergyModelsBase.jl/).
 
 ## Features
