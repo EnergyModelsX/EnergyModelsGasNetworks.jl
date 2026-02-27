@@ -22,9 +22,9 @@ jobs:
           - version: '1'  # The latest point-release (Windows)
             os: windows-latest
             arch: x64
-          - version: 'lts' # Long term stable version (Linux)
-            os: ubuntu-latest
-            arch: x64
+          # - version: 'lts' # Long term stable version (Linux)
+          #   os: ubuntu-latest
+          #   arch: x64
           # - version: 'lts' # Long term stable version (Windows)
           #   os: windows-latest
           #   arch: x64
