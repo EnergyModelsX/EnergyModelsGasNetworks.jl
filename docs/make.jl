@@ -24,7 +24,7 @@ bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"); style=:a
 
 Documenter.makedocs(
     sitename = "EnergyModelsGasNetworks",
-    repo  = "https://gitlab.sintef.no/shimmer/EnergyModelsGasNetworks",
+    repo  = "https://github.com/EnergyModelsX/EnergyModelsGasNetworks.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
         edit_link = "main",
@@ -56,6 +56,6 @@ Documenter.makedocs(
     # remotes = nothing
 )
 
-# deploydocs(;
-#     repo = "github.com/EnergyModelsX/EnergyModelsGasNetworks.jl.git",
-# )
+deploydocs(;
+    repo = "github.com/EnergyModelsX/EnergyModelsGasNetworks.jl.git",
+)
