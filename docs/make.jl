@@ -20,11 +20,11 @@ links = InterLinks(
     "EnergyModelsBase" => "https://energymodelsx.github.io/EnergyModelsBase.jl/stable/",
 )
 
-bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"); style=:authoryear)
+bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"); style = :authoryear)
 
 Documenter.makedocs(
     sitename = "EnergyModelsGasNetworks",
-    repo  = "https://github.com/EnergyModelsX/EnergyModelsGasNetworks.jl",
+    repo = "https://github.com/EnergyModelsX/EnergyModelsGasNetworks.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
         edit_link = "main",
@@ -41,13 +41,13 @@ Documenter.makedocs(
         "Background" => [
             "Overview" => "background/overview.md",
             "Theoretical Background" => "background/method.md",
-            ],
+        ],
         "Library" => [
             "Public" => "library/public.md",
             "Internal" => Any[
-                "Functions" => "library/internal/functions.md",
-                "Elements" => "library/internal/elements.md",
-            ]
+                "Functions"=>"library/internal/functions.md",
+                "Elements"=>"library/internal/elements.md",
+            ],
         ],
         # "Auxiliary Functions" => [
         #     "Scratch" => "aux-fun/scratch.md"],
