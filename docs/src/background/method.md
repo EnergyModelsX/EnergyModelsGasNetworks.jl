@@ -18,7 +18,7 @@ We define a directed graph ``G = (N, A)``, where ``N`` is the set of nodes and `
 
 Let ``K`` denote the set of commodities. The parameter ``q^k_s`` represents the proportion of the commodity ``k`` injected from source ``s``. This parameter equals 1 if source ``s`` supplies commodity ``k`` and 0 otherwise. For each node ``n \in N \setminus S``, the parameters ``\overline{q}^k_n`` and ``\underline{q}^k_n`` define the maximum and minimum proportion bound, respectively. 
 
-The pooling problem extension in EMX will assign flow values that, in addition to the minimisation of the net present value, the quality bounds at terminals and pooling nodes are respected. The extension was defined to allow the definition of *generalised pooling problem*, allowing pool-to-pool and source-to-terminal connections. As such, qualities depend on recursive mixing and can lead to much harder nonconvex problems. 
+`EnergyModelsGasNetworks` assigns flow values that respect the quality bounds at terminals and pooling nodes. The extension was defined to allow the definition of *generalised pooling problem*, allowing pool-to-pool and source-to-terminal connections. As such, qualities depend on recursive mixing and can lead to much harder nonconvex problems. 
 
 The formulation implemented in `EnergyModelsGasNetworks` is based on the multi-commodity flow formulation in [alfaki_multi-commodity_2013](@cite). In this formulation, we track source contributions through the network using the variable ``y^s_i``, interpreted as the fraction of flow at node ``i`` that originates from source ``s``.
 
@@ -50,7 +50,7 @@ Other constraints considered are the nodal flow balance and capacity limits at n
 
 Whereas pooling focuses on composition tracking, the flow–pressure problem focuses on the physics that determines which flows are feasible given pressure bounds and pipeline characteristics. For blended gases, the pressure–flow relationship depends on composition, so the composition variables from pooling feed directly into the parameters used in the flow-pressure constraints.
 
-One main consideration when modelling steady-state network optimisation models is to capture the relationship between the pipeline flows and the pressure drop. The three fundamental flow equations (i.e., mass conservation, momentum conservation and equation of state) form a system of nonlinear partial differential equations which are too complex to be included in optimisation models. To tackle this limitation, EMX captures flow-pressure relationship using the Weymouth equation, which simplifies the laws and assumes a steady-state system. The **Weymouth equation** is expressed as:
+One main consideration when modelling gas network optimisation models is to capture the relationship between the pipeline flows and the pressure drop. The three fundamental flow equations (i.e., mass conservation, momentum conservation and equation of state) form a system of nonlinear partial differential equations which are too complex to be included in optimisation models. To tackle this limitation, EMX captures flow-pressure relationship using the Weymouth equation, which simplifies the laws and assumes a steady-state system. The **Weymouth equation** is expressed as:
 
 ``    
 Q^2 = W (p_{in}^{2} - p_{out}^2)
@@ -62,9 +62,7 @@ where ``W`` is the Weymouth constant:
 W = \frac{D^5}{KTfLzg}
 ``
 
-``Q`` is the flow through the pipeline, ``p_{in}`` and ``p_{out}`` are the pressures at the begining and end of the pipe, ``D`` and ``L`` are the inside diameter and length of the pipe, ``K`` is a global constant, ``T`` is the gas temperature, ``f`` is the Darcy-Weisbach friction factor in the pipeline, while the ``z`` and ``g`` are the compressibility and specific gravity of the gas. 
-
-The compressibility and specific gravity parameters in the Weymouth constant depend on the gas composition, while the rest of the parameters are pipe specific.
+``Q`` is the flow through the pipeline, ``p_{in}`` and ``p_{out}`` are the pressures at the beginning and end of the pipe, ``D`` and ``L`` are the inside diameter and length of the pipe, ``K`` is a global constant, ``T`` is the gas temperature, ``f`` is the Darcy-Weisbach friction factor in the pipeline, while the ``z`` and ``g`` are the compressibility and specific gravity of the gas. The compressibility and specific gravity parameters in the Weymouth constant depend on the gas composition, while the rest of the parameters are pipe specific.
 
 In pipes transporting single gases, like pure methane, the Weymouth equation is linearised using the first-order Taylor approximation (Rømo et al. 2009). The outer approximation of Eq.\ref{eq:Weymouth} used in EMX is as follows:
 

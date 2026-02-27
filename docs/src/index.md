@@ -34,6 +34,8 @@ Depth = 1
 ## Additional Info
 `EnergyModelsGasNetworks` integrates the package [Scratch.jl](https://github.com/JuliaPackaging/Scratch.jl), which enables storing mutable containers of data. Specifically, it is applied to managing temporary storage of the piecewise-affine approximation data. In this way, the optimization used for finding the corresponding planes does not need to be performed again if the same conditions (i.e., Weymouth constants, maximum inlet pressure, minimum outlet pressure, pressure steps) are inputs for a link.
 
+Additionally, the formulation of the method proposed was validated using the open-source simulation model [SHIMMER++](https://github.com/shimmerhydrogen/shimmer.git) in collaboration with Politecnico di Torino.
+
 ## Project funding
 
 The development of `EnergyModelsGasNetworks` was funded by the the European Union’s Clean Hydrogen Partnership in the project [SHIMMER](https://shimmerproject.eu/) under grant agreement [101111888](https://doi.org/10.3030/101111888).
