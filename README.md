@@ -1,6 +1,6 @@
 # EnergyModelsGasNetworks
 
-`EnergyModelsPooling` extends the [`EnergyModelsX`](https://github.com/EnergyModelsX) ecosystem with pressure-feasible gas transport and pooling of blended gases (e.g. hydrogen–methane). It adds pressure potentials, Weymouth-based link constraints, and quality tracking to [`EnergyModelsBase`](https://energymodelsx.github.io/EnergyModelsBase.jl/).
+`EnergyModelsGasNetworks` extends the [`EnergyModelsX`](https://github.com/EnergyModelsX) ecosystem with pressure-feasible gas transport and pooling of blended gases (e.g. hydrogen–methane). It adds pressure potentials, Weymouth-based link constraints, and quality tracking to [`EnergyModelsBase`](https://energymodelsx.github.io/EnergyModelsBase.jl/).
 
 ## Features
 
@@ -12,7 +12,7 @@
 ## Installation
 
 ```julia
-] add TimeStruct EnergyModelsBase EnergyModelsPooling
+] add EnergyModelsGasNetworks
 ```
 
 Choose a solver stack appropriate to your use case:
@@ -26,8 +26,8 @@ See the [Quick Start](docs/src/manual/quick-start.md) for step-by-step instructi
 Run the bundled examples from a REPL:
 
 ```julia
-julia> using EnergyModelsPooling
-julia> exdir = joinpath(pkgdir(EnergyModelsPooling), "examples")
+julia> using EnergyModelsGasNetworks
+julia> exdir = joinpath(pkgdir(EnergyModelsGasNetworks), "examples")
 julia> include(joinpath(exdir, "single_pressure.jl"))   # pressure drop with Taylor cuts
 julia> include(joinpath(exdir, "pooling.jl"))           # hydrogen–methane blending
 ```
