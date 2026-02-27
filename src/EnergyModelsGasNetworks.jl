@@ -13,11 +13,26 @@ using JSON3
 
 ### PARAMETERS
 const _STEP_PRESSURE = Ref(10) # Pressure step for PWA approximation
+
+"""
+    get_step_pressure()
+
+Return the current pressure step (in the same units as the inputs, e.g. bars) used when building piecewise-affine approximations of the Weymouth relation.
+"""
 get_step_pressure() = _STEP_PRESSURE[]
+
+"""
+    set_step_pressure!(step_pressure)
+
+Set the spacing of the pressures used to generate piecewise-affine Weymouth cuts for blended gases.
+Default is 10 (e.g., bars).
+"""
 set_step_pressure!(step_pressure) = (_STEP_PRESSURE[] = step_pressure)
 
 const _OPT = Ref{Any}(nothing)
 """
+    set_optimizer_pwa!(opt)
+
 Set the optimizer used by EnergyModelsPooling for PWA approximations.
 """
 set_optimizer_pwa!(opt) = (_OPT[] = opt)
@@ -47,7 +62,7 @@ include("data_functions.jl")
 include("model.jl")
 include("checks.jl")
 
-export set_optimizer_pwa!, set_step_pressure!
+export set_optimizer_pwa!, set_step_pressure!, delete_cache
 export SimpleCompressor, PoolingNode, CapDirect
 export ResourcePressure, ResourceComponentPotential, ResourceComponent, ResourcePooling
 export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData

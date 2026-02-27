@@ -1,14 +1,16 @@
 """
-    PressureData to apply to Nodes and Links in a gas network.
-    For Source, Availability and SimpleCompressor nodes, the pressure chosen applies to the outlet potential.
-    For Sink nodes, the pressure chosen applies to the inlet potential.
+Pressure-related extension data applied to nodes and links.
+For sources, availability nodes, and compressors the pressure applies to the outlet potential; for sinks it applies to the inlet.
 """
 abstract type PressureData <: EMB.ExtensionData end
 
+"""
+Abstract data attached to nodes or links to describe blend quality requirements or tracking parameters.
+"""
 abstract type BlendData <: EMB.ExtensionData end
 
 """
-    Reference PressureData that can be applied to Nodes and Links
+Reference PressureData that can be applied to Nodes and Links
 """
 abstract type AbstractPressureData <: PressureData end
 
@@ -20,7 +22,7 @@ abstract type AbstractLinkPressureData <: PressureData end
 """
     FixPressureData
 
-    Used to define a fixed pressure in Nodes or Links
+Set a fixed pressure in nodes or links.
 """
 struct FixPressureData <: AbstractPressureData
     pressure::TimeProfile
@@ -29,7 +31,7 @@ end
 """
     MaxPressureData
 
-    Used to define a fixed maximum pressure in Nodes or Links
+Set a maximum pressure in nodes or links.
 """
 struct MaxPressureData <: AbstractPressureData
     pressure::TimeProfile
@@ -38,7 +40,7 @@ end
 """
     MinPressureData
 
-    Used to define a fixed minimum pressure in Nodes or Links
+Set a minimum pressure in nodes or links.
 """
 struct MinPressureData <: AbstractPressureData
     pressure::TimeProfile
@@ -143,11 +145,10 @@ function res_blendata(blend_data::BlendData)
 end
 
 """
-    function get_pwa(data_pressure::PressureLinkData, data_blend::BlendData; resolution_prop=0.01)
-    function get_pwa(l::EMB.Link; resolution_prop=0.01)
+    function get_pwa(data_pressure::PressureLinkData, data_blend::BlendData, optimizer; resolution_prop=0.01)
+    function get_pwa(l::EMB.Link, optimizer; resolution_prop=0.01)
 
 Generates/retrieves the PWA functions for a link with blending and pressure data to calculate the Weymouth equation with blending.
-# TODO: Improve calling the optimizer. For the moment, it is a parameter included when 
 """
 function get_pwa(
     data_pressure::PressureLinkData,

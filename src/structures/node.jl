@@ -9,7 +9,7 @@ abstract type Compressor <: EMB.NetworkNode end
 """
     SimpleCompressor <: Compressor
 
-Type of Compressor that allows pressure increase (:potential_Δ) and whose operation is penalised through the energy resource consumption proportional to its :cap_use.
+Compressor that adds a pressure increase (`potential_Δ`) and pays variable cost through an energy input proportional to `cap_use`.
 
 # Fields
 - **`id::Any`** is the name/identifier of the link.
@@ -79,8 +79,9 @@ function PoolingNode(
 end
 
 """
-    abstract type UnitConversion <: NetworkNode end
-New abstract type of NetworkNode that allows to convert flow units to other units.
+abstract type UnitConversion <: NetworkNode end
+
+Abstract node used to convert flow units (e.g. volumetric to energy) without capacity or cost.
 """
 abstract type UnitConversion <: EMB.NetworkNode end
 

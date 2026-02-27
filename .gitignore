@@ -2,10 +2,10 @@
 /extra/
 *Manifest.toml
 *.txt
-/docs/
 *.DS_Store
 *.log
 .vscode
 .vscode/settings.json
 *.sh
 issue.jl
+docs/build/
