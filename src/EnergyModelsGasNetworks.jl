@@ -33,14 +33,14 @@ const _OPT = Ref{Any}(nothing)
 """
     set_optimizer_pwa!(opt)
 
-Set the optimizer used by EnergyModelsPooling for PWA approximations.
+Set the optimizer used by EnergyModelsGasNetworks for PWA approximations.
 """
 set_optimizer_pwa!(opt) = (_OPT[] = opt)
 "Get optimizer; error if not set."
 function _get_optimizer()
     opt = _OPT[]
     opt === nothing && error(
-        "EnergyModelsPooling: optimizer not set. Call EMGN.set_optimizer_pwa!(opt) before declaring the model.",
+        "EnergyModelsGasNetworks: optimizer not set. Call EMGN.set_optimizer_pwa!(opt) before declaring the model.",
     )
     return opt
 end
