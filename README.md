@@ -33,15 +33,15 @@ Run the bundled examples from a REPL:
 ```julia
 julia> using EnergyModelsGasNetworks
 julia> exdir = joinpath(pkgdir(EnergyModelsGasNetworks), "examples")
-julia> include(joinpath(exdir, "single_pressure.jl"))   # pressure drop with Taylor cuts
-julia> include(joinpath(exdir, "pooling.jl"))           # hydrogen–methane blending
+julia> include(joinpath(exdir, "pressure.jl"))   # pressure drop with Taylor cuts
+julia> include(joinpath(exdir, "pooling.jl"))    # hydrogen–methane blending
 ```
 
 Each script builds a case, sets an optimiser, solves, and prints key flows/pressures or proportions using `PrettyTables`.
 
 ## Documentation
 
-Full docs live under `docs/` and cover installation, examples, background, and the public API.
+[The full documentation](https://energymodelsx.github.io/EnergyModelsGasNetworks.jl/stable/) covers installation, examples, background, and the public API.
 
 ## Funding
 
