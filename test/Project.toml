@@ -15,7 +15,7 @@ Xpress_jll = "308bddfa-7f95-4fa6-a557-f2c7addc1869"
 
 
 [compat]
-Alpine = "0.5.7"
+Alpine = "0.5.8"
 JuMP = "1.28.0"
 PiecewiseAffineApprox = "0.6.4"
 TimeStruct = "0.9.5"

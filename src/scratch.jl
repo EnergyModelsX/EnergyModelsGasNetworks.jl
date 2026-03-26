@@ -12,14 +12,14 @@ get_input_fn(x, y) = joinpath(@get_scratch!("curve_cache"), string(hash((x, y)),
 
 Reads the `PiecewiseAffineApprox.PWAFunc` objects from a JSON file `fn`.
 """
-read_from_json(fn) = JSON3.read(fn, PiecewiseAffineApprox.PWAFunc)
+read_from_json(fn) = JSON.parsefile(fn, PiecewiseAffineApprox.PWAFunc)
 
 """
     write_to_json(fn, pwa)
 
 Writes the `PiecewiseAffineApprox.PWAFunc` object `pwa` to a JSON file `fn`.
 """
-write_to_json(fn, pwa) = JSON3.write(fn, pwa)
+write_to_json(fn, pwa) = JSON.json(fn, pwa)
 
 """
     delete_cache()
