@@ -9,7 +9,7 @@ using PiecewiseAffineApprox
 using LinearAlgebra
 
 using Scratch
-using JSON3
+using JSON
 
 ### PARAMETERS
 const _STEP_PRESSURE = Ref(10) # Pressure step for PWA approximation
