@@ -18,7 +18,7 @@ TimeStruct = "f9ed5ce0-9f41-4eaa-96da-f38ab8df101c"
 
 [compat]
 Documenter = "1.17.0"
-EnergyModelsBase = "0.9.5"
+EnergyModelsBase = "0.10"
 JSON = "1.4.0"
 JuMP = "1.28.0"
 LinearAlgebra = "1.10"

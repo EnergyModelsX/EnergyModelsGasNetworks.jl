@@ -3,6 +3,10 @@
 
 Tracks all nodes associated with a given node `n` through the links in `ℒ`. We refer to associated
 to all the nodes that lead to `n` following the direction of the links.
+
+Links with a negative integer `id` are treated as reverse CapDirect links (bidirectional models
+use `id = -(forward_id)` for reverse directions) and are skipped during traversal so that
+upstream source sets remain directionally correct.
 """
 function nodes_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link})
     visited = Vector{EMB.Node}()
@@ -16,8 +20,9 @@ function nodes_upstream_of(n::EMB.Node, ℒ::Vector{<:EMB.Link})
         # Add it as visited
         push!(visited, current_area)
 
-        # Extract links into `n`
-        ℒᵗᵒ = filter(x -> x.to == current_area, ℒ)
+        # Extract links into `n`, skipping reverse CapDirect links (negative integer IDs)
+        # to prevent bidirectional traversal from polluting upstream source sets.
+        ℒᵗᵒ = filter(x -> x.to == current_area && !(x.id isa Integer && x.id < 0), ℒ)
 
         for l ∈ ℒᵗᵒ
             # Get node at the other end of the link

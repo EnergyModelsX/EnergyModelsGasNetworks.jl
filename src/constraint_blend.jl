@@ -33,6 +33,8 @@ function constraints_proportion(
             𝒮 = sources_upstream_of(n, ℒ, sub_res)
 
             # The flow proportion of each source in `n` evolves as it moves through the network.
+           
+            if length(ℒᵗᵒ) > 0
             @constraint(m, [t ∈ 𝒯, s ∈ 𝒮],
                 sum(
                     m[:proportion_source][l.from, s, t] * sum(
@@ -46,11 +48,16 @@ function constraints_proportion(
                     p ∈ EMB.link_res(l) if (p ∈ sub_res) || (p == blend)
                 ) == 0
             )
+            end
 
-            # The sum of all source proportions of resources forming the blend at node n must equal 1
-            @constraint(m, [t ∈ 𝒯],
-                sum(m[:proportion_source][n, s, t] for s ∈ 𝒮) == 1.0
-            )
+            # The sum of all source proportions of resources forming the blend at node n must equal 1.
+            # Guard against empty source sets (e.g. unlabeled network entry nodes with no upstream
+            # sources), which would generate a degenerate 0 == 1 constraint.
+            if !isempty(𝒮)
+                @constraint(m, [t ∈ 𝒯],
+                    sum(m[:proportion_source][n, s, t] for s ∈ 𝒮) == 1.0
+                )
+            end
         end
     end
 end
@@ -101,13 +108,20 @@ function constraints_quality(
                 ℒᵗᵒ,
             )
 
-            # Get associated sources to `n` whose outputs are sub_resources of blend
+            # Get associated sources to `n` whose outputs are sub_resources of blend.
+            # Only keep links whose upstream node has at least one tracked source; links from
+            # unlabeled network entry nodes (no labeled sources upstream) would otherwise
+            # produce empty sums that degenerate to trivial 0 <= 0 constraints.
             𝒮 = Dict(
                 l_to.from => filter(
                     s -> any(res -> res ∈ sub_res, EMB.outputs(s)),
                     sources_upstream_of(l_to.from, ℒ),
                 ) for l_to ∈ ℒᵗᵒ
             )
+            ℒᵗᵒ_tracked = filter(l_to -> !isempty(𝒮[l_to.from]), ℒᵗᵒ)
+
+            # Only add quality constraints when there are upstream sources with known proportions
+            isempty(ℒᵗᵒ_tracked) && continue
 
             # Set constraints for maximum quality of resources
             for p ∈ keys(𝒫ᵐᵃˣ)
@@ -116,8 +130,8 @@ function constraints_quality(
                         sum(
                             (get_source_prop(s, p) - get_max_proportion(data, p)) *
                             m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
-                            for l ∈ ℒᵗᵒ for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
-                        ) <= 0
+                            for l ∈ ℒᵗᵒ_tracked for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
+                        ) <= 0, base_name="max_quality_$p"
                     )
                 end
             end
@@ -129,8 +143,8 @@ function constraints_quality(
                         sum(
                             (get_source_prop(s, p) - get_min_proportion(data, p)) *
                             m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
-                            for l ∈ ℒᵗᵒ for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
-                        ) >= 0
+                            for l ∈ ℒᵗᵒ_tracked for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
+                        ) >= 0, base_name="min_quality_$p"
                     )
                 end
             end
@@ -230,6 +244,7 @@ function constraints_tracking(
             fix(m[:proportion_track][n, t, p], 1; force = true)
         end
         for t ∈ 𝒯, p ∈ setdiff(𝒫ʳ, 𝒫ⁿ)
+            # fix(m[:proportion_track][n, t, p], 0; force = true)
             fix(m[:proportion_track][n, t, p], 0; force = true)
         end
     end

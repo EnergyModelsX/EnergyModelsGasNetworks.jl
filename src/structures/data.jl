@@ -150,6 +150,34 @@ end
 
 Generates/retrieves the PWA functions for a link with blending and pressure data to calculate the Weymouth equation with blending.
 """
+
+"""
+    _clamp_pwa_intercepts(pwa::PWAFunc{Concave, D}) where {D}
+
+Return a copy of `pwa` with all plane intercepts clamped to `β ≤ 0`.
+
+For a concave PWA, the per-plane constraint added by `PiecewiseAffineApprox.constr` is:
+
+    z ≤ -dot(plane.α, x) - plane.β
+
+At `x = (0, 0, 0)` (link potentials forced to zero by `constraints_balance_pressure`
+when a reverse link is inactive): `z ≤ -plane.β`. With `z = 0` (no flow on the
+inactive link), this becomes `0 ≤ -plane.β`. If any plane has `plane.β > 0` due to
+extrapolation outside the fitting domain, this constraint is infeasible.
+
+Clamping sets `β_k ← min(0, β_k)` for each plane. This:
+- Makes `0 ≤ -β_k` always satisfiable (since `-β_k ≥ 0` after clamping).
+- Preserves the outer approximation: decreasing `β_k` increases `-β_k`, loosening the
+  upper bound and keeping `approx(x) ≥ f(x)` on the fitting domain.
+
+Called by `get_pwa` when `get_clamp_pwa_intercepts()` returns `true` (the default).
+Use [`set_clamp_pwa_intercepts!`](@ref) to control this behaviour.
+"""
+function _clamp_pwa_intercepts(pwa::PWAFunc{Concave, D}) where {D}
+    planes = [Plane(p.α, min(p.β, zero(p.β))) for p ∈ pwa.planes]
+    return PWAFunc{Concave, D}(planes)
+end
+
 function get_pwa(
     data_pressure::PressureLinkData,
     data_blend::BlendData,
@@ -186,18 +214,40 @@ function get_pwa(
             molmass_track,
         )
 
+    # Append zero-flow anchor points (p_in=0, p_out=0, alpha) for all alpha values.
+    # At these points f(0, 0, alpha) = sqrt(W * (0² - 0²) * g(alpha)) = 0 exactly.
+    # Including them in the fitting domain encourages each plane assigned one of these
+    # points (via the strict=:outer constraint in Cluster) to satisfy
+    # P_k(0, 0, alpha) = α_k[3]*alpha + β_k ≤ 0, reducing the risk of positive
+    # intercepts that cause infeasibility when inactive reverse links zero out
+    # potentials in bidirectional networks. The cache key incorporates the full
+    # augmented data, so old cached files (without anchors) are automatically
+    # bypassed by a different hash.
+    x_anchors = [(0.0, 0.0, Float64(a)) for a ∈ x3]
+    z_anchors  = zeros(Float64, length(x3))
+    points_all = vcat(collect(zip(X[:, 1], X[:, 2], X[:, 3])), x_anchors)
+    z_all      = vcat(z, z_anchors)
+
     # Generate/read the pwa
-    fn = get_input_fn([weymouth_ct, X[:, 1], X[:, 2], X[:, 3]], z)
+    fn = get_input_fn([weymouth_ct, first.(points_all), map(p -> p[2], points_all), last.(points_all)], z_all)
 
     if isfile(fn)
         pwa = read_from_json(fn)
     else
         pwa = approx(
-            FunctionEvaluations(collect(zip(X[:, 1], X[:, 2], X[:, 3])), z),
+            FunctionEvaluations(points_all, z_all),
             Concave(),
             Cluster(; optimizer, planes = 10, strict = :outer, metric = :l1))
 
         write_to_json(fn, pwa)
+    end
+
+    # Optionally clamp plane intercepts to β ≤ 0. Default: enabled.
+    # This is a safety guarantee for the case where some planes did not receive any
+    # anchor point in their Cluster partition during random fitting. See
+    # set_clamp_pwa_intercepts! and _clamp_pwa_intercepts for full documentation.
+    if get_clamp_pwa_intercepts()
+        pwa = _clamp_pwa_intercepts(pwa)
     end
 
     return pwa

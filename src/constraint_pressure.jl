@@ -270,11 +270,13 @@ function constraints_pressure_couple(
     # Get links from and to `n`
     ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
 
-    @constraint(m, [t ∈ 𝒯],
-        sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    if !isempty(ℒᵗᵒ)
+        @constraint(m, [t ∈ 𝒯],
+            sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    end
 
     @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
-        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
+        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t]) 
 
     # Outlet potential of `l` and Inlet Potential of `n`
     @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp ∈ 𝒫ⁿ_in if pp in inputs(l_to)]],
@@ -311,11 +313,13 @@ function constraints_pressure_couple(
     ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
     ℒᵗᵒ = filter(l -> inputs(l) != P, ℒᵗᵒ) # Filter out links whose resource is not relevant for pressure coupling
 
-    @constraint(m, [t ∈ 𝒯],
-        sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    if !isempty(ℒᵗᵒ)
+        @constraint(m, [t ∈ 𝒯],
+            sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    end
 
     @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
-        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
+        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t]) 
 
     # Outlet potential of `l` and Inlet Potential of `n`
     @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp ∈ 𝒫ⁿ_in if pp in inputs(l_to)]],
@@ -358,8 +362,10 @@ function constraints_pressure_couple(
     # Get links from and to `n`
     ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
 
-    @constraint(m, [t ∈ 𝒯],
-        sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    if !isempty(ℒᵗᵒ)
+        @constraint(m, [t ∈ 𝒯],
+            sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    end
 
     @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
         m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
@@ -396,12 +402,13 @@ function constraints_pressure_couple(
     # Get links from and to `n`
     _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
 
-    @constraint(m, [t ∈ 𝒯],
-        sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    if !isempty(ℒᵗᵒ)
+        @constraint(m, [t ∈ 𝒯],
+            sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    end
 
     @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
         m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
-
     # Outlet potential of `l` and Inlet Potential of `n`
     @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp ∈ 𝒫ⁿ if pp in inputs(l_to)]],
         m[:potential_in][n, t, p] <=
