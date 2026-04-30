@@ -57,6 +57,25 @@ function EMB.constraints_flow_in(
     )
 end
 
+"""
+    EMB.constraints_flow_in(m, n::TransitNode, 𝒯::TimeStructure, modeltype::EMB.EnergyModel)
+
+Same as `PoolingNode`: the sum of all input flows equals the used capacity of the node.
+`TransitNode` accepts mixed resource inputs (H2, CH4, Blend) and treats their total as
+the throughput, identical to `PoolingNode`.
+"""
+function EMB.constraints_flow_in(
+    m,
+    n::TransitNode,
+    𝒯::TimeStructure,
+    modeltype::EMB.EnergyModel,
+)
+    𝒫ⁱⁿ = EMB.inputs(n)
+    @constraint(m, [t ∈ 𝒯],
+        sum(m[:flow_in][n, t, p] for p ∈ 𝒫ⁱⁿ) == m[:cap_use][n, t]
+    )
+end
+
 function EMB.constraints_flow_in(m, n::Compressor, 𝒯::TimeStructure, modeltype::EnergyModel)
     # Declaration of the required subsets
     𝒫ⁱⁿ = EMB.inputs(n)

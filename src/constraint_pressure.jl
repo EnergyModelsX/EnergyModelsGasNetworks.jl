@@ -3,7 +3,7 @@
     constraints_balance_pressure(m, n::EMB.NetworkNode, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_balance_pressure(m, n::SimpleCompressor, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:ResourcePressure})
-    constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:ResourcePooling{ResourcePressure}})
+    constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:ResourcePooling{<:ResourcePressure}})
     constraints_balance_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
 
 Set internal balance pressures between `potential_in` and `potential_out` in Nodes `n` and Links `l``.
@@ -56,16 +56,25 @@ function constraints_balance_pressure(m, n::PoolingNode, 𝒯, 𝒫::Vector{<:Re
     𝒫ⁱⁿ = filter(p -> p ∈ EMB.inputs(n), 𝒫)
     𝒫ᵒᵘᵗ = EMB.outputs(n)
 
-    # Inlet Potential for each input resource should equal the outlet potential of the output (no drop or increase in potential)
+    # Inlet Potential for each input resource must be at least the outlet potential.
+    # Using >= (not ==) so composition-tracking resources only bound the output from above,
+    # without forcing it up to supply pressure when lower pipeline delivery pressures exist.
     @constraint(m, [t ∈ 𝒯, p_in ∈ 𝒫ⁱⁿ, p_out ∈ 𝒫ᵒᵘᵗ],
-        m[:potential_in][n, t, p_in] == m[:potential_out][n, t, p_out])
+        m[:potential_in][n, t, p_in] >= m[:potential_out][n, t, p_out])
 end
 function constraints_balance_pressure(
     m,
     n::PoolingNode,
     𝒯,
-    𝒫::Vector{<:ResourcePooling{ResourcePressure}},
-) end
+    𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
+)
+    𝒫ⁱⁿ  = filter(p -> p ∈ EMB.inputs(n),  𝒫)
+    𝒫ᵒᵘᵗ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
+    (isempty(𝒫ⁱⁿ) || isempty(𝒫ᵒᵘᵗ)) && return
+    # Output pressure cannot exceed the minimum incoming pipeline delivery pressure
+    @constraint(m, [t ∈ 𝒯, p_in ∈ 𝒫ⁱⁿ, p_out ∈ 𝒫ᵒᵘᵗ],
+        m[:potential_in][n, t, p_in] >= m[:potential_out][n, t, p_out])
+end
 function constraints_balance_pressure(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
 
     # Inlet Potential should be always higher or equal to Outlet Potential (direction)
@@ -232,6 +241,7 @@ end
     constraints_pressure_couple(m, n::EMB.Availability, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_pressure_couple(m, n::SimpleCompressor, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_pressure_couple(m, n::PoolingNode, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
+    constraints_pressure_couple(m, n::TransitNode, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
     constraints_pressure_couple(m, n::EMB.Sink, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
 
 Constraints setting the pressure balance between nodes and links.
@@ -425,11 +435,17 @@ function constraints_pressure_couple(m, n::EMB.AbstractElement, ℒ, 𝒯, 𝒫)
     constraints_flow_capacity(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource}) 
 
 Constraints setting the maximum flow through link `l` at time `t` whether it has flow or not.
+
+The big-M coefficient is taken from `EMB.capacity(l, t)` so that the physical capacity
+of the link acts as both the flow ceiling and the big-M that deactivates flow when
+`has_flow[l, t] = 0`.  For `CapDirect` links (including `Pipeline`) this is the
+`cap` time-profile value; for plain `Direct` links the default `EMB.capacity` fallback
+returns `1e6`.
 """
 function constraints_flow_capacity(m, l::EMB.Link, 𝒯, 𝒫::Vector{<:CompoundResource})
     @constraint(
         m, [t ∈ 𝒯, p ∈ 𝒫],
-        m[:link_in][l, t, p] <= 1e6 * m[:has_flow][l, t])
+        m[:link_in][l, t, p] <= EMB.capacity(l, t) * m[:has_flow][l, t])
 end
 
 """ 
@@ -523,7 +539,7 @@ function constraints_pwa(
             (
                 m[:link_potential_in][l, t, p_blend],
                 m[:link_potential_out][l, t, p_blend],
-                m[:proportion_track][n, t, p_track],
+                m[:proportion_out][n, t, p_track],
             ),
         )
     end
@@ -573,3 +589,82 @@ function constraints_bidirectional_pressure(m, l::EMB.Link, ℒ::Vector{<:EMB.Li
         m[:has_flow][ll, t] + m[:has_flow][l, t] <= 1)
 end
 function constraints_bidirectional_pressure(m, l::EMB.Direct, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫) end
+
+# --- TransitNode pressure coupling and balance ---
+# TransitNode is semantically a pass-through junction: no injection, no extraction.
+# The pressure coupling and balance constraints are identical to PoolingNode.
+
+"""
+    constraints_pressure_couple(m, n::TransitNode, ℒ, 𝒯, 𝒫::Vector{<:CompoundResource})
+
+Couple inlet/outlet potentials of links to the `potential_in`/`potential_out` of a
+`TransitNode`. Identical logic to `PoolingNode`: a `lower_pressure_into_node` binary
+variable selects the incoming link with the minimum outlet pressure, and that pressure
+is propagated to the node inlet.
+"""
+function constraints_pressure_couple(
+    m,
+    n::TransitNode,
+    ℒ::Vector{<:EMB.Link},
+    𝒯,
+    𝒫::Vector{<:CompoundResource},
+)
+    # Filter resources CompoundResource that are inputs and outputs of `n`
+    𝒫ⁿ_in = filter(p -> p ∈ EMB.inputs(n), 𝒫)
+    𝒫ⁿ_out = filter(p -> p ∈ EMB.outputs(n), 𝒫)
+
+    # Get links from and to `n`
+    ℒᶠʳᵒᵐ, ℒᵗᵒ = EMB.link_sub(ℒ, n)
+
+    if !isempty(ℒᵗᵒ)
+        @constraint(m, [t ∈ 𝒯],
+            sum(m[:lower_pressure_into_node][l_to, t] for l_to ∈ ℒᵗᵒ) == 1)
+    end
+
+    @constraint(m, [t ∈ 𝒯, l_to in ℒᵗᵒ],
+        m[:lower_pressure_into_node][l_to, t] <= m[:has_flow][l_to, t])
+
+    # Outlet potential of `l` and Inlet Potential of `n`
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp ∈ 𝒫ⁿ_in if pp in inputs(l_to)]],
+        m[:potential_in][n, t, p] <=
+        m[:link_potential_out][l_to, t, p] + 1e4 * (1 - m[:has_flow][l_to, t]))
+
+    @constraint(m, [l_to ∈ ℒᵗᵒ, t ∈ 𝒯, p ∈ [pp for pp ∈ 𝒫ⁿ_in if pp in inputs(l_to)]],
+        m[:potential_in][n, t, p] >=
+        m[:link_potential_out][l_to, t, p] -
+        1e4 * (1 - m[:lower_pressure_into_node][l_to, t]))
+
+    # Outlet potential of `n` and Inlet Potential of `l`
+    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ inputs(l_from), pp ∈ 𝒫ⁿ_out],
+        m[:link_potential_in][l_from, t, p] <=
+        m[:potential_out][n, t, pp] + 1e4 * (1 - m[:has_flow][l_from, t]))
+
+    @constraint(m, [l_from ∈ ℒᶠʳᵒᵐ, t ∈ 𝒯, p ∈ inputs(l_from), pp ∈ 𝒫ⁿ_out],
+        m[:link_potential_in][l_from, t, p] >=
+        m[:potential_out][n, t, pp] - 1e4 * (1 - m[:has_flow][l_from, t]))
+end
+
+# --- TransitNode pressure balance ---
+# Identical semantics to PoolingNode: all incoming resource potentials bound the output
+# from above (>=). This ensures that the corridor junction output pressure cannot exceed
+# the minimum of the incoming pipeline delivery pressure and composition-tracking potentials.
+
+function constraints_balance_pressure(m, n::TransitNode, 𝒯, 𝒫::Vector{<:ResourcePressure})
+    𝒫ⁱⁿ  = filter(p -> p ∈ EMB.inputs(n),  𝒫)
+    𝒫ᵒᵘᵗ = EMB.outputs(n)
+    @constraint(m, [t ∈ 𝒯, p_in ∈ 𝒫ⁱⁿ, p_out ∈ 𝒫ᵒᵘᵗ],
+        m[:potential_in][n, t, p_in] >= m[:potential_out][n, t, p_out])
+end
+
+function constraints_balance_pressure(
+    m,
+    n::TransitNode,
+    𝒯,
+    𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
+)
+    𝒫ⁱⁿ  = filter(p -> p ∈ EMB.inputs(n),  𝒫)
+    𝒫ᵒᵘᵗ = filter(p -> p ∈ EMB.outputs(n), 𝒫)
+    (isempty(𝒫ⁱⁿ) || isempty(𝒫ᵒᵘᵗ)) && return
+    @constraint(m, [t ∈ 𝒯, p_in ∈ 𝒫ⁱⁿ, p_out ∈ 𝒫ᵒᵘᵗ],
+        m[:potential_in][n, t, p_in] >= m[:potential_out][n, t, p_out])
+end

@@ -45,7 +45,7 @@ function resource_lhv(
         m,
         [t ∈ 𝒯],
         sum(
-            get_specific_energy_content(data, p) * m[:proportion_track][n, t, p] for
+            get_specific_energy_content(data, p) * m[:proportion_out][n, t, p] for
             p ∈ 𝒫ˡʰᵛ
         )
     )

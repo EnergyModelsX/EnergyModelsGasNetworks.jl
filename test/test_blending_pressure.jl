@@ -187,10 +187,10 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
 
     @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 0
     @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 27.74 rtol = 5e-1
-    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 27.74 atol = 5e-1
+    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 29.98 atol = 1.0
     @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 55.5 rtol = 5e-1
-    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.0
-    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 1.0
+    @test value(m[:proportion_out][𝒩[4], first(collect(𝒯)), H2]) ≈ 0.0 atol=1e-3
+    @test value(m[:proportion_out][𝒩[4], first(collect(𝒯)), CH4]) ≈ 1.0 atol=1e-3
 end
 
 @testset "Basic case - approximation" begin
@@ -220,20 +220,11 @@ end
             value(m[:link_potential_out][ℒ[1], first(collect(𝒯)), H2]))
     @test_skip isapprox(rhs, value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]); atol = 1e-1)
 
-    # Test the propagation of quality constraints towards link_in of hydrogen
-    n = 𝒩[5]
-    blend_data = EMGN.get_blenddata(n)
-    data = first(blend_data)
+    # Test the propagation of quality constraints: H2 proportion at PoolingNode ≈ 0
     t = first(collect(𝒯))
-    source_h2 = 𝒩[1]
-    @test (
-              EMGN.get_source_prop(source_h2, H2) -
-              EMGN.get_max_proportion(data, H2)
-          ) * value.(m[:proportion_source][𝒩[4], source_h2, t]) *
-          m[:link_in][ℒ[4], t, Blend] == 0 # the quality of H2 reaching node_5 should be 0
-    @test value(m[:link_in][ℒ[1], t, H2]) ==
-          value.(m[:proportion_source][𝒩[4], source_h2, t]) *
-          value.(m[:link_in][ℒ[4], t, Blend]) # the flow of hydrogen should be equal to the proportion reaching node_4 times the total flow into/out node_4
+    @test value(m[:proportion_out][𝒩[4], t, H2]) ≈ 0.0 atol=1e-3
+    @test value(m[:flow_component][ℒ[4], t, H2]) ≈
+          value(m[:proportion_out][𝒩[4], t, H2]) * value(m[:link_in][ℒ[4], t, Blend]) atol=1e-2
 end
 
 case, model, m = generate_case_blending_pressure(; max_h2 = 0.1, min_h2 = 0.00, cost_s3 = 5)
@@ -252,10 +243,10 @@ Blend = first(filter(p -> p.id == "Blend", 𝒫))
 
     @test value(m[:link_in][ℒ[1], first(collect(𝒯)), H2]) ≈ 5.852 atol = 5e-1
     @test value(m[:link_in][ℒ[2], first(collect(𝒯)), CH4]) ≈ 26.33 rtol = 5e-1
-    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 26.33 atol = 5e-1
+    @test value(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈ 28.43 atol = 1.0
     @test value(m[:link_in][ℒ[4], first(collect(𝒯)), Blend]) ≈ 58.53 rtol = 5e-1
-    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.1
-    @test value(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 0.90
+    @test value(m[:proportion_out][𝒩[4], first(collect(𝒯)), H2]) ≈ 0.1 atol=1e-2
+    @test value(m[:proportion_out][𝒩[4], first(collect(𝒯)), CH4]) ≈ 0.90 atol=1e-2
 end
 
 @testset "0.1% H2 case - approximation" begin

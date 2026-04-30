@@ -79,6 +79,60 @@ function PoolingNode(
 end
 
 """
+    TransitNode <: EMB.NetworkNode
+
+A corridor pass-through junction with no gas injection or extraction.
+
+`TransitNode` is the node analogue of a `Direct` link: just as a `Direct` link propagates
+pressure unchanged (no Weymouth loss), a `TransitNode` propagates blend proportions
+unchanged (no bilinear mixing terms). It is appropriate for interior pipeline junctions
+where the gas composition simply passes through without any blending.
+
+Unlike `PoolingNode`, which requires bilinear `proportion_source × link_in` constraints to
+track mixing from multiple sources, `TransitNode` uses a direct linear equality:
+    proportion_source[n, s, t] == proportion_source[upstream, s, t]
+
+This eliminates the main source of MINLP complexity at pure transit nodes and makes the
+sub-problem solvable by an LP/MIP solver without Alpine's bilinear relaxation.
+
+# When to use
+- Interior network junctions with no direct H₂/CH₄ source injection.
+- Corridor nodes where the incoming gas simply splits into multiple outgoing pipes.
+
+# Fields
+- **`id::Any`** is the name/identifier of the node.
+- **`cap::TimeProfile`** is the maximum throughput capacity.
+- **`opex_var::TimeProfile`** is the variable operational expenditure.
+- **`opex_fixed::TimeProfile`** is the fixed operational expenditure.
+- **`input::Dict{<:Resource,<:Real}`** is the dict of input resources. Typically
+  `Dict(H2 => 1, CH4 => 1, Blend => 1)` where H2 and CH4 come from composition-tracking
+  `Direct` links and Blend comes from the upstream pipeline.
+- **`output::Dict{<:Resource,<:Real}`** is the dict of output resources. Typically
+  `Dict(Blend => 1)`.
+- **`data::Vector{<:Data}`** is the vector of `Data`. Can include pressure bounds
+  (`MaxPressureData`, `MinPressureData`, `FixPressureData`).
+"""
+struct TransitNode <: EMB.NetworkNode
+    id::Any
+    cap::TimeProfile
+    opex_var::TimeProfile
+    opex_fixed::TimeProfile
+    input::Dict{<:Resource,<:Real}
+    output::Dict{<:Resource,<:Real}
+    data::Vector{<:Data}
+end
+function TransitNode(
+    id,
+    cap::TimeProfile,
+    opex_var::TimeProfile,
+    opex_fixed::TimeProfile,
+    input::Dict{<:Resource,<:Real},
+    output::Dict{<:Resource,<:Real},
+)
+    return TransitNode(id, cap, opex_var, opex_fixed, input, output, Data[])
+end
+
+"""
 abstract type UnitConversion <: NetworkNode end
 
 Abstract node used to convert flow units (e.g. volumetric to energy) without capacity or cost.

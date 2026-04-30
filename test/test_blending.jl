@@ -117,14 +117,19 @@ Gas = first(filter(p -> p.id == "Gas", 𝒫))
           value.(m[:link_in][ℒ[3], first(collect(𝒯)), CH4]) ≈
           value.(m[:link_out][ℒ[4], first(collect(𝒯)), Gas])
 
-    @test value.(m[:proportion_source][𝒩[5], 𝒩[1], first(collect(𝒯))]) ≈ 0.05
-    @test value.(m[:proportion_track][𝒩[3], first(collect(𝒯)), H2]) ≈ 0.0
-    @test value.(m[:proportion_track][𝒩[4], first(collect(𝒯)), H2]) ≈ 0.05
-    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), H2]) ≈ 0.05
+    # The PoolingNode (𝒩[4]) mixes H2 + CH4 from three sources.
+    # H2 source (𝒩[1]) injects 42.105 units. Total blend ≈ 842.1.
+    # proportion_out[poolingnode, t, H2] should be ≈ 42.105 / 842.105 ≈ 0.05
+    t1 = first(collect(𝒯))
+    pooling_node = 𝒩[4]
+    blend_link   = ℒ[4]  # PoolingNode → Sink
 
-    @test value.(m[:proportion_source][𝒩[5], 𝒩[3], first(collect(𝒯))]) ≈
-          600/(600+42.105+200) atol=1e-2
-    @test value.(m[:proportion_source][𝒩[5], 𝒩[2], first(collect(𝒯))]) ≈
-          200/(600+42.105+200) atol=1e-2
-    @test value.(m[:proportion_track][𝒩[5], first(collect(𝒯)), CH4]) ≈ 0.95
+    @test value.(m[:proportion_out][pooling_node, t1, H2]) ≈ 0.05 atol=1e-2
+    @test value.(m[:proportion_out][pooling_node, t1, CH4]) ≈ 0.95 atol=1e-2
+
+    # flow_component on the blend output link should match total × proportion
+    @test value.(m[:flow_component][blend_link, t1, H2]) ≈
+          0.05 * value.(m[:link_in][blend_link, t1, Gas]) atol=1e-2
+    @test value.(m[:flow_component][blend_link, t1, CH4]) ≈
+          0.95 * value.(m[:link_in][blend_link, t1, Gas]) atol=1e-2
 end

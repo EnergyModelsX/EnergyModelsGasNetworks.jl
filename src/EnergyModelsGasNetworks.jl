@@ -137,7 +137,7 @@ include("checks.jl")
 
 export set_optimizer_pwa!, set_step_pressure!, delete_cache
 export get_clamp_pwa_intercepts, set_clamp_pwa_intercepts!
-export SimpleCompressor, PoolingNode, CapDirect
+export SimpleCompressor, PoolingNode, TransitNode, CapDirect
 export ResourcePressure, ResourceComponentPotential, ResourceComponent, ResourcePooling
 export FixPressureData, MaxPressureData, MinPressureData, PressureLinkData
 export RefBlendData, BlendLinkData

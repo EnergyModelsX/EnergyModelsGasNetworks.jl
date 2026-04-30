@@ -1,251 +1,368 @@
 """
-    constraints_proportion(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourcePooling})
-    constraints_proportion(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{ResourcePooling})
+    constraints_component_blend(m, 𝒩, ℒ, 𝒯, 𝒫)
 
-Keeps track of the proportions of flows from sources at each node `n`. 
-`Source` nodes have their proportions fixed to 1 for their own resource and 0 for others.
+Entry point for the component-flow pooling formulation.
+
+Adds, in order:
+1. Linear link component balances (`link_in[blend] == Σ flow_component[p]`).
+2. Linear per-component node mass balances.
+3. Bilinear mixing / proportion constraints at `PoolingNode`s.
+4. Linear proportion passthrough at `TransitNode`s and generic passthrough nodes.
+5. Universal normalisation `Σ proportion_out[n,t,p] = 1` for TransitNode /
+   NetworkNode blend-passthrough nodes (PoolingNode already gets it from its
+   bilinear dispatch; Sink/Source get it transitively through passthrough).
+6. Linear quality bounds from `RefBlendData`.
 """
-function constraints_proportion(
-    m,
-    n::EMB.Source,
-    ℒ::Vector{<:EMB.Link},
-    𝒯,
-    𝒫::Vector{<:ResourcePooling},
-) end
-function constraints_proportion(
-    m,
-    n::EMB.Node,
-    ℒ::Vector{<:EMB.Link},
-    𝒯,
-    𝒫::Vector{<:ResourcePooling},
-)
-    for blend ∈ 𝒫
-        # Get the subresources for the blend
-        sub_res = subresources(blend)
-
-        # Check if the constraints for that blend applies to `n`
-        if any(res -> res ∈ EMB.inputs(n), sub_res) || blend ∈ EMB.inputs(n)
-
-            # Get links into `n` which transport any sub_resource or blend
-            ℒᵗᵒ = get_links_to_node_blend(n, ℒ, sub_res, blend)
-
-            # Get sources associated to `n` whose outputs are any subresource
-            𝒮 = sources_upstream_of(n, ℒ, sub_res)
-
-            # The flow proportion of each source in `n` evolves as it moves through the network.
-           
-            if length(ℒᵗᵒ) > 0
-            @constraint(m, [t ∈ 𝒯, s ∈ 𝒮],
-                sum(
-                    m[:proportion_source][l.from, s, t] * sum(
-                        m[:link_in][l, t, p] for
-                        p ∈ EMB.link_res(l) if (p ∈ sub_res) || (p == blend)
-                    ) for l ∈ ℒᵗᵒ
-                )
-                -
-                m[:proportion_source][n, s, t] * sum(
-                    m[:link_in][l, t, p] for l ∈ ℒᵗᵒ for
-                    p ∈ EMB.link_res(l) if (p ∈ sub_res) || (p == blend)
-                ) == 0
-            )
-            end
-
-            # The sum of all source proportions of resources forming the blend at node n must equal 1.
-            # Guard against empty source sets (e.g. unlabeled network entry nodes with no upstream
-            # sources), which would generate a degenerate 0 == 1 constraint.
-            if !isempty(𝒮)
-                @constraint(m, [t ∈ 𝒯],
-                    sum(m[:proportion_source][n, s, t] for s ∈ 𝒮) == 1.0
-                )
-            end
-        end
-    end
-end
-
-"""
-    constraints_quality(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
-    constraints_quality(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
-
-Defines the maximum and minimum quality constraints for a node n based on the blending data.
-`Source`nodes do not have quality constraints.
-"""
-function constraints_quality(
-    m,
-    n::EMB.Source,
-    ℒ::Vector{<:EMB.Link},
-    𝒯,
-    𝒫::Vector{<:ResourcePooling},
-) end
-function constraints_quality(
-    m,
-    n::EMB.Node,
-    ℒ::Vector{<:EMB.Link},
-    𝒯,
-    𝒫::Vector{<:ResourcePooling},
-)
-    for blend ∈ 𝒫
-        # Get the subresources for the blend
-        sub_res = subresources(blend)
-
-        # Check if blend data is available for the current blend
-        data_vect = get_blenddata(n, blend)
-
-        if !isempty(data_vect)
-            # Get the specific data for blend
-            data = only(data_vect)
-
-            # Get maximum and minimum resource proportions for node `n`
-            𝒫ᵐᵃˣ, 𝒫ᵐⁱⁿ = res_blendata(data)
-            𝒫ᵐᵃˣ = Dict(key => val for (key, val) ∈ 𝒫ᵐᵃˣ)
-            𝒫ᵐⁱⁿ = Dict(key => val for (key, val) ∈ 𝒫ᵐⁱⁿ)
-
-            # Get links into `n` that deliver any sub_resource of blend
-            _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
-            ℒᵗᵒ = filter(
-                l ->
-                    (blend ∈ EMB.link_res(l)) ||
-                    any(res -> res ∈ EMB.link_res(l), sub_res),
-                ℒᵗᵒ,
-            )
-
-            # Get associated sources to `n` whose outputs are sub_resources of blend.
-            # Only keep links whose upstream node has at least one tracked source; links from
-            # unlabeled network entry nodes (no labeled sources upstream) would otherwise
-            # produce empty sums that degenerate to trivial 0 <= 0 constraints.
-            𝒮 = Dict(
-                l_to.from => filter(
-                    s -> any(res -> res ∈ sub_res, EMB.outputs(s)),
-                    sources_upstream_of(l_to.from, ℒ),
-                ) for l_to ∈ ℒᵗᵒ
-            )
-            ℒᵗᵒ_tracked = filter(l_to -> !isempty(𝒮[l_to.from]), ℒᵗᵒ)
-
-            # Only add quality constraints when there are upstream sources with known proportions
-            isempty(ℒᵗᵒ_tracked) && continue
-
-            # Set constraints for maximum quality of resources
-            for p ∈ keys(𝒫ᵐᵃˣ)
-                if 𝒫ᵐᵃˣ[p] != 1
-                    @constraint(m, [t ∈ 𝒯],
-                        sum(
-                            (get_source_prop(s, p) - get_max_proportion(data, p)) *
-                            m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
-                            for l ∈ ℒᵗᵒ_tracked for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
-                        ) <= 0, base_name="max_quality_$p"
-                    )
-                end
-            end
-
-            # Set constraints for minimum quality of resources
-            for p ∈ keys(𝒫ᵐⁱⁿ)
-                if 𝒫ᵐⁱⁿ[p] != 0
-                    @constraint(m, [t ∈ 𝒯],
-                        sum(
-                            (get_source_prop(s, p) - get_min_proportion(data, p)) *
-                            m[:proportion_source][l.from, s, t] * m[:link_in][l, t, pp]
-                            for l ∈ ℒᵗᵒ_tracked for pp ∈ EMB.link_res(l) for s ∈ 𝒮[l.from]
-                        ) >= 0, base_name="min_quality_$p"
-                    )
-                end
-            end
-        end
-    end
-end
-
-"""
-    function constraints_proportion_source(m, 𝒩::Vector{<:EMB.Node}, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
-
-Set standard proportion_source values for all nodes. 
-For nodes of type `Source`, the proportion source from itself is set to 1 and from other sources to 0.
-For other nodes, the proportion source from non-associated sources is set to 0. Non-associated sources are those that are not 
-upstream of the node.
-"""
-function constraints_proportion_source(
+function constraints_component_blend(
     m,
     𝒩::Vector{<:EMB.Node},
     ℒ::Vector{<:EMB.Link},
     𝒯,
     𝒫::Vector{<:ResourcePooling},
 )
-    sub_res = [r for res_blend ∈ 𝒫 for r ∈ subresources(res_blend)]
-
-    # Filter sources with resources for blends
-    𝒮 = filter(n -> EMB.is_source(n) &&
-                    all(res -> res ∈ sub_res, EMB.outputs(n)), 𝒩)
-
-    # Set proportion_source to 0 at nodes where the source is not associated
-    # and set proportion_source to 1 at source nodes.
+    constraints_link_component_balance(m, ℒ, 𝒯, 𝒫)
     for n ∈ 𝒩
-        𝒮ⁿ = sources_upstream_of(n, ℒ)
-        for source ∈ 𝒮
-            if source == n # if `source` is the same as `n`
-                for t ∈ 𝒯
-                    fix(m[:proportion_source][n, source, t], 1; force = true)
-                end
-            elseif ~(source in 𝒮ⁿ) # if `source` is not associated to `n`
-                for t ∈ 𝒯
-                    fix(m[:proportion_source][n, source, t], 0; force = true)
-                end
-            end
-        end
+        constraints_node_component_balance(m, n, ℒ, 𝒯, 𝒫)
+        constraints_blend_proportion(m, n, ℒ, 𝒯, 𝒫)
+        constraints_quality_blend(m, n, ℒ, 𝒯, 𝒫)
     end
-end
-function constraints_proportion_source(
-    m,
-    ℒ::Vector{<:EMB.Link},
-    𝒩::Vector{<:EMB.Node},
-    𝒯,
-    𝒫::Vector{<:ResourcePooling},
-)
-    constraints_proportion_source(m, 𝒩, ℒ, 𝒯, 𝒫)
-end
 
-"""
-    constraints_tracking(m, n::EMB.Source, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
-    constraints_tracking(m, n::EMB.Node, ℒ::Vector{<:EMB.Link}, 𝒯, 𝒫::Vector{<:ResourcePooling})
-
-Tracking the proportion of subresources at node `n`. Required for linking with the pressure constraints.
-If n is a `Source`, the :proportion_track variables are fixed to 1 for its own resources and 0 for others.
-For other node types, the :proportion_track variables are defined based on the :proportion_source variables of upstream sources.
-"""
-function constraints_tracking(
-    m,
-    n::EMB.Node,
-    ℒ::Vector{<:EMB.Link},
-    𝒯,
-    𝒫::Vector{<:ResourcePooling},
-)
-    for p_blend ∈ 𝒫
-        𝒫ʳ = subresources(p_blend)
-        𝒮 = sources_upstream_of(n, ℒ)
-
-        for p ∈ 𝒫ʳ
-            𝒮ᵖ = filter(s -> p ∈ outputs(s), 𝒮)
+    # Universal normalisation for blend-originating nodes: proportions must always
+    # sum to 1. This catches TransitNode and NetworkNode instances that receive only
+    # pure-component inputs (no incoming Blend link) and therefore get no passthrough
+    # constraint — without normalisation, their proportion_out variables are free in
+    # [0,1] and the solver can push every component to 1.0 simultaneously.
+    #
+    # Excluded:
+    #   - PoolingNode: already gets normalisation inside constraints_blend_proportion.
+    #   - EMB.Sink / EMB.Source: proportions are pinned via passthrough/consume
+    #     constraints; adding an extra equality can interact poorly with the MIP
+    #     relaxation used by MINLP solvers such as Alpine.
+    prop_idx = axes(m[:proportion_out], 1)
+    for n ∈ 𝒩
+        n isa PoolingNode  && continue
+        n isa EMB.Sink     && continue
+        n isa EMB.Source   && continue
+        n ∈ prop_idx || continue
+        for blend ∈ 𝒫
+            sub = subresources(blend)
+            any(p ∈ axes(m[:proportion_out], 3) for p ∈ sub) || continue
             @constraint(m, [t ∈ 𝒯],
-                m[:proportion_track][n, t, p] ==
-                sum(m[:proportion_source][n, s, t] for s ∈ 𝒮ᵖ)
+                sum(m[:proportion_out][n, t, p] for p ∈ sub) == 1.0
             )
         end
     end
 end
-function constraints_tracking(
-    m,
-    n::EMB.Source,
-    ℒ::Vector{<:EMB.Link},
-    𝒯,
-    𝒫::Vector{<:ResourcePooling},
-)
-    for p_blend ∈ 𝒫
-        𝒫ʳ = subresources(p_blend)
-        𝒫ⁿ = filter(p -> (p ∈ EMB.outputs(n)), 𝒫ʳ)
 
-        # Set the proportion_track for Source `n` as 1 if it p is an output, and 0 otherwise
-        for t ∈ 𝒯, p ∈ 𝒫ⁿ
-            fix(m[:proportion_track][n, t, p], 1; force = true)
-        end
-        for t ∈ 𝒯, p ∈ setdiff(𝒫ʳ, 𝒫ⁿ)
-            # fix(m[:proportion_track][n, t, p], 0; force = true)
-            fix(m[:proportion_track][n, t, p], 0; force = true)
+# ---------------------------------------------------------------------------
+# Link-level balance
+# ---------------------------------------------------------------------------
+
+"""
+    constraints_link_component_balance(m, ℒ, 𝒯, 𝒫)
+
+For every link carrying a `ResourcePooling` blend, enforce:
+
+    link_in[l, t, blend] == Σ_p flow_component[l, t, p]
+
+so that the sum of all tracked component flows equals the total blend flow.
+"""
+function constraints_link_component_balance(m, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    ℒ_blend = filter(l -> any(p -> p isa ResourcePooling, EMB.link_res(l)), ℒ)
+    for l ∈ ℒ_blend, blend ∈ 𝒫
+        blend ∈ EMB.link_res(l) || continue
+        sub = subresources(blend)
+        @constraint(m, [t ∈ 𝒯],
+            m[:link_in][l, t, blend] == sum(m[:flow_component][l, t, p] for p ∈ sub)
+        )
+    end
+end
+
+# ---------------------------------------------------------------------------
+# Node-level component mass balance
+# ---------------------------------------------------------------------------
+
+"""
+    constraints_node_component_balance(m, n, ℒ, 𝒯, 𝒫)
+
+Linear per-component mass balance at a node `n`.
+
+For each subresource `p` of every blend:
+    Σ_{l_out blend} flow_component[l_out, t, p]
+        == flow_in[n, t, p]  (if p ∈ inputs(n), else 0)
+         + Σ_{l_in blend} flow_component[l_in, t, p]
+
+This is a linear identity that connects the raw inflow of `p` (e.g., pure H2
+injected at a `PoolingNode`) with the component-tracked flows on the blend links.
+
+No-op for `Source` nodes (no blend output) and `Sink` nodes (no blend output to balance).
+"""
+function constraints_node_component_balance(m, n::EMB.Node, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    for blend ∈ 𝒫
+        sub = subresources(blend)
+
+        _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
+        ℒᶠʳᵒᵐ, _ = EMB.link_sub(ℒ, n)
+
+        ℒ_blend_in  = filter(l -> blend ∈ EMB.link_res(l), ℒᵗᵒ)
+        ℒ_blend_out = filter(l -> blend ∈ EMB.link_res(l), ℒᶠʳᵒᵐ)
+
+        isempty(ℒ_blend_out) && continue
+
+        for p ∈ sub
+            raw_in = p ∈ EMB.inputs(n)
+
+            if isempty(ℒ_blend_in) && !raw_in
+                # Neither blend nor raw subresource flows in — fix components to 0
+                for l ∈ ℒ_blend_out
+                    @constraint(m, [t ∈ 𝒯], m[:flow_component][l, t, p] == 0)
+                end
+                continue
+            end
+
+            if raw_in && isempty(ℒ_blend_in)
+                # Only raw subresource input — simple assignment (single blend out handled
+                # in constraints_blend_proportion; here just balance multi-output case)
+                @constraint(m, [t ∈ 𝒯],
+                    sum(m[:flow_component][l, t, p] for l ∈ ℒ_blend_out) ==
+                    m[:flow_in][n, t, p]
+                )
+            elseif !raw_in && !isempty(ℒ_blend_in)
+                # Only blend inputs carry p — pure passthrough
+                @constraint(m, [t ∈ 𝒯],
+                    sum(m[:flow_component][l, t, p] for l ∈ ℒ_blend_out) ==
+                    sum(m[:flow_component][l, t, p] for l ∈ ℒ_blend_in)
+                )
+            else
+                # Both raw inflow and blend inputs carry p
+                @constraint(m, [t ∈ 𝒯],
+                    sum(m[:flow_component][l, t, p] for l ∈ ℒ_blend_out) ==
+                    m[:flow_in][n, t, p] +
+                    sum(m[:flow_component][l, t, p] for l ∈ ℒ_blend_in)
+                )
+            end
         end
     end
 end
+function constraints_node_component_balance(
+    m, n::EMB.Source, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling},
+) end
+function constraints_node_component_balance(
+    m, n::EMB.Sink, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling},
+) end
+
+# ---------------------------------------------------------------------------
+# Proportion constraints — dispatched by node type
+# ---------------------------------------------------------------------------
+
+"""
+    constraints_blend_proportion(m, n, ℒ, 𝒯, 𝒫)
+
+Set the `proportion_out` variable and any associated constraints for node `n`.
+
+- **`PoolingNode`** (bilinear): for each blend output link,
+      `flow_component[l_out, t, p] = proportion_out[n, t, p] × link_in[l_out, t, blend]`
+
+- **`TransitNode`** and generic blend-passthrough `NetworkNode` (linear):
+      `proportion_out[n, t, p] = proportion_out[upstream_node, t, p]`
+  where `upstream_node` is the node at the other end of the primary incoming blend link.
+
+- All other node types: no-op.
+
+Normalisation (`Σ proportion_out = 1`) is applied globally by `constraints_component_blend`
+and is not repeated here.
+"""
+function constraints_blend_proportion(
+    m, n::EMB.Node, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling},
+) end
+function constraints_blend_proportion(
+    m, n::EMB.Source, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling},
+) end
+
+function constraints_blend_proportion(
+    m, n::PoolingNode, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling},
+)
+    for blend ∈ 𝒫
+        blend ∈ EMB.outputs(n) || continue
+        sub = subresources(blend)
+
+        ℒᶠʳᵒᵐ, _ = EMB.link_sub(ℒ, n)
+        ℒ_blend_out = filter(l -> blend ∈ EMB.link_res(l), ℒᶠʳᵒᵐ)
+        isempty(ℒ_blend_out) && continue
+
+        # Bilinear mixing: each output link carries the blend in proportion_out[n] ratio.
+        for l ∈ ℒ_blend_out, p ∈ sub
+            @constraint(m, [t ∈ 𝒯],
+                m[:flow_component][l, t, p] ==
+                m[:proportion_out][n, t, p] * m[:link_in][l, t, blend]
+            )
+        end
+
+        # Normalisation: proportions must sum to 1 at every timestep.
+        # Kept here (rather than only in the universal loop) to guarantee the
+        # constraint is conditioned on `blend ∈ EMB.outputs(n)`, matching the
+        # bilinear constraints above.
+        @constraint(m, [t ∈ 𝒯], sum(m[:proportion_out][n, t, p] for p ∈ sub) == 1.0)
+    end
+end
+
+function constraints_blend_proportion(
+    m, n::TransitNode, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling},
+)
+    _constraints_blend_passthrough(m, n, ℒ, 𝒯, 𝒫)
+end
+
+function constraints_blend_proportion(
+    m, n::EMB.NetworkNode, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling},
+)
+    if any(p -> p isa ResourcePooling, EMB.outputs(n))
+        _constraints_blend_passthrough(m, n, ℒ, 𝒯, 𝒫)
+    else
+        # Node receives blend but doesn't output it (e.g., UnitConversion).
+        # Set proportion_out[n] = proportion_out[upstream] as a convenience for LHV
+        # and quality constraint lookups.
+        _constraints_blend_consume(m, n, ℒ, 𝒯, 𝒫)
+    end
+end
+
+function constraints_blend_proportion(
+    m, n::EMB.Sink, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling},
+)
+    # Sink nodes receive blend but never output it — propagate proportion_out from
+    # upstream so that quality bounds (RefBlendData) are linked to actual composition.
+    _constraints_blend_consume(m, n, ℒ, 𝒯, 𝒫)
+end
+
+"""
+    _constraints_blend_consume(m, n, ℒ, 𝒯, 𝒫)
+
+Linear proportion passthrough for nodes that consume blend (have blend as input but not output).
+
+Sets `proportion_out[n, t, p] == proportion_out[upstream, t, p]` so that downstream
+constraints (quality bounds, LHV calculation) can access the blend composition at `n`.
+"""
+function _constraints_blend_consume(m, n, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    for blend ∈ 𝒫
+        blend ∈ EMB.inputs(n) || continue
+        sub = subresources(blend)
+
+        _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
+        ℒ_blend_in = filter(l -> blend ∈ EMB.link_res(l), ℒᵗᵒ)
+        isempty(ℒ_blend_in) && continue
+
+        upstream = first(ℒ_blend_in).from
+        any(p -> p isa ResourcePooling, EMB.outputs(upstream)) || continue
+
+        @constraint(m, [t ∈ 𝒯, p ∈ sub],
+            m[:proportion_out][n, t, p] == m[:proportion_out][upstream, t, p]
+        )
+    end
+end
+
+"""
+    _constraints_blend_passthrough(m, n, ℒ, 𝒯, 𝒫)
+
+Linear proportion passthrough for nodes that carry blend unchanged (no injection).
+
+**Single-link case (no circularity possible):**  
+When a node has exactly one incoming blend link, a hard equality is used:
+    proportion_out[n, t, p] == proportion_out[upstream, t, p]
+
+**Multi-link case (bidirectional / cyclic networks):**  
+When a node has two or more incoming blend links, a big-M formulation conditioned on
+`has_flow` is used instead of a hard equality.  For each incoming link `l_up`:
+
+    proportion_out[n, t, p] - proportion_out[upstream, t, p] ∈ [-(1 - has_flow), (1 - has_flow)]
+
+When `has_flow[l_up, t] = 1` (link is active) this collapses to a hard equality, propagating
+the upstream composition.  When `has_flow[l_up, t] = 0` (link is inactive) the constraint is
+trivially satisfied and `proportion_out[n]` is not pinned to that (inactive) upstream.
+
+This matters in bidirectional networks: a pair {A→B, B→A} carries
+`has_flow[A→B] + has_flow[B→A] ≤ 1`, guaranteeing at most one direction is active.
+Without conditioning, iterating both links would add `proportion[n] = proportion[A]` and
+`proportion[n] = proportion[B]` — contradictory if A and B carry different compositions, and
+circular (free) if they share the same cycle.  Conditioning on `has_flow` breaks the
+contradiction: only the active-direction link constrains the proportion.
+
+`proportion_out ∈ [0, 1]`, so M = 1 is the tightest valid big-M coefficient.
+
+Fallback: if `has_flow` is not in the model (networks without `ResourcePressure`), hard
+equalities are used in all cases — safe for the acyclic / unidirectional topologies those
+models represent.
+
+Guard per link: only add the constraint if the upstream node itself produces a
+`ResourcePooling` blend (i.e., has `proportion_out` defined and meaningful).
+"""
+function _constraints_blend_passthrough(m, n, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    use_bigm = haskey(m, :has_flow)
+
+    for blend ∈ 𝒫
+        blend ∈ EMB.outputs(n) || continue
+        sub = subresources(blend)
+
+        _, ℒᵗᵒ = EMB.link_sub(ℒ, n)
+        ℒ_blend_in = filter(l -> blend ∈ EMB.link_res(l), ℒᵗᵒ)
+        isempty(ℒ_blend_in) && continue
+
+        # Single-link: no circularity possible — hard equality is always safe.
+        # Multi-link: use big-M so that only active (has_flow=1) upstreams anchor the
+        # proportion; inactive links (has_flow=0) do not over-constrain the proportion.
+        force_equality = !use_bigm || length(ℒ_blend_in) == 1
+
+        for l_up ∈ ℒ_blend_in
+            upstream = l_up.from
+            any(p -> p isa ResourcePooling, EMB.outputs(upstream)) || continue
+
+            if force_equality
+                @constraint(m, [t ∈ 𝒯, p ∈ sub],
+                    m[:proportion_out][n, t, p] == m[:proportion_out][upstream, t, p]
+                )
+            else
+                # Big-M conditional equality: binding when has_flow = 1, relaxed when 0.
+                @constraint(m, [t ∈ 𝒯, p ∈ sub],
+                    m[:proportion_out][n, t, p] - m[:proportion_out][upstream, t, p] <=
+                    1 - m[:has_flow][l_up, t]
+                )
+                @constraint(m, [t ∈ 𝒯, p ∈ sub],
+                    m[:proportion_out][n, t, p] - m[:proportion_out][upstream, t, p] >=
+                    -(1 - m[:has_flow][l_up, t])
+                )
+            end
+        end
+    end
+end
+
+# ---------------------------------------------------------------------------
+# Quality / composition bounds
+# ---------------------------------------------------------------------------
+
+"""
+    constraints_quality_blend(m, n, ℒ, 𝒯, 𝒫)
+
+Enforce the blend composition bounds from `RefBlendData` attached to node `n`.
+
+Since `proportion_out[n]` is now defined for all nodes with blend in inputs or outputs
+(including `Sink` and `UnitConversion`), the bounds are applied directly to `proportion_out[n]`.
+This is always linear.
+
+No-op when no `RefBlendData` is attached.
+"""
+function constraints_quality_blend(m, n::EMB.Node, ℒ, 𝒯, 𝒫::Vector{<:ResourcePooling})
+    for blend ∈ 𝒫
+        data_vect = get_blenddata(n, blend)
+        isempty(data_vect) && continue
+        data = only(data_vect)
+
+        𝒫ᵐᵃˣ, 𝒫ᵐⁱⁿ = res_blendata(data)
+        sub = subresources(blend)
+
+        for p ∈ sub
+            haskey(𝒫ᵐᵃˣ, p) && 𝒫ᵐᵃˣ[p] < 1 &&
+                @constraint(m, [t ∈ 𝒯], m[:proportion_out][n, t, p] <= 𝒫ᵐᵃˣ[p])
+            haskey(𝒫ᵐⁱⁿ, p) && 𝒫ᵐⁱⁿ[p] > 0 &&
+                @constraint(m, [t ∈ 𝒯], m[:proportion_out][n, t, p] >= 𝒫ᵐⁱⁿ[p])
+        end
+    end
+end
+

@@ -32,25 +32,24 @@ function EMB.variables_flow_resource(
     𝒯,
     modeltype::EMB.EnergyModel,
 )
+    # Get the unique subresources across all blend resources
+    𝒫ˢᵘᵇ = unique([r for blend ∈ 𝒫 for r ∈ subresources(blend)])
 
-    # Get the subresources included in the blends (ResourceCarrier or ResourcePressure)
-    𝒫ᴿᴾ = [r for res_blend ∈ 𝒫 for r ∈ subresources(res_blend)]
-
-    # Get the sources that can provide the subresources
-    𝒮 = filter(n -> EMB.is_source(n) && all(res -> res in 𝒫ᴿᴾ, EMB.outputs(n)), 𝒩)
-
-    # Create all combinations (node, source) for tracking the proportion of source in each node
-    @variable(m, 0.0 <= proportion_source[𝒩, 𝒮, 𝒯] <= 1.0)
-
-    # Create a proportion_track variable for each node and subresource
-    @variable(m, 0 <= proportion_track[𝒩, 𝒯, 𝒫ᴿᴾ] <= 1.0)
+    # Create proportion_out at all nodes that have a ResourcePooling blend in inputs OR outputs.
+    # Nodes that only receive blend (e.g., UnitConversion, RefSink) also need this variable
+    # for LHV calculations and quality constraints — it is set to upstream's proportion_out
+    # via a linear passthrough constraint in constraints_blend_proportion.
+    𝒩_blend = filter(n -> any(p -> p isa ResourcePooling,
+                         vcat(EMB.inputs(n), EMB.outputs(n))), 𝒩)
+    @variable(m, 0.0 <= proportion_out[𝒩_blend, 𝒯, 𝒫ˢᵘᵇ] <= 1.0)
 end
 
 """
     EMB.variables_flow_resource(m, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{:ResourcePressure}, 𝒯, modeltype::EnergyModel) 
+    EMB.variables_flow_resource(m, ℒ::Vector{<:EMB.Link}, 𝒫::Vector{:ResourcePooling}, 𝒯, modeltype::EnergyModel) 
 
-Define additional pressure-related variables for links if there are `ResourcePressure` in the system. 
-Note! There is no blending variables associated to links.
+Define additional pressure-related variables for links if there are `ResourcePressure` in the system.
+For `ResourcePooling` blends, define `flow_component` variables on each blend-carrying link.
 """
 function EMB.variables_flow_resource(
     m,
@@ -66,6 +65,22 @@ function EMB.variables_flow_resource(
     # Add link binary variables
     @variable(m, has_flow[l ∈ ℒ, 𝒯], Bin) # auxiliary binary that ensures that all links with flow take value 1, it can take value 1 without flow as well. Careful with this detail, it cannot be used to check actual flows.
     @variable(m, lower_pressure_into_node[l ∈ ℒ, 𝒯], Bin) # binary for tracking lowest pressure going into a node
+end
+
+function EMB.variables_flow_resource(
+    m,
+    ℒ::Vector{<:EMB.Link},
+    𝒫::Vector{<:ResourcePooling},
+    𝒯,
+    modeltype::EnergyModel,
+)
+    # Get the unique subresources across all blend resources
+    𝒫ˢᵘᵇ = unique([r for blend ∈ 𝒫 for r ∈ subresources(blend)])
+
+    # Filter to links that carry at least one ResourcePooling resource
+    ℒ_blend = filter(l -> any(p -> p isa ResourcePooling, EMB.link_res(l)), ℒ)
+
+    @variable(m, 0 <= flow_component[ℒ_blend, 𝒯, 𝒫ˢᵘᵇ])
 end
 
 """ 
@@ -212,13 +227,7 @@ function EMB.constraints_couple_resource(
     𝒯,
     modeltype::EMB.EnergyModel,
 )
-    for n ∈ 𝒩
-        constraints_proportion(m, n, ℒ, 𝒯, 𝒫)
-        constraints_quality(m, n, ℒ, 𝒯, 𝒫)
-        constraints_tracking(m, n, ℒ, 𝒯, 𝒫)
-    end
-
-    constraints_proportion_source(m, 𝒩, ℒ, 𝒯, 𝒫)
+    constraints_component_blend(m, 𝒩, ℒ, 𝒯, 𝒫)
 end
 function EMB.constraints_couple_resource(
     m,
@@ -233,13 +242,7 @@ function EMB.constraints_couple_resource(
     end
 
     # Set blending couple constraints
-    for n ∈ 𝒩
-        constraints_proportion(m, n, ℒ, 𝒯, 𝒫)
-        constraints_quality(m, n, ℒ, 𝒯, 𝒫)
-        constraints_tracking(m, n, ℒ, 𝒯, 𝒫)
-    end
-
-    constraints_proportion_source(m, 𝒩, ℒ, 𝒯, 𝒫)
+    constraints_component_blend(m, 𝒩, ℒ, 𝒯, 𝒫)
 
     for l ∈ ℒ
         constraints_bidirectional_pressure(m, l, ℒ, 𝒯, 𝒫)

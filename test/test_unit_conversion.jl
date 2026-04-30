@@ -229,14 +229,15 @@ optimize!(m)
     H2 = first(filter(p -> p.id == "H2", 𝒫))
     Blend = first(filter(p -> p.id == "Blend", 𝒫))
 
-    # Check the prooportion of H2 in the pooling and conversion node is at its maximum
+    # Check the proportion of H2 in the pooling node is at its maximum
     n = first(filter(n -> n.id == "pooling", 𝒩))
-    proportion_h2 = value(m[:proportion_track][n, first(𝒯), H2])
+    proportion_h2 = value(m[:proportion_out][n, first(𝒯), H2])
     @test isapprox(proportion_h2, 0.1; atol = 0.02)  # Alpine has 1% rel_gap
 
-    n = first(filter(n -> n.id == "conversion", 𝒩))
-    proportion_h2 = value(m[:proportion_track][n, first(𝒯), H2])
-    flow_in = value(m[:flow_in][n, first(𝒯), Blend])
+    # The conversion node receives Blend from the pooling node; same H2 proportion applies
+    n_pooling = first(filter(n -> n.id == "pooling", 𝒩))
+    proportion_h2 = value(m[:proportion_out][n_pooling, first(𝒯), H2])
+    flow_in = value(m[:flow_in][first(filter(n -> n.id == "conversion", 𝒩)), first(𝒯), Blend])
     @test isapprox(proportion_h2, 0.1; atol = 0.02)  # Alpine has 1% rel_gap
     @test isapprox(flow_in, 222.222; rtol = 0.05) # Check the flow_in to the conversion node is at the maximum capacity from the sources.
 end
