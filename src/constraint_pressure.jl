@@ -97,6 +97,23 @@ function constraints_balance_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:Com
         m[:link_potential_in][l, t, p] == m[:link_potential_out][l, t, p]
     )
 end
+function constraints_balance_pressure(m, l::ZeroDrop, 𝒯, 𝒫::Vector{<:CompoundResource})
+    # When flow is active, inlet and outlet potentials are equal (zero pressure drop).
+    # The equality is relaxed with a big-M when has_flow = 0, so that zero-flow pipes do not
+    # propagate pressure equality across network regions at different pressure levels.
+    @constraint(
+        m,
+        [t ∈ 𝒯, p ∈ 𝒫],
+        m[:link_potential_in][l, t, p] <=
+            m[:link_potential_out][l, t, p] + 1e4 * (1 - m[:has_flow][l, t])
+    )
+    @constraint(
+        m,
+        [t ∈ 𝒯, p ∈ 𝒫],
+        m[:link_potential_in][l, t, p] >=
+            m[:link_potential_out][l, t, p] - 1e4 * (1 - m[:has_flow][l, t])
+    )
+end
 function constraints_balance_pressure(m, n::EMB.Node, 𝒯, 𝒫::Vector) end
 
 """
@@ -516,6 +533,10 @@ function constraints_flow_pressure(
     𝒫::Vector{<:ResourcePooling{<:ResourcePressure}},
 ) end
 function constraints_flow_pressure(m, l::EMB.Direct, 𝒯, 𝒫::Vector{<:Resource}) end
+# ZeroDrop: zero-drop pipeline, no Weymouth constraint for any resource type
+function constraints_flow_pressure(m, l::ZeroDrop, 𝒯, 𝒫::Vector{<:ResourcePressure}) end
+function constraints_flow_pressure(m, l::ZeroDrop, 𝒯, 𝒫::Vector{<:ResourcePooling{<:ResourcePressure}}) end
+function constraints_flow_pressure(m, l::ZeroDrop, 𝒯, 𝒫::Vector{<:Resource}) end
 
 """
     constraints_pwa(m, l::Link, p_blend::ResourcePooling, p_track::ResourcePressure, 𝒯, plane, pwa::PWAFunc)
