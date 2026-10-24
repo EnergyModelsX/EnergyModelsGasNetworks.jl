@@ -27,23 +27,19 @@
         
     - **Pressure-flow constraints for blended gases**. The pressure-flow relation for blended gases is also nonlinear and nonconvex (adapted Weymouth equation for blended gases). However, within the physically operating region (i.e., inlet pressure >= outlet pressure, nonnegative flows and bounded pressures), the relation is smooth and monotonic. To obtain a MILP, we approximate the nonlinear surface using a piecewise-affine outer approximation built from tangent planes via [`PiecewiseAffineApprox`](https://sintefore.github.io/PiecewiseAffineApprox.jl/stable/). 
     
-    Consequently, when pooling and/or pressure-flow constraints are enabled, you need a solver capable of handling nonconvex MINLP problems, such as [`Alpine`](https://github.com/lanl-ansi/Alpine.jl), which uses a MIP solver and a continous NLP solver internally.
+    Consequently, when pooling and/or pressure-flow constraints are enabled, you need a solver capable of handling nonconvex MINLP problems. [`SCIP`](https://github.com/scipopt/SCIP.jl) is the recommended open-source option; commercial alternatives such as Gurobi and Xpress also work.
 
   ```julia
-  ] add Alpine, Ipopt, HiGHS
-  using JuMP, Alpine, Ipopt, HiGHS
-  ipopt = optimizer_with_attributes(Ipopt.Optimizer, "print_level" => 0)
-  highs = optimizer_with_attributes(HiGHS.Optimizer, "output_flag" => false)
-  model = Model(
-    optimizer_with_attributes(
-        Alpine.Optimizer,
-        "nlp_solver" => ipopt,
-        "mip_solver" => highs,
-    ),
-  )
+  ] add SCIP, HiGHS
+  using JuMP, SCIP, HiGHS
+  model = Model(SCIP.Optimizer)
   ```
 
-Using other MIP solvers such as  *Gurobi* or *Xpress* can significantly improve performance.
+  When only `DiscretizedPoolingNode` and `BlendingNode` are used (no `PoolingNode`), the model is a pure MILP and HiGHS suffices:
+
+  ```julia
+  model = Model(HiGHS.Optimizer)
+  ```
 
 !!! tip "JuMP and solver"
     While JuMP is automatically installed when you add `EnergyModelsBase`, it is still necessary to load it to optimize a model or extract the results.
