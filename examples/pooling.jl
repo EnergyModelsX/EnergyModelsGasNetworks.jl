@@ -1,9 +1,9 @@
 using Pkg
-# Activate the local environment including EnergyModelsBase, EnergyModelsGasNetworks, HiGHS, Alpine, Ipopt, JuMP
+# Activate the local environment including EnergyModelsBase, EnergyModelsGasNetworks, HiGHS, SCIP, JuMP
 Pkg.activate(joinpath(@__DIR__))
 Pkg.instantiate()
 
-using HiGHS, Alpine, Ipopt, Juniper
+using HiGHS, SCIP
 using JuMP
 using EnergyModelsBase
 using EnergyModelsGasNetworks
@@ -131,34 +131,8 @@ end
 # Generate the case and model
 case, model = generate_pooling_case()
 
-# Set the optimizer, in this example,  we use Alpine to deal with the binary products of the blending constraints
-"""
-    define_optimizer(mip_solver)
-
-Define the optimizer with Alpine, Juniper and Ipopt to solve the pooling example.
-The `mip_solver` can be HiGHS or the desired MIP solver.
-"""
-function define_optimizer(mip_solver)
-    nl_solver = optimizer_with_attributes(Ipopt.Optimizer, MOI.Silent() => true, "sb" => "yes")
-    minlp_optimizer = optimizer_with_attributes(
-        Juniper.Optimizer,
-        MOI.Silent() => true,
-        "mip_solver" => mip_solver,
-        "nl_solver" => nl_solver,
-    )
-    optimizer = optimizer_with_attributes(
-        Alpine.Optimizer,
-        "nlp_solver" => nl_solver,
-        "mip_solver" => mip_solver,
-        "minlp_solver" => minlp_optimizer,
-        "rel_gap" => 0.01,
-        "presolve_bt" => false,
-        "time_limit" => 300,
-    )
-    return optimizer
-end
-
-optimizer = define_optimizer(optimizer_with_attributes(HiGHS.Optimizer, MOI.Silent() => true))
+# Set the optimizer — use SCIP for the bilinear PoolingNode constraints (MINLP)
+optimizer = optimizer_with_attributes(SCIP.Optimizer, MOI.Silent() => true)
 m = create_model(case, model; check_timeprofiles = true)
 set_optimizer(m, optimizer)
 optimize!(m)

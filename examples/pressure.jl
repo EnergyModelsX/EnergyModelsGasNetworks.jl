@@ -1,5 +1,5 @@
 using Pkg
-# Activate the local environment including EnergyModelsBase, EnergyModelsGasNetworks, HiGHS, Alpine, Ipopt, JuMP
+# Activate the local environment including EnergyModelsBase, EnergyModelsGasNetworks, HiGHS, JuMP
 Pkg.activate(joinpath(@__DIR__))
 Pkg.instantiate()
 
